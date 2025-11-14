@@ -1,0 +1,138 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@400;600&family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,600&display=swap');
+
+:root {
+  color-scheme: light;
+  --brand-font-serif: 'Playfair Display', 'Times New Roman', serif;
+  --brand-font-body: 'Source Serif 4', 'Georgia', serif;
+  --brand-font-sans: 'Source Sans 3', 'Arial', sans-serif;
+  --color-background: #ffffff;
+  --color-surface: #ffffff;
+  --color-border: #d9d9d9;
+  --color-text-primary: #000000;
+  --color-text-secondary: #333333;
+  --color-accent: #000000;
+  --color-accent-dark: #111111;
+  --color-muted: #4d4d4d;
+  --layout-max-width: 1120px;
+  --stack-spacing-sm: 0.75rem;
+  --stack-spacing-md: 1.5rem;
+  --stack-spacing-lg: 2.5rem;
+  --transition-default: 180ms ease-in-out;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--brand-font-body);
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0 0 0.5em;
+  font-family: var(--brand-font-serif);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: 0.04em;
+}
+
+p {
+  margin: 0 0 1em;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:hover,
+a:focus-visible {
+  text-decoration: underline;
+  text-decoration-color: var(--color-accent);
+}
+
+button {
+  font-family: var(--brand-font-body);
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-content {
+  flex: 1 1 auto;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.container {
+  width: min(100% - 2rem, var(--layout-max-width));
+  margin: 0 auto;
+}
+
+.grid {
+  display: grid;
+  gap: 2rem;
+}
+
+.surface {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 16px 24px rgba(17, 17, 17, 0.06);
+}
+
+.text-muted {
+  color: var(--color-muted);
+}
+
+.link-underline {
+  text-decoration: underline;
+  text-decoration-color: var(--color-border);
+  transition: text-decoration-color var(--transition-default);
+}
+
+.link-underline:hover {
+  text-decoration-color: var(--color-accent);
+}
+
+.sr-only {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+  white-space: nowrap;
+}
+
