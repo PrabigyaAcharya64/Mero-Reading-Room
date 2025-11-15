@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, addDoc, getDocs, doc, setDoc, getDoc, query, where, deleteDoc } from 'firebase/firestore';
+import { validateMenuItemName, validatePrice, validateDescription, validateCategory } from '../../utils/validation';
 
 const IMGBB_API_KEY = 'f3836c3667cc5c73c64e1aa4f0849566';
 
@@ -163,21 +164,40 @@ function MenuManagement() {
 
   const handleAddMenuItem = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.price || !formData.description || !formData.category) {
-      setMessage('Please fill all fields');
-      return;
-    }
-
+    
     setLoading(true);
     setMessage('');
 
+    // Validate all inputs
+    const nameValidation = validateMenuItemName(formData.name);
+    if (!nameValidation.valid) {
+      setMessage(nameValidation.error);
+      setLoading(false);
+      return;
+    }
+
+    const priceValidation = validatePrice(formData.price, 0, 10000);
+    if (!priceValidation.valid) {
+      setMessage(priceValidation.error);
+      setLoading(false);
+      return;
+    }
+
+    const descriptionValidation = validateDescription(formData.description, 500);
+    if (!descriptionValidation.valid) {
+      setMessage(descriptionValidation.error);
+      setLoading(false);
+      return;
+    }
+
+    const categoryValidation = validateCategory(formData.category);
+    if (!categoryValidation.valid) {
+      setMessage(categoryValidation.error);
+      setLoading(false);
+      return;
+    }
+
     try {
-      const price = parseFloat(formData.price);
-      if (isNaN(price) || price <= 0) {
-        setMessage('Please enter a valid price');
-        setLoading(false);
-        return;
-      }
 
       let photoURL = null;
 
@@ -244,10 +264,10 @@ function MenuManagement() {
       
       await Promise.race([
         addDoc(collection(db, 'menuItems'), {
-          name: formData.name.trim(),
-          price: price,
-          description: formData.description.trim(),
-          category: formData.category,
+          name: nameValidation.sanitized,
+          price: priceValidation.sanitized,
+          description: descriptionValidation.sanitized,
+          category: categoryValidation.sanitized,
           photoURL: photoURL,
           createdAt: new Date().toISOString(),
         }),

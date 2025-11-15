@@ -11,36 +11,139 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
     
-    // Users collection - users can read/write their own data
+    // Helper function to get user role from user document
+    function getUserRole() {
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return userDoc != null && userDoc.data != null ? userDoc.data.role : null;
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == 'admin';
+    }
+    
+    // Helper function to check if user is canteen staff
+    function isCanteen() {
+      return isAuthenticated() && getUserRole() == 'canteen';
+    }
+    
+    // Helper function to check if user is admin or canteen
+    function isAdminOrCanteen() {
+      return isAuthenticated() && (getUserRole() == 'admin' || getUserRole() == 'canteen');
+    }
+    
+    // Users collection - users can read their own data, update their own balance/profile
     match /users/{userId} {
+      // Users can read their own data
       allow read: if isOwner(userId);
-      allow write: if isOwner(userId);
+      
+      // Users can create their own document on signup
+      allow create: if isOwner(userId) 
+        && request.resource.data.keys().hasAll(['email', 'role', 'balance'])
+        && request.resource.data.email is string
+        && request.resource.data.role in ['admin', 'canteen', null]
+        && request.resource.data.balance is number
+        && request.resource.data.balance >= 0;
+      
+      // Users can update their own profile (but not role or balance directly)
+      allow update: if isOwner(userId)
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'balance']))
+        || isAdmin(); // Admin can update any user
+      
+      // Only admin can delete user documents
+      allow delete: if isAdmin();
     }
     
-    // Menu items - authenticated users can read, only authenticated can write
-    // This includes imageUrl field for photos
+    // Menu items - all authenticated users can read, only canteen/admin can modify
     match /menuItems/{itemId} {
+      // All authenticated users can read menu items
       allow read: if isAuthenticated();
-      allow create, update, delete: if isAuthenticated();
+      
+      // Only canteen staff and admin can create menu items
+      allow create: if isAdminOrCanteen()
+        && request.resource.data.keys().hasAll(['name', 'price', 'description', 'category'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.price is number
+        && request.resource.data.price > 0
+        && request.resource.data.price <= 10000
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 500
+        && request.resource.data.category is string
+        && request.resource.data.category in ['Breakfast', 'Meal', 'Dinner', 'Snacks', 'Drinks'];
+      
+      // Only canteen staff and admin can update menu items
+      allow update: if isAdminOrCanteen()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.price is number
+        && request.resource.data.price > 0
+        && request.resource.data.price <= 10000
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 500
+        && request.resource.data.category is string
+        && request.resource.data.category in ['Breakfast', 'Meal', 'Dinner', 'Snacks', 'Drinks'];
+      
+      // Only canteen staff and admin can delete menu items
+      allow delete: if isAdminOrCanteen();
     }
     
-    // Today's menu - authenticated users can read, only authenticated can write
+    // Today's menu - all authenticated users can read, only canteen/admin can modify
     match /todaysMenu/{date} {
+      // All authenticated users can read today's menu
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
+      
+      // Only canteen staff and admin can set today's menu
+      allow write: if isAdminOrCanteen()
+        && request.resource.data.keys().hasAll(['date', 'items'])
+        && request.resource.data.date is string
+        && request.resource.data.items is list
+        && request.resource.data.items.size() <= 100;
     }
     
-    // Orders - users can read their own orders, create orders
+    // Orders - users can read their own orders, create orders, canteen/admin can read all
     match /orders/{orderId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated();
+      // Users can read their own orders, canteen/admin can read all orders
+      allow read: if isAuthenticated() 
+        && (resource.data.userId == request.auth.uid || isAdminOrCanteen());
+      
+      // Users can create their own orders
+      allow create: if isAuthenticated() 
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasAll(['userId', 'userEmail', 'items', 'total', 'status'])
+        && request.resource.data.userEmail is string
+        && request.resource.data.items is list
+        && request.resource.data.items.size() > 0
+        && request.resource.data.items.size() <= 50
+        && request.resource.data.total is number
+        && request.resource.data.total > 0
+        && request.resource.data.total <= 50000
+        && request.resource.data.status == 'pending';
+      
+      // Only canteen staff and admin can update orders (to change status)
+      allow update: if isAdminOrCanteen()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'completedAt'])
+        && request.resource.data.status in ['pending', 'completed', 'cancelled'];
+      
+      // Only admin can delete orders
+      allow delete: if isAdmin();
     }
     
-    // Daily sales - authenticated users can read, only authenticated can write
+    // Daily sales - only admin and canteen can read/write
     match /dailySales/{date} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
+      // Only canteen staff and admin can read sales data
+      allow read: if isAdminOrCanteen();
+      
+      // Only canteen staff and admin can write sales data
+      allow write: if isAdminOrCanteen()
+        && request.resource.data.keys().hasAll(['date', 'totalSales', 'totalOrders'])
+        && request.resource.data.date is string
+        && request.resource.data.totalSales is number
+        && request.resource.data.totalSales >= 0
+        && request.resource.data.totalOrders is number
+        && request.resource.data.totalOrders >= 0;
     }
   }
 }

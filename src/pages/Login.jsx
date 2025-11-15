@@ -2,10 +2,13 @@ import { useState } from 'react';
 import { useAuth } from '../auth/AuthProvider';
 
 function Login({ onSwitch }) {
-  const { signInEmail, signInWithGoogle } = useAuth();
+  const { signInEmail, signInWithGoogle, resetPassword } = useAuth();
   const [form, setForm] = useState({ email: '', password: '' });
   const [feedback, setFeedback] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetting, setResetting] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -31,7 +34,35 @@ function Login({ onSwitch }) {
   };
 
   const handleForgotPassword = () => {
-    setFeedback('Password reset is coming soon. Contact support in the meantime.');
+    setShowResetPassword(true);
+    setFeedback('');
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    if (!resetEmail || !resetEmail.trim()) {
+      setFeedback('Please enter your email address.');
+      return;
+    }
+
+    setResetting(true);
+    setFeedback('');
+    try {
+      await resetPassword(resetEmail);
+      setFeedback('Password reset email sent! Please check your inbox and follow the instructions.');
+      setShowResetPassword(false);
+      setResetEmail('');
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : 'Unable to send password reset email.');
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const handleCancelReset = () => {
+    setShowResetPassword(false);
+    setResetEmail('');
+    setFeedback('');
   };
 
   const handleGoogle = async () => {
@@ -45,6 +76,43 @@ function Login({ onSwitch }) {
       setSubmitting(false);
     }
   };
+
+  if (showResetPassword) {
+    return (
+      <div className="auth-card">
+        <h2 style={{ marginBottom: '20px', textAlign: 'center' }}>Reset Password</h2>
+        <form className="auth-form" onSubmit={handleResetPassword}>
+          <label className="input-field">
+            <span className="input-field__label">Email</span>
+            <input
+              type="email"
+              name="resetEmail"
+              placeholder="reader@example.com"
+              value={resetEmail}
+              onChange={(e) => setResetEmail(e.target.value)}
+              autoComplete="email"
+              required
+            />
+          </label>
+
+          <button type="submit" className="cta-button cta-button--primary" disabled={resetting}>
+            {resetting ? 'Sending…' : 'Send Reset Link'}
+          </button>
+
+          <button
+            type="button"
+            className="cta-button cta-button--secondary"
+            onClick={handleCancelReset}
+            disabled={resetting}
+          >
+            Cancel
+          </button>
+        </form>
+
+        {feedback ? <p className="auth-feedback">{feedback}</p> : null}
+      </div>
+    );
+  }
 
   return (
     <div className="auth-card">

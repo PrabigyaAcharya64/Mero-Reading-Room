@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { doc, onSnapshot, collection, addDoc } from 'firebase/firestore';
+import { validateOrderNote } from '../../utils/validation';
 
 const profileIcon =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
@@ -114,6 +115,18 @@ function CanteenClient({ onBack }) {
         return;
       }
 
+      // Validate and sanitize order note
+      let sanitizedNote = null;
+      if (orderNote && orderNote.trim()) {
+        const noteValidation = validateOrderNote(orderNote, 500);
+        if (!noteValidation.valid) {
+          setOrderMessage(noteValidation.error);
+          setOrdering(false);
+          return;
+        }
+        sanitizedNote = noteValidation.sanitized || null;
+      }
+
       // Create order
       await addDoc(collection(db, 'orders'), {
         userId: user.uid,
@@ -122,7 +135,7 @@ function CanteenClient({ onBack }) {
         items: cart,
         total: total,
         status: 'pending',
-        note: orderNote.trim() || null,
+        note: sanitizedNote,
         location: null, // Will be set when hostel/reading room features are added
         createdAt: new Date().toISOString(),
       });

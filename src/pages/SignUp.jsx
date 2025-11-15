@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { updateProfile } from 'firebase/auth';
 import { useAuth } from '../auth/AuthProvider';
 import { auth } from '../lib/firebase';
+import { validatePassword, validateEmail, validateName } from '../utils/validation';
 
 function SignUp({ onSwitch }) {
   const { signUpEmail, signInWithGoogle } = useAuth();
@@ -13,22 +14,49 @@ function SignUp({ onSwitch }) {
   });
   const [feedback, setFeedback] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(null);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    
+    // Validate password in real-time
+    if (name === 'password') {
+      const validation = validatePassword(value);
+      setPasswordStrength(validation);
+    } else if (name === 'confirmPassword' && form.password) {
+      // Clear password strength when confirming
+      setPasswordStrength(null);
+    }
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (form.password !== form.confirmPassword) {
-      setFeedback('Passwords must match.');
+    // Validate name
+    const nameValidation = validateName(form.name, 'Full name');
+    if (!nameValidation.valid) {
+      setFeedback(nameValidation.error);
       return;
     }
 
-    if (!form.email || !form.password) {
-      setFeedback('Email and password are required.');
+    // Validate email
+    const emailValidation = validateEmail(form.email);
+    if (!emailValidation.valid) {
+      setFeedback(emailValidation.error);
+      return;
+    }
+
+    // Validate password
+    const passwordValidation = validatePassword(form.password);
+    if (!passwordValidation.valid) {
+      setFeedback(passwordValidation.error);
+      return;
+    }
+
+    // Check password match
+    if (form.password !== form.confirmPassword) {
+      setFeedback('Passwords must match.');
       return;
     }
 
@@ -36,10 +64,10 @@ function SignUp({ onSwitch }) {
     setFeedback('');
 
     try {
-      await signUpEmail(form.email, form.password);
+      await signUpEmail(emailValidation.sanitized, form.password);
 
-      if (auth.currentUser && form.name.trim()) {
-        await updateProfile(auth.currentUser, { displayName: form.name.trim() });
+      if (auth.currentUser && nameValidation.sanitized) {
+        await updateProfile(auth.currentUser, { displayName: nameValidation.sanitized });
       }
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : 'Unable to create your account.');
@@ -94,13 +122,23 @@ function SignUp({ onSwitch }) {
           <input
             type="password"
             name="password"
-            placeholder="Create a password"
+            placeholder="Create a password (min. 8 chars, uppercase, lowercase, number, special)"
             value={form.password}
             onChange={handleChange}
             autoComplete="new-password"
             required
-            minLength={6}
+            minLength={8}
           />
+          {passwordStrength && !passwordStrength.valid && form.password && (
+            <p style={{ fontSize: '12px', color: '#f44', marginTop: '5px' }}>
+              {passwordStrength.error}
+            </p>
+          )}
+          {passwordStrength && passwordStrength.valid && (
+            <p style={{ fontSize: '12px', color: '#4a4', marginTop: '5px' }}>
+              ✓ Password strength: Good
+            </p>
+          )}
         </label>
 
         <label className="input-field">
@@ -113,8 +151,18 @@ function SignUp({ onSwitch }) {
             onChange={handleChange}
             autoComplete="new-password"
             required
-            minLength={6}
+            minLength={8}
           />
+          {form.confirmPassword && form.password !== form.confirmPassword && (
+            <p style={{ fontSize: '12px', color: '#f44', marginTop: '5px' }}>
+              Passwords do not match.
+            </p>
+          )}
+          {form.confirmPassword && form.password === form.confirmPassword && form.password && (
+            <p style={{ fontSize: '12px', color: '#4a4', marginTop: '5px' }}>
+              ✓ Passwords match
+            </p>
+          )}
         </label>
 
         <button type="submit" className="cta-button cta-button--primary" disabled={submitting}>

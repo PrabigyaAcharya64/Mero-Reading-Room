@@ -12,6 +12,7 @@ import {
   User,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
@@ -28,6 +29,7 @@ type AuthContextState = {
   signUpEmail: (email: string, password: string) => Promise<void>;
   signOutUser: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   updateBalance: (newBalance: number) => Promise<void>;
   deductBalance: (amount: number) => Promise<boolean>;
 };
@@ -59,6 +61,7 @@ const firebaseErrorMessages: Record<string, string> = {
   'auth/weak-password': 'Please choose a stronger password.',
   'auth/network-request-failed': 'Network error. Check your connection and try again.',
   'auth/popup-closed-by-user': 'The sign-in popup was closed before completing.',
+  'auth/too-many-requests': 'Too many requests. Please try again later.',
 };
 
 const getFriendlyError = (code: string, fallback: string) =>
@@ -316,6 +319,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const resetPassword = useCallback(async (email: string) => {
+    if (!email || !email.trim()) {
+      throw new Error('Please provide an email address.');
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+    } catch (error: any) {
+      throw new Error(
+        getFriendlyError(
+          error?.code ?? 'auth/unknown',
+          error?.message ?? 'Unable to send password reset email.',
+        ),
+      );
+    }
+  }, []);
+
   const signInWithGoogleHandler = useCallback(async () => {
     try {
       const provider = new GoogleAuthProvider();
@@ -421,10 +441,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signUpEmail,
       signOutUser,
       signInWithGoogle: signInWithGoogleHandler,
+      resetPassword,
       updateBalance,
       deductBalance,
     }),
-    [user, userRole, userBalance, loading, signInEmail, signUpEmail, signOutUser, signInWithGoogleHandler, updateBalance, deductBalance],
+    [user, userRole, userBalance, loading, signInEmail, signUpEmail, signOutUser, signInWithGoogleHandler, resetPassword, updateBalance, deductBalance],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
