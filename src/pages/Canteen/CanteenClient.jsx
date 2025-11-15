@@ -50,7 +50,7 @@ function CanteenClient({ onBack }) {
       }
     );
 
-    // Cleanup listener on unmount
+    
     return () => {
       unsubscribe();
     };
@@ -106,7 +106,7 @@ function CanteenClient({ onBack }) {
     setOrderMessage('');
 
     try {
-      // Deduct balance
+      
       const success = await deductBalance(total);
       if (!success) {
         setOrderMessage('Failed to process payment. Please try again.');
@@ -151,6 +151,20 @@ function CanteenClient({ onBack }) {
       console.error('Sign out error:', error);
     }
   };
+
+  // Group menu items by category
+  const groupedMenu = todaysMenu.reduce((acc, item) => {
+    const category = item.category || 'Other';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(item);
+    return acc;
+  }, {});
+
+  // Define category order
+  const categoryOrder = ['Breakfast', 'Meal', 'Snacks', 'Drinks'];
+  const sortedCategories = categoryOrder.filter(cat => groupedMenu[cat]?.length > 0);
 
   return (
     <div className="landing-screen">
@@ -197,41 +211,57 @@ function CanteenClient({ onBack }) {
         <section style={{ marginBottom: '30px' }}>
           <h2>Today's Menu</h2>
           {todaysMenu.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px', marginBottom: '30px' }}>
-              {todaysMenu.map((item, index) => (
-                <div key={item.id || index} style={{
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  padding: '15px',
-                  backgroundColor: '#fff',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                }}>
-                  {item.photoURL && (
-                    <img 
-                      src={item.photoURL} 
-                      alt={item.name}
-                      style={{
-                        width: '100%',
-                        height: '200px',
-                        objectFit: 'cover',
+            <div style={{ marginBottom: '30px' }}>
+              {sortedCategories.map((category) => (
+                <div key={category} style={{ marginBottom: '40px' }}>
+                  <h3 style={{ 
+                    fontSize: '24px', 
+                    fontWeight: 'bold', 
+                    marginBottom: '20px', 
+                    paddingBottom: '10px',
+                    borderBottom: '2px solid #4a4',
+                    color: '#111'
+                  }}>
+                    {category}
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' }}>
+                    {groupedMenu[category].map((item, index) => (
+                      <div key={item.id || index} style={{
+                        border: '1px solid #ddd',
                         borderRadius: '8px',
-                        marginBottom: '10px'
-                      }}
-                    />
-                  )}
-                  <h3 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>{item.name}</h3>
-                  <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '14px' }}>{item.description}</p>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <p style={{ margin: '0', fontSize: '20px', fontWeight: 'bold', color: '#111' }}>
-                      रु {item.price.toFixed(2)}
-                    </p>
-                    <button
-                      onClick={() => addToCart(item)}
-                      className="cta-button cta-button--primary"
-                      style={{ padding: '8px 16px', fontSize: '14px' }}
-                    >
-                      Add to Cart
-                    </button>
+                        padding: '15px',
+                        backgroundColor: '#fff',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                      }}>
+                        {item.photoURL && (
+                          <img 
+                            src={item.photoURL} 
+                            alt={item.name}
+                            style={{
+                              width: '100%',
+                              height: '200px',
+                              objectFit: 'cover',
+                              borderRadius: '8px',
+                              marginBottom: '10px'
+                            }}
+                          />
+                        )}
+                        <h4 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>{item.name}</h4>
+                        <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '14px' }}>{item.description}</p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <p style={{ margin: '0', fontSize: '20px', fontWeight: 'bold', color: '#111' }}>
+                            रु {item.price.toFixed(2)}
+                          </p>
+                          <button
+                            onClick={() => addToCart(item)}
+                            className="cta-button cta-button--primary"
+                            style={{ padding: '8px 16px', fontSize: '14px' }}
+                          >
+                            Add to Cart
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}

@@ -19,6 +19,7 @@ function MenuManagement() {
     name: '',
     price: '',
     description: '',
+    category: 'Breakfast', // Default category
   });
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -162,7 +163,7 @@ function MenuManagement() {
 
   const handleAddMenuItem = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.price || !formData.description) {
+    if (!formData.name || !formData.price || !formData.description || !formData.category) {
       setMessage('Please fill all fields');
       return;
     }
@@ -246,13 +247,14 @@ function MenuManagement() {
           name: formData.name.trim(),
           price: price,
           description: formData.description.trim(),
+          category: formData.category,
           photoURL: photoURL,
           createdAt: new Date().toISOString(),
         }),
         timeoutPromise
       ]);
 
-      setFormData({ name: '', price: '', description: '' });
+      setFormData({ name: '', price: '', description: '', category: 'Breakfast' });
       setPhotoFile(null);
       setPhotoPreview(null);
       setMessage('Menu item added successfully!');
@@ -327,6 +329,7 @@ function MenuManagement() {
           name: item.name,
           price: item.price,
           description: item.description,
+          category: item.category || 'Breakfast', // Default to Breakfast if category is missing
           photoURL: item.photoURL || null,
         }));
       
@@ -465,7 +468,23 @@ function MenuManagement() {
             </label>
 
             <label className="input-field">
-              <span className="input-field__label">Food Photo (Optional)</span>
+              <span className="input-field__label">Category</span>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleInputChange}
+                required
+                style={{ width: '100%', padding: '10px', fontFamily: 'inherit', fontSize: 'inherit' }}
+              >
+                <option value="Breakfast">Breakfast</option>
+                <option value="Meal">Meal</option>
+                <option value="Snacks">Snacks</option>
+                <option value="Drinks">Drinks</option>
+              </select>
+            </label>
+
+            <label className="input-field">
+              <span className="input-field__label">Food Photo</span>
               <input
                 type="file"
                 accept="image/*"
@@ -617,7 +636,10 @@ function MenuManagement() {
                       }}
                     />
                   )}
-                  <h3 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>{item.name}</h3>
+                  <h3 style={{ margin: '0 0 5px 0', fontSize: '18px' }}>{item.name}</h3>
+                  <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#888', fontWeight: 'bold' }}>
+                    {item.category || 'Uncategorized'}
+                  </p>
                   <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '14px' }}>{item.description}</p>
                   <p style={{ margin: '0 0 15px 0', fontSize: '20px', fontWeight: 'bold', color: '#111' }}>
                     रु {item.price.toFixed(2)}
@@ -673,7 +695,10 @@ function MenuManagement() {
                     }}
                   />
                 )}
-                <h3 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>{item.name}</h3>
+                <h3 style={{ margin: '0 0 5px 0', fontSize: '18px' }}>{item.name}</h3>
+                <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#888', fontWeight: 'bold' }}>
+                  {item.category || 'Uncategorized'}
+                </p>
                 <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '14px' }}>{item.description}</p>
                 <p style={{ margin: '0 0 15px 0', fontSize: '20px', fontWeight: 'bold', color: '#111' }}>
                   रु {item.price.toFixed(2)}
