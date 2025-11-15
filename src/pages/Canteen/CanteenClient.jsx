@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
-import { doc, getDoc, collection, addDoc } from 'firebase/firestore';
+import { doc, onSnapshot, collection, addDoc } from 'firebase/firestore';
 
 const profileIcon =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
@@ -13,49 +13,48 @@ function CanteenClient({ onBack }) {
   const [cart, setCart] = useState([]);
   const [ordering, setOrdering] = useState(false);
   const [orderMessage, setOrderMessage] = useState('');
+  const [orderNote, setOrderNote] = useState('');
   
   useEffect(() => {
-    loadTodaysMenu();
-  }, []);
+    const today = new Date().toISOString().split('T')[0];
+    const todaysMenuRef = doc(db, 'todaysMenu', today);
+    
+    // Set up real-time listener for menu updates
+    const unsubscribe = onSnapshot(
+      todaysMenuRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          if (data && data.items) {
+            setTodaysMenu(data.items);
+          } else {
+            setTodaysMenu([]);
+          }
+        } else {
+          setTodaysMenu([]);
+        }
+      },
+      (error) => {
+        // Handle different error types
+        console.error('Error listening to menu updates:', error);
+        if (error?.code === 'permission-denied') {
+          console.error('Permission denied: Firestore security rules are blocking access. Please check rules in Firebase Console.');
+          setTodaysMenu([]);
+        } else if (error?.code === 'unavailable' || error?.code === 'failed-precondition' || error?.message?.includes('offline')) {
+          console.warn('Firestore is offline. Menu will load when connection is restored.');
+          setTodaysMenu([]);
+        } else {
+          console.error('Error loading today\'s menu:', error);
+          setTodaysMenu([]);
+        }
+      }
+    );
 
-  const loadTodaysMenu = async () => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const todaysMenuRef = doc(db, 'todaysMenu', today);
-      
-      // Add timeout to prevent hanging (increased to 15 seconds for first load)
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 15000)
-      );
-      
-      const todaysMenuDoc = await Promise.race([
-        getDoc(todaysMenuRef),
-        timeoutPromise
-      ]);
-      
-      if (todaysMenuDoc && todaysMenuDoc.exists) {
-        const data = todaysMenuDoc.data();
-        setTodaysMenu(data.items || []);
-      } else {
-        setTodaysMenu([]);
-      }
-    } catch (error) {
-      // Handle different error types
-      if (error?.code === 'permission-denied') {
-        console.error('Permission denied: Firestore security rules are blocking access. Please check rules in Firebase Console.');
-        setTodaysMenu([]);
-      } else if (error?.code === 'unavailable' || error?.code === 'failed-precondition' || error?.message?.includes('offline')) {
-        console.warn('Firestore is offline. Menu will load when connection is restored.');
-        setTodaysMenu([]);
-      } else if (error?.message?.includes('timeout')) {
-        console.warn('Menu loading timed out. Please check Firestore configuration and security rules.');
-        setTodaysMenu([]);
-      } else {
-        console.error('Error loading today\'s menu:', error);
-        setTodaysMenu([]);
-      }
-    }
-  };
+    // Cleanup listener on unmount
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   const addToCart = (item) => {
     setCart(prev => {
@@ -119,14 +118,18 @@ function CanteenClient({ onBack }) {
       await addDoc(collection(db, 'orders'), {
         userId: user.uid,
         userEmail: user.email,
+        userName: displayName,
         items: cart,
         total: total,
         status: 'pending',
+        note: orderNote.trim() || null,
+        location: null, // Will be set when hostel/reading room features are added
         createdAt: new Date().toISOString(),
       });
 
       setOrderMessage('Order placed successfully!');
       setCart([]);
+      setOrderNote('');
     } catch (error) {
       console.error('Error placing order:', error);
       if (error?.code === 'permission-denied') {
@@ -203,6 +206,19 @@ function CanteenClient({ onBack }) {
                   backgroundColor: '#fff',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                 }}>
+                  {item.photoURL && (
+                    <img 
+                      src={item.photoURL} 
+                      alt={item.name}
+                      style={{
+                        width: '100%',
+                        height: '200px',
+                        objectFit: 'cover',
+                        borderRadius: '8px',
+                        marginBottom: '10px'
+                      }}
+                    />
+                  )}
                   <h3 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>{item.name}</h3>
                   <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '14px' }}>{item.description}</p>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -273,6 +289,30 @@ function CanteenClient({ onBack }) {
                 </div>
               ))}
               <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '2px solid #4a4' }}>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 'bold', color: '#333' }}>
+                    Add Note (Optional)
+                  </label>
+                  <textarea
+                    value={orderNote}
+                    onChange={(e) => setOrderNote(e.target.value)}
+                    placeholder="Any special instructions or notes for your order..."
+                    rows="3"
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      fontFamily: 'inherit',
+                      resize: 'vertical'
+                    }}
+                    maxLength={500}
+                  />
+                  <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#666' }}>
+                    {orderNote.length}/500 characters
+                  </p>
+                </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                   <strong style={{ fontSize: '18px' }}>Total:</strong>
                   <strong style={{ fontSize: '20px' }}>रु {getCartTotal().toFixed(2)}</strong>

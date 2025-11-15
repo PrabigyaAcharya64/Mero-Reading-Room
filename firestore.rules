@@ -18,6 +18,7 @@ service cloud.firestore {
     }
     
     // Menu items - authenticated users can read, only authenticated can write
+    // This includes imageUrl field for photos
     match /menuItems/{itemId} {
       allow read: if isAuthenticated();
       allow create, update, delete: if isAuthenticated();
@@ -29,14 +30,17 @@ service cloud.firestore {
       allow write: if isAuthenticated();
     }
     
-    // Orders - users can read their own orders, create orders, and admins can read all
+    // Orders - users can read their own orders, create orders
     match /orders/{orderId} {
-      allow read: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        true // Allow all authenticated users to read (you can restrict this later)
-      );
+      allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAuthenticated();
+    }
+    
+    // Daily sales - authenticated users can read, only authenticated can write
+    match /dailySales/{date} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
     }
   }
 }

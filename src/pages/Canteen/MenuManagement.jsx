@@ -3,6 +3,8 @@ import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, addDoc, getDocs, doc, setDoc, getDoc, query, where, deleteDoc } from 'firebase/firestore';
 
+const IMGBB_API_KEY = 'f3836c3667cc5c73c64e1aa4f0849566';
+
 const profileIcon =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
 
@@ -12,11 +14,14 @@ function MenuManagement() {
   
   const [menuItems, setMenuItems] = useState([]);
   const [todaysMenu, setTodaysMenu] = useState([]);
+  const [selectedItems, setSelectedItems] = useState([]); // Array of item IDs
   const [formData, setFormData] = useState({
     name: '',
     price: '',
     description: '',
   });
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -24,6 +29,12 @@ function MenuManagement() {
     loadMenuItems();
     loadTodaysMenu();
   }, []);
+
+  // Update selected items when today's menu changes
+  useEffect(() => {
+    const todaysMenuIds = todaysMenu.map(item => item.id);
+    setSelectedItems(todaysMenuIds);
+  }, [todaysMenu]);
 
   const loadMenuItems = async () => {
     try {
@@ -85,9 +96,13 @@ function MenuManagement() {
         timeoutPromise
       ]);
       
-      if (todaysMenuDoc && todaysMenuDoc.exists) {
+      if (todaysMenuDoc && todaysMenuDoc.exists()) {
         const data = todaysMenuDoc.data();
-        setTodaysMenu(data.items || []);
+        if (data && data.items) {
+          setTodaysMenu(data.items);
+        } else {
+          setTodaysMenu([]);
+        }
       } else {
         setTodaysMenu([]);
       }
@@ -117,6 +132,34 @@ function MenuManagement() {
     }));
   };
 
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setMessage('Please select an image file');
+        return;
+      }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setMessage('Image size should be less than 5MB');
+        return;
+      }
+      setPhotoFile(file);
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+  };
+
   const handleAddMenuItem = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.price || !formData.description) {
@@ -135,6 +178,64 @@ function MenuManagement() {
         return;
       }
 
+      let photoURL = null;
+
+      // Upload photo to imgBB if provided
+      if (photoFile) {
+        try {
+          // Convert file to base64
+          const reader = new FileReader();
+          const base64Promise = new Promise((resolve, reject) => {
+            reader.onloadend = () => {
+              const base64String = reader.result.split(',')[1]; // Remove data:image/...;base64, prefix
+              resolve(base64String);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(photoFile);
+          });
+
+          const base64Image = await base64Promise;
+
+          // Upload to imgBB using FormData
+          const uploadFormData = new FormData();
+          uploadFormData.append('image', base64Image);
+
+          const uploadTimeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Upload timeout')), 30000)
+          );
+
+          const uploadResponse = await Promise.race([
+            fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+              method: 'POST',
+              body: uploadFormData
+            }),
+            uploadTimeoutPromise
+          ]);
+
+          if (!uploadResponse.ok) {
+            throw new Error(`Upload failed with status: ${uploadResponse.status}`);
+          }
+
+          const result = await uploadResponse.json();
+          
+          if (result.success && result.data) {
+            photoURL = result.data.url; // Use the direct image URL
+          } else {
+            throw new Error(result.error?.message || 'Upload failed');
+          }
+        } catch (error) {
+          console.error('Error uploading photo to imgBB:', error);
+          if (error?.message?.includes('timeout')) {
+            setMessage('Photo upload timed out. Please try again.');
+            setLoading(false);
+            return;
+          } else {
+            setMessage(`Error uploading photo: ${error?.message || 'Unknown error'}. Menu item will be saved without photo.`);
+            // Continue without photo
+          }
+        }
+      }
+
       // Add timeout to prevent hanging (increased to 15 seconds)
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Request timeout')), 15000)
@@ -145,12 +246,15 @@ function MenuManagement() {
           name: formData.name.trim(),
           price: price,
           description: formData.description.trim(),
+          photoURL: photoURL,
           createdAt: new Date().toISOString(),
         }),
         timeoutPromise
       ]);
 
       setFormData({ name: '', price: '', description: '' });
+      setPhotoFile(null);
+      setPhotoPreview(null);
       setMessage('Menu item added successfully!');
       loadMenuItems();
     } catch (error) {
@@ -184,9 +288,27 @@ function MenuManagement() {
     }
   };
 
+  const handleToggleSelection = (itemId) => {
+    setSelectedItems(prev => {
+      if (prev.includes(itemId)) {
+        return prev.filter(id => id !== itemId);
+      } else {
+        return [...prev, itemId];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    setSelectedItems(menuItems.map(item => item.id));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedItems([]);
+  };
+
   const handleSetTodaysMenu = async () => {
-    if (menuItems.length === 0) {
-      setMessage('No menu items available. Please add menu items first.');
+    if (selectedItems.length === 0) {
+      setMessage('Please select at least one menu item to set as today\'s menu.');
       return;
     }
 
@@ -197,13 +319,16 @@ function MenuManagement() {
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
       const todaysMenuRef = doc(db, 'todaysMenu', today);
       
-      // Ensure all items have proper structure with id
-      const itemsToSet = menuItems.map(item => ({
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        description: item.description,
-      }));
+      // Get only selected items
+      const itemsToSet = menuItems
+        .filter(item => selectedItems.includes(item.id))
+        .map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          description: item.description,
+          photoURL: item.photoURL || null,
+        }));
       
       // Add timeout to prevent hanging (increased to 15 seconds)
       const timeoutPromise = new Promise((_, reject) => 
@@ -220,7 +345,7 @@ function MenuManagement() {
       ]);
 
       setTodaysMenu(itemsToSet);
-      setMessage('Today\'s menu set successfully!');
+      setMessage(`Today's menu set successfully with ${itemsToSet.length} item(s)!`);
     } catch (error) {
       console.error('Error setting today\'s menu:', error);
       if (error?.code === 'permission-denied') {
@@ -232,6 +357,41 @@ function MenuManagement() {
       } else {
         setMessage(`Error setting today's menu: ${error?.message || 'Unknown error'}. Please check Firestore security rules.`);
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveFromMenu = async (itemId) => {
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const todaysMenuRef = doc(db, 'todaysMenu', today);
+      
+      // Remove the item from today's menu
+      const updatedMenu = todaysMenu.filter(item => item.id !== itemId);
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 15000)
+      );
+      
+      await Promise.race([
+        setDoc(todaysMenuRef, {
+          date: today,
+          items: updatedMenu,
+          updatedAt: new Date().toISOString(),
+        }),
+        timeoutPromise
+      ]);
+
+      setTodaysMenu(updatedMenu);
+      setSelectedItems(prev => prev.filter(id => id !== itemId));
+      setMessage('Item removed from today\'s menu successfully!');
+    } catch (error) {
+      console.error('Error removing item from menu:', error);
+      setMessage('Error removing item from menu');
     } finally {
       setLoading(false);
     }
@@ -304,6 +464,49 @@ function MenuManagement() {
               />
             </label>
 
+            <label className="input-field">
+              <span className="input-field__label">Food Photo (Optional)</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                style={{ width: '100%', padding: '10px', fontFamily: 'inherit', fontSize: 'inherit' }}
+              />
+              {photoPreview && (
+                <div style={{ marginTop: '10px', position: 'relative', display: 'inline-block' }}>
+                  <img 
+                    src={photoPreview} 
+                    alt="Preview" 
+                    style={{ 
+                      maxWidth: '200px', 
+                      maxHeight: '200px', 
+                      borderRadius: '8px',
+                      border: '1px solid #ddd'
+                    }} 
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemovePhoto}
+                    style={{
+                      position: 'absolute',
+                      top: '5px',
+                      right: '5px',
+                      backgroundColor: '#f44',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '24px',
+                      height: '24px',
+                      cursor: 'pointer',
+                      fontSize: '14px'
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+            </label>
+
             <button type="submit" className="cta-button cta-button--primary" disabled={loading}>
               {loading ? 'Adding...' : 'Add Menu Item'}
             </button>
@@ -317,46 +520,125 @@ function MenuManagement() {
         </section>
 
         <section style={{ marginBottom: '30px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
             <h2>All Menu Items ({menuItems.length})</h2>
-            <button 
-              onClick={handleSetTodaysMenu} 
-              className="cta-button cta-button--primary"
-              disabled={loading || menuItems.length === 0}
-            >
-              Set as Today's Menu
-            </button>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <span style={{ fontSize: '14px', color: '#666' }}>
+                {selectedItems.length} selected
+              </span>
+              <button 
+                onClick={handleSelectAll}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#666',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+                disabled={loading || menuItems.length === 0}
+              >
+                Select All
+              </button>
+              <button 
+                onClick={handleDeselectAll}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#666',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+                disabled={loading || selectedItems.length === 0}
+              >
+                Deselect All
+              </button>
+              <button 
+                onClick={handleSetTodaysMenu} 
+                className="cta-button cta-button--primary"
+                disabled={loading || selectedItems.length === 0}
+              >
+                Set Selected as Today's Menu ({selectedItems.length})
+              </button>
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' }}>
-            {menuItems.map((item) => (
-              <div key={item.id} style={{ 
-                border: '1px solid #ddd', 
-                borderRadius: '8px', 
-                padding: '15px',
-                backgroundColor: '#fff',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}>
-                <h3 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>{item.name}</h3>
-                <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '14px' }}>{item.description}</p>
-                <p style={{ margin: '0 0 15px 0', fontSize: '20px', fontWeight: 'bold', color: '#111' }}>
-                  रु {item.price.toFixed(2)}
-                </p>
-                <button 
-                  onClick={() => handleDeleteMenuItem(item.id)}
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#f44',
-                    color: 'white',
-                    border: 'none',
+            {menuItems.map((item) => {
+              const isSelected = selectedItems.includes(item.id);
+              const isInTodaysMenu = todaysMenu.some(menuItem => menuItem.id === item.id);
+              
+              return (
+                <div key={item.id} style={{ 
+                  border: isSelected ? '2px solid #4a4' : isInTodaysMenu ? '2px solid #4aa' : '1px solid #ddd', 
+                  borderRadius: '8px', 
+                  padding: '15px',
+                  backgroundColor: isSelected ? '#f0fff0' : isInTodaysMenu ? '#f0f8ff' : '#fff',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  position: 'relative'
+                }}>
+                  <label style={{
+                    position: 'absolute',
+                    top: '10px',
+                    right: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    cursor: 'pointer',
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    padding: '5px 10px',
                     borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Delete
-                </button>
-              </div>
-            ))}
+                    zIndex: 1
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => handleToggleSelection(item.id)}
+                      style={{ cursor: 'pointer', width: '18px', height: '18px' }}
+                    />
+                    <span style={{ fontSize: '12px', fontWeight: 'bold' }}>
+                      {isInTodaysMenu ? 'In Menu' : 'Select'}
+                    </span>
+                  </label>
+                  
+                  {item.photoURL && (
+                    <img 
+                      src={item.photoURL} 
+                      alt={item.name}
+                      style={{
+                        width: '100%',
+                        height: '200px',
+                        objectFit: 'cover',
+                        borderRadius: '8px',
+                        marginBottom: '10px'
+                      }}
+                    />
+                  )}
+                  <h3 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>{item.name}</h3>
+                  <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '14px' }}>{item.description}</p>
+                  <p style={{ margin: '0 0 15px 0', fontSize: '20px', fontWeight: 'bold', color: '#111' }}>
+                    रु {item.price.toFixed(2)}
+                  </p>
+                  <button 
+                    onClick={() => handleDeleteMenuItem(item.id)}
+                    style={{
+                      padding: '8px 16px',
+                      backgroundColor: '#f44',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      width: '100%'
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              );
+            })}
           </div>
 
           {menuItems.length === 0 && (
@@ -375,13 +657,42 @@ function MenuManagement() {
                 borderRadius: '8px', 
                 padding: '15px',
                 backgroundColor: '#f0fff0',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                position: 'relative'
               }}>
+                {item.photoURL && (
+                  <img 
+                    src={item.photoURL} 
+                    alt={item.name}
+                    style={{
+                      width: '100%',
+                      height: '200px',
+                      objectFit: 'cover',
+                      borderRadius: '8px',
+                      marginBottom: '10px'
+                    }}
+                  />
+                )}
                 <h3 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>{item.name}</h3>
                 <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '14px' }}>{item.description}</p>
-                <p style={{ margin: '0', fontSize: '20px', fontWeight: 'bold', color: '#111' }}>
+                <p style={{ margin: '0 0 15px 0', fontSize: '20px', fontWeight: 'bold', color: '#111' }}>
                   रु {item.price.toFixed(2)}
                 </p>
+                <button 
+                  onClick={() => handleRemoveFromMenu(item.id)}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#ff8800',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    width: '100%'
+                  }}
+                  disabled={loading}
+                >
+                  Remove from Menu
+                </button>
               </div>
             ))}
           </div>

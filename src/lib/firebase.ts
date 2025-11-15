@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 export const firebaseConfig = {
   apiKey: 'AIzaSyA-vVWn93wisiUS4_KyMmTw1h2o7wkKzDs',
@@ -44,9 +45,18 @@ try {
   db = getFirestore(app);
 }
 
+// Initialize Storage
+let storage;
+try {
+  storage = getStorage(app);
+} catch (error) {
+  console.error('Firebase Storage initialization error:', error);
+  storage = getStorage(app);
+}
+
 export const googleOAuthClientIds = {
   web: '949466497845-cgo9khl5jbhljl2m4c5v6ef63b1qeqp3.apps.googleusercontent.com',
 };
 
-export { app, auth, db };
+export { app, auth, db, storage };
 

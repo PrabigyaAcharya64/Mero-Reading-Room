@@ -1,4 +1,4 @@
-import {
+import React, {
   createContext,
   useCallback,
   useContext,
@@ -98,12 +98,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userDoc = await Promise.race([
         getDoc(userDocRef),
         timeoutPromise
-      ]);
+      ]) as Awaited<ReturnType<typeof getDoc>>;
       
-      if (userDoc && userDoc.exists) {
+      if (userDoc && userDoc.exists()) {
         const userData = userDoc.data();
-        if (userData.role) {
-          return userData.role;
+        if (userData && typeof userData === 'object' && 'role' in userData) {
+          return userData.role as string;
         }
       }
     } catch (error) {
@@ -126,15 +126,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       const userDocRef = doc(db, 'users', userId);
       const balancePromise = getDoc(userDocRef).then((userDoc) => {
-        if (userDoc.exists) {
+        if (userDoc.exists()) {
           const userData = userDoc.data();
           // If balance doesn't exist, set it to 500
-          if (userData.balance === undefined || userData.balance === null) {
+          if (userData && (userData.balance === undefined || userData.balance === null)) {
             // Update the document with default balance
             setDoc(userDocRef, { balance: 500 }, { merge: true }).catch(() => {});
             return 500;
           }
-          return userData.balance || 500;
+          return (userData && userData.balance) || 500;
         } else {
           // User document doesn't exist, create it with default balance
           setDoc(userDocRef, { balance: 500 }, { merge: true }).catch(() => {});
@@ -349,12 +349,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // If balance doesn't exist, set it to 500
         if (userData.balance === undefined || userData.balance === null) {
           await setDoc(userDocRef, {
-            balance: 500,
+            balance: 5000,
             updatedAt: new Date().toISOString(),
           }, { merge: true });
-          setUserBalance(500);
+          setUserBalance(5000);
         } else {
-          setUserBalance(userData.balance || 500);
+          setUserBalance(userData.balance || 5000);
         }
         
         if (role) {
