@@ -478,6 +478,7 @@ function MenuManagement() {
               >
                 <option value="Breakfast">Breakfast</option>
                 <option value="Meal">Meal</option>
+                <option value="Dinner">Dinner</option>
                 <option value="Snacks">Snacks</option>
                 <option value="Drinks">Drinks</option>
               </select>

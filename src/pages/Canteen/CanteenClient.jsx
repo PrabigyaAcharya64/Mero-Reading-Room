@@ -163,7 +163,7 @@ function CanteenClient({ onBack }) {
   }, {});
 
   // Define category order
-  const categoryOrder = ['Breakfast', 'Meal', 'Snacks', 'Drinks'];
+  const categoryOrder = ['Breakfast', 'Meal', 'Dinner', 'Snacks', 'Drinks'];
   const sortedCategories = categoryOrder.filter(cat => groupedMenu[cat]?.length > 0);
 
   return (
