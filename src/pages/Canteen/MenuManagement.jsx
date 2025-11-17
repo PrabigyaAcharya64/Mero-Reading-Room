@@ -663,7 +663,7 @@ function MenuManagement() {
                   </p>
                   <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '14px' }}>{item.description}</p>
                   <p style={{ margin: '0 0 15px 0', fontSize: '20px', fontWeight: 'bold', color: '#111' }}>
-                    रु {item.price.toFixed(2)}
+                    रु {item.price != null ? Number(item.price).toFixed(2) : '0.00'}
                   </p>
                   <button 
                     onClick={() => handleDeleteMenuItem(item.id)}
@@ -722,7 +722,7 @@ function MenuManagement() {
                 </p>
                 <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '14px' }}>{item.description}</p>
                 <p style={{ margin: '0 0 15px 0', fontSize: '20px', fontWeight: 'bold', color: '#111' }}>
-                  रु {item.price.toFixed(2)}
+                  रु {item.price != null ? Number(item.price).toFixed(2) : '0.00'}
                 </p>
                 <button 
                   onClick={() => handleRemoveFromMenu(item.id)}
