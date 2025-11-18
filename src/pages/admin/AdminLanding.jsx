@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import NewUsers from './NewUsers';
+import CanteenLanding from '../Canteen/CanteenLanding';
 
 const profileIcon =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
+const foodIcon = new URL('../assets/food.svg', import.meta.url).href;
 
 function AdminLanding() {
   const { user, signOutUser } = useAuth();
@@ -20,6 +22,10 @@ function AdminLanding() {
 
   if (currentView === 'new-users') {
     return <NewUsers onBack={() => setCurrentView('dashboard')} />;
+  }
+
+  if (currentView === 'canteen') {
+    return <CanteenLanding onBack={() => setCurrentView('dashboard')} />;
   }
 
   return (
@@ -51,6 +57,16 @@ function AdminLanding() {
               onClick={() => setCurrentView('new-users')}
             >
               <span className="landing-service-card__label">New Users</span>
+            </button>
+            <button 
+              type="button" 
+              className="landing-service-card"
+              onClick={() => setCurrentView('canteen')}
+            >
+              <span className="landing-service-card__icon">
+                <img src={foodIcon} alt="" aria-hidden="true" />
+              </span>
+              <span className="landing-service-card__label">Canteen</span>
             </button>
             <button type="button" className="landing-service-card">
               <span className="landing-service-card__label">Reports</span>

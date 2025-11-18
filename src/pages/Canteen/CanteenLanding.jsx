@@ -8,7 +8,7 @@ const profileIcon =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
 const foodIcon = new URL('../assets/food.svg', import.meta.url).href;
 
-function CanteenLanding() {
+function CanteenLanding({ onBack }) {
   const { user, signOutUser } = useAuth();
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Canteen Staff';
   const [currentView, setCurrentView] = useState('dashboard');
@@ -22,7 +22,7 @@ function CanteenLanding() {
   };
 
   if (currentView === 'menu-management') {
-    return <MenuManagement />;
+    return <MenuManagement onBack={() => setCurrentView('dashboard')} />;
   }
 
   if (currentView === 'orders') {
@@ -37,6 +37,22 @@ function CanteenLanding() {
     <div className="landing-screen">
       <header className="landing-header">
         <p className="landing-greeting">
+          {onBack && (
+            <button 
+              type="button" 
+              onClick={onBack}
+              style={{ 
+                marginRight: '1rem', 
+                padding: '0.5rem 1rem', 
+                background: '#f0f0f0', 
+                border: '1px solid #ccc', 
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              ← Back to Admin
+            </button>
+          )}
           Hey <span>{displayName}</span>!
         </p>
         <div className="landing-status">
