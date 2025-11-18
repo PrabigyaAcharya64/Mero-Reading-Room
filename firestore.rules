@@ -1,150 +1,79 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to check if user is authenticated
-    function isAuthenticated() {
+    // Check if user is logged in
+    function loggedIn() {
       return request.auth != null;
     }
-    
-    // Helper function to check if user is the owner
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+    // Path to user doc
+    function userDoc() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
     }
-    
-    // Helper function to get user role from user document
-    function getUserRole() {
-      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
-      return userDoc != null && userDoc.data != null ? userDoc.data.role : null;
+    // Get user role safely (if doc exists)
+    function role() {
+      return loggedIn() && exists(userDoc()) ? get(userDoc()).data.role : null;
     }
-    
-    // Helper function to check if user is admin
+    // Convenience checks
     function isAdmin() {
-      return isAuthenticated() && getUserRole() == 'admin';
+      return role() == "admin";
     }
-    
-    // Helper function to check if user is canteen staff
     function isCanteen() {
-      return isAuthenticated() && getUserRole() == 'canteen';
+      return role() == "canteen";
     }
-    
-    // Helper function to check if user is admin or canteen
-    function isAdminOrCanteen() {
-      return isAuthenticated() && (getUserRole() == 'admin' || getUserRole() == 'canteen');
+    function isStaff() {
+      return isAdmin() || isCanteen();
     }
-    
-    // Users collection - users can read their own data, update their own balance/profile
-    match /users/{userId} {
-      // Users can read their own data
-      allow read: if isOwner(userId);
-      
-      // Users can create their own document on signup
-      allow create: if isOwner(userId) 
-        && request.resource.data.keys().hasAll(['email', 'role', 'balance'])
-        && request.resource.data.email is string
-        && request.resource.data.role in ['admin', 'canteen', null]
-        && request.resource.data.balance is number
-        && request.resource.data.balance >= 0;
-      
-      // Users can update their own profile (but not role or balance directly)
-      allow update: if isOwner(userId)
-        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'balance']))
-        || isAdmin(); // Admin can update any user
-      
-      // Only admin can delete user documents
-      allow delete: if isAdmin();
+    // USERS COLLECTION
+    match /users/{uid} {
+      allow read: if loggedIn() && (uid == request.auth.uid || isStaff());
+      // Users can create/update their own document, admins can update any user (for verification)
+      allow create: if loggedIn() && uid == request.auth.uid;
+      allow update: if loggedIn() && (uid == request.auth.uid || isAdmin());
+      allow delete: if loggedIn() && isAdmin();
     }
-    
-    // Menu items - all authenticated users can read, only canteen/admin can modify
+    // MENU ITEMS (admin + canteen manage, everyone reads)
     match /menuItems/{itemId} {
-      // All authenticated users can read menu items
-      allow read: if isAuthenticated();
-      
-      // Only canteen staff and admin can create menu items
-      allow create: if isAdminOrCanteen()
-        && request.resource.data.keys().hasAll(['name', 'price', 'description', 'category'])
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 100
-        && request.resource.data.price is number
-        && request.resource.data.price > 0
-        && request.resource.data.price <= 10000
-        && request.resource.data.description is string
-        && request.resource.data.description.size() <= 500
-        && request.resource.data.category is string
-        && request.resource.data.category in ['Breakfast', 'Meal', 'Dinner', 'Snacks', 'Drinks'];
-      
-      // Only canteen staff and admin can update menu items
-      allow update: if isAdminOrCanteen()
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 100
-        && request.resource.data.price is number
-        && request.resource.data.price > 0
-        && request.resource.data.price <= 10000
-        && request.resource.data.description is string
-        && request.resource.data.description.size() <= 500
-        && request.resource.data.category is string
-        && request.resource.data.category in ['Breakfast', 'Meal', 'Dinner', 'Snacks', 'Drinks'];
-      
-      // Only canteen staff and admin can delete menu items
-      allow delete: if isAdminOrCanteen();
+      allow read: if loggedIn();
+      allow create, update, delete: if loggedIn() && isStaff();
     }
-    
-    // Today's menu - all authenticated users can read, only canteen/admin can modify
-    match /todaysMenu/{date} {
-      // All authenticated users can read today's menu
-      allow read: if isAuthenticated();
-      
-      // Only canteen staff and admin can set today's menu
-      allow write: if isAdminOrCanteen()
-        && request.resource.data.keys().hasAll(['date', 'items'])
-        && request.resource.data.date is string
-        && request.resource.data.items is list
-        && request.resource.data.items.size() <= 100;
+    // TODAY'S MENU (admin + canteen manage, everyone reads)
+    match /todaysMenu/{id} {
+      allow read: if loggedIn();
+      allow write: if loggedIn() && isStaff();
     }
-    
-    // Orders - users can read their own orders, create orders, canteen/admin can read all
+    // ORDERS
     match /orders/{orderId} {
-      // Users can read their own orders, canteen/admin can read all orders
-      allow read: if isAuthenticated() 
-        && (resource.data.userId == request.auth.uid || isAdminOrCanteen());
-      
-      // Users can create their own orders
-      allow create: if isAuthenticated() 
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.keys().hasAll(['userId', 'userEmail', 'items', 'total', 'status'])
-        && request.resource.data.userEmail is string
-        && request.resource.data.items is list
-        && request.resource.data.items.size() > 0
-        && request.resource.data.items.size() <= 50
-        && request.resource.data.total is number
-        && request.resource.data.total > 0
-        && request.resource.data.total <= 50000
-        && request.resource.data.status == 'pending';
-      
-      // Only canteen staff and admin can update orders (to change status)
-      allow update: if isAdminOrCanteen()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'completedAt'])
-        && request.resource.data.status in ['pending', 'completed', 'cancelled'];
-      
-      // Only admin can delete orders
-      allow delete: if isAdmin();
+      allow list: if loggedIn() && (isStaff() || request.query.userId == request.auth.uid);
+      allow get: if loggedIn() && (
+        isStaff() ||
+        (resource != null && resource.data.userId == request.auth.uid)
+      );
+      allow create: if loggedIn() &&
+        request.resource.data.userId == request.auth.uid;
+      allow update: if loggedIn() && (
+        isStaff() ||
+        (resource != null && resource.data.userId == request.auth.uid)
+      );
+      allow delete: if loggedIn() && isStaff();
     }
-    
-    // Daily sales - only admin and canteen can read/write
+    // DAILY SALES (only staff can write)
     match /dailySales/{date} {
-      // Only canteen staff and admin can read sales data
-      allow read: if isAdminOrCanteen();
-      
-      // Only canteen staff and admin can write sales data
-      allow write: if isAdminOrCanteen()
-        && request.resource.data.keys().hasAll(['date', 'totalSales', 'totalOrders'])
-        && request.resource.data.date is string
-        && request.resource.data.totalSales is number
-        && request.resource.data.totalSales >= 0
-        && request.resource.data.totalOrders is number
-        && request.resource.data.totalOrders >= 0;
+      allow read: if loggedIn();
+      allow write: if loggedIn() && isStaff();
+    }
+    // PAYMENTS
+    match /payments/{payId} {
+      allow read: if loggedIn() && (
+        isStaff() ||
+        (resource != null && resource.data.userId == request.auth.uid)
+      );
+      allow create: if loggedIn() &&
+        request.resource.data.userId == request.auth.uid;
+      allow update: if loggedIn() && (
+        isStaff() ||
+        (resource != null && resource.data.userId == request.auth.uid)
+      );
+      allow delete: if loggedIn() && isAdmin();
     }
   }
 }
-

@@ -282,11 +282,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Determine role based on email
       const role = getRoleFromEmail(normalizedEmail);
       
+      // Admin and canteen users are automatically verified
+      const isVerified = role === 'admin' || role === 'canteen';
+      
       // Create user document in Firestore with role and initial balance
       await setDoc(doc(db, 'users', userId), {
         email: normalizedEmail,
         role: role,
         balance: 500, // Default balance of 500
+        verified: isVerified, // Auto-verify admin and canteen users
         createdAt: new Date().toISOString(),
       });
       
@@ -340,7 +344,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
+      
+      // Suppress Cross-Origin-Opener-Policy errors (harmless browser security warning)
+      // This error occurs when Firebase tries to close the popup window
+      const errorHandler = (event) => {
+        if (event.message && event.message.includes('Cross-Origin-Opener-Policy')) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      };
+      
+      const originalError = console.error;
+      const suppressError = (...args) => {
+        const errorMsg = args[0]?.toString() || '';
+        if (errorMsg.includes('Cross-Origin-Opener-Policy') || 
+            args[0]?.message?.includes?.('Cross-Origin-Opener-Policy')) {
+          // Suppress this specific error as it's harmless - popup closes successfully anyway
+          return;
+        }
+        originalError.apply(console, args);
+      };
+      
+      window.addEventListener('error', errorHandler);
+      console.error = suppressError;
+      
       const result = await signInWithPopup(auth, provider);
+      
+      // Restore original handlers after a short delay to catch async errors
+      setTimeout(() => {
+        window.removeEventListener('error', errorHandler);
+        console.error = originalError;
+      }, 100);
+      
       const userId = result.user.uid;
       const userEmail = result.user.email;
       const normalizedEmail = userEmail?.toLowerCase().trim();
@@ -351,12 +386,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Check if user document exists, if not create one
       const userDocRef = doc(db, 'users', userId);
       const userDoc = await getDoc(userDocRef);
+      
+      // Admin and canteen users are automatically verified
+      const isVerified = role === 'admin' || role === 'canteen';
+      
       if (!userDoc.exists()) {
         // Create user document with role based on email and default balance
         await setDoc(userDocRef, {
           email: normalizedEmail,
           role: role,
           balance: 500, // Default balance of 500
+          verified: isVerified, // Auto-verify admin and canteen users
           createdAt: new Date().toISOString(),
         });
         setUserBalance(500);

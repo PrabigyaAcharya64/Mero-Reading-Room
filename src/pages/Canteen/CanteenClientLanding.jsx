@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import CanteenClient from './CanteenClient';
 import ClientOrderHistory from './ClientOrderHistory';
+import IDCard from '../IDCard';
 
 const profileIcon =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
@@ -19,6 +20,10 @@ function CanteenClientLanding({ onBack }) {
       console.error('Sign out error:', error);
     }
   };
+
+  if (currentView === 'idcard') {
+    return <IDCard onBack={() => setCurrentView('landing')} />;
+  }
 
   if (currentView === 'menu') {
     return <CanteenClient onBack={() => setCurrentView('landing')} />;
@@ -42,7 +47,12 @@ function CanteenClientLanding({ onBack }) {
               +
             </button>
           </div>
-          <button type="button" className="landing-profile" aria-label="Profile">
+          <button 
+            type="button" 
+            className="landing-profile" 
+            aria-label="Profile"
+            onClick={() => setCurrentView('idcard')}
+          >
             <img src={profileIcon} alt="" />
           </button>
           <button type="button" className="landing-signout" onClick={handleSignOut}>

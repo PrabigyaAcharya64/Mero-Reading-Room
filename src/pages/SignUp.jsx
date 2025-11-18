@@ -4,7 +4,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { auth } from '../lib/firebase';
 import { validatePassword, validateEmail, validateName } from '../utils/validation';
 
-function SignUp({ onSwitch }) {
+function SignUp({ onSwitch, onComplete }) {
   const { signUpEmail, signInWithGoogle } = useAuth();
   const [form, setForm] = useState({
     name: '',
@@ -69,6 +69,11 @@ function SignUp({ onSwitch }) {
       if (auth.currentUser && nameValidation.sanitized) {
         await updateProfile(auth.currentUser, { displayName: nameValidation.sanitized });
       }
+
+      // Redirect to additional details page after successful signup
+      if (onComplete) {
+        onComplete();
+      }
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : 'Unable to create your account.');
     } finally {
@@ -81,6 +86,11 @@ function SignUp({ onSwitch }) {
     setFeedback('');
     try {
       await signInWithGoogle();
+      // For Google sign-in, also redirect to additional details if needed
+      // The navigation will handle this based on user status
+      if (onComplete) {
+        onComplete();
+      }
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : 'Google sign-up is unavailable.');
     } finally {
