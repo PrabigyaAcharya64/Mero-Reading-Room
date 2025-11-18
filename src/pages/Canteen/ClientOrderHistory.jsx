@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, onSnapshot } from 'firebase/firestore';
 
 const profileIcon =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
@@ -18,20 +18,26 @@ function ClientOrderHistory({ onBack }) {
     if (!user) return;
 
     const ordersRef = collection(db, 'orders');
-    // Get all orders and filter by userId in memory to avoid index requirement
-    const q = query(ordersRef, orderBy('createdAt', 'desc'));
+    // Query without orderBy to avoid index requirement - we'll sort client-side
+    const q = query(ordersRef);
 
     // Set up real-time listener for orders
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        // Filter orders by current user's ID
+        // Filter orders by current user's ID and sort by createdAt descending
         const ordersData = snapshot.docs
           .filter(doc => doc.data().userId === user.uid)
           .map((doc) => ({
             id: doc.id,
             ...doc.data(),
-          }));
+          }))
+          .sort((a, b) => {
+            // Sort by createdAt descending (newest first)
+            const aTime = a.createdAt?.toMillis?.() || new Date(a.createdAt || 0).getTime();
+            const bTime = b.createdAt?.toMillis?.() || new Date(b.createdAt || 0).getTime();
+            return bTime - aTime;
+          });
         setOrders(ordersData);
         setLoading(false);
       },

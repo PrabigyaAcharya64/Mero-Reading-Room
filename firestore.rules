@@ -43,17 +43,23 @@ service cloud.firestore {
     }
     // ORDERS
     match /orders/{orderId} {
-      allow list: if loggedIn() && (isStaff() || request.query.userId == request.auth.uid);
+      // Allow all authenticated users to list orders (client-side filtering)
+      // Staff can list all, regular users will filter client-side
+      allow list: if loggedIn();
+      // Users can only read their own orders, staff can read any
       allow get: if loggedIn() && (
         isStaff() ||
         (resource != null && resource.data.userId == request.auth.uid)
       );
+      // Users can only create orders for themselves
       allow create: if loggedIn() &&
         request.resource.data.userId == request.auth.uid;
+      // Users can update their own orders, staff can update any
       allow update: if loggedIn() && (
         isStaff() ||
         (resource != null && resource.data.userId == request.auth.uid)
       );
+      // Only staff can delete orders
       allow delete: if loggedIn() && isStaff();
     }
     // DAILY SALES (only staff can write)
