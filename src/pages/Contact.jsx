@@ -56,7 +56,7 @@ function Contact({ onBack }) {
                 read: false
             });
             setSuccess(true);
-            setFormData({ name: '', email: '', phone: '', message: '' });
+            setFormData(prev => ({ ...prev, message: '' }));
         } catch (err) {
             console.error('Error sending message:', err);
             setError('Failed to send message. Please try again.');
@@ -100,44 +100,7 @@ function Contact({ onBack }) {
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit} className="auth-form">
-                            <div className="input-field">
-                                <label className="input-field__label" htmlFor="name">Name</label>
-                                <input
-                                    type="text"
-                                    id="name"
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                    required
-                                    placeholder="Your Name"
-                                />
-                            </div>
-
-                            <div className="input-field">
-                                <label className="input-field__label" htmlFor="email">Email</label>
-                                <input
-                                    type="email"
-                                    id="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    required
-                                    placeholder="your@email.com"
-                                />
-                            </div>
-
-                            <div className="input-field">
-                                <label className="input-field__label" htmlFor="phone">Phone Number</label>
-                                <input
-                                    type="tel"
-                                    id="phone"
-                                    name="phone"
-                                    value={formData.phone}
-                                    onChange={handleChange}
-                                    required
-                                    placeholder="98XXXXXXXX"
-                                />
-                            </div>
+                            {/* Name, Email, and Phone fields are hidden but data is still sent */}
 
                             <div className="input-field">
                                 <label className="input-field__label" htmlFor="message">Message</label>
