@@ -1,85 +1,184 @@
 rules_version = '2';
+
 service cloud.firestore {
+
   match /databases/{database}/documents {
-    // Check if user is logged in
+
     function loggedIn() {
+
       return request.auth != null;
+
     }
-    // Path to user doc
+
+    
+
     function userDoc() {
+
       return /databases/$(database)/documents/users/$(request.auth.uid);
+
     }
-    // Get user role safely (if doc exists)
+
+    
+
+    // Get user role safely - default to 'client' if null/missing/undefined
+
     function role() {
-      return loggedIn() && exists(userDoc()) ? get(userDoc()).data.role : null;
+
+      return loggedIn() && exists(userDoc()) 
+
+        ? (get(userDoc()).data.role != null && get(userDoc()).data.role != '' 
+
+           ? get(userDoc()).data.role 
+
+           : 'client')
+
+        : 'client';
+
     }
-    // Convenience checks
+
+    
+
     function isAdmin() {
+
       return role() == "admin";
+
     }
+
+    
+
     function isCanteen() {
+
       return role() == "canteen";
+
     }
+
+    
+
     function isStaff() {
+
       return isAdmin() || isCanteen();
+
     }
-    // USERS COLLECTION
+
     match /users/{uid} {
+
       allow read: if loggedIn() && (uid == request.auth.uid || isStaff());
-      // Users can create/update their own document, admins can update any user (for verification)
+
       allow create: if loggedIn() && uid == request.auth.uid;
+
       allow update: if loggedIn() && (uid == request.auth.uid || isAdmin());
+
       allow delete: if loggedIn() && isAdmin();
+
     }
-    // MENU ITEMS (admin + canteen manage, everyone reads)
+
     match /menuItems/{itemId} {
+
       allow read: if loggedIn();
+
       allow create, update, delete: if loggedIn() && isStaff();
+
     }
-    // TODAY'S MENU (admin + canteen manage, everyone reads)
+
     match /todaysMenu/{id} {
+
       allow read: if loggedIn();
+
       allow write: if loggedIn() && isStaff();
+
     }
-    // ORDERS
+
     match /orders/{orderId} {
-      // Allow all authenticated users to list orders (client-side filtering)
-      // Staff can list all, regular users will filter client-side
+
+      // Allow list for all authenticated users - Firestore will filter by get rule
+
       allow list: if loggedIn();
-      // Users can only read their own orders, staff can read any
+
+      
+
+      // Users can read their own orders OR staff can read any order
+
       allow get: if loggedIn() && (
+
         isStaff() ||
+
         (resource != null && resource.data.userId == request.auth.uid)
+
       );
+
+      
+
       // Users can only create orders for themselves
+
       allow create: if loggedIn() &&
+
         request.resource.data.userId == request.auth.uid;
+
+      
+
       // Users can update their own orders, staff can update any
+
       allow update: if loggedIn() && (
+
         isStaff() ||
+
         (resource != null && resource.data.userId == request.auth.uid)
+
       );
+
+      
+
       // Only staff can delete orders
+
       allow delete: if loggedIn() && isStaff();
+
     }
-    // DAILY SALES (only staff can write)
+
     match /dailySales/{date} {
+
       allow read: if loggedIn();
+
       allow write: if loggedIn() && isStaff();
+
     }
-    // PAYMENTS
+
     match /payments/{payId} {
+
       allow read: if loggedIn() && (
+
         isStaff() ||
+
         (resource != null && resource.data.userId == request.auth.uid)
+
       );
+
       allow create: if loggedIn() &&
+
         request.resource.data.userId == request.auth.uid;
+
       allow update: if loggedIn() && (
+
         isStaff() ||
+
         (resource != null && resource.data.userId == request.auth.uid)
+
       );
+
       allow delete: if loggedIn() && isAdmin();
+
+    }
+
+
+    // MESSAGES
+    match /messages/{messageId} {
+      allow create: if loggedIn();
+      allow read, update: if loggedIn() && isAdmin();
+    }
+
+    // ANNOUNCEMENTS
+    match /announcements/{announcementId} {
+      allow read: if loggedIn();
+      allow create, delete: if loggedIn() && isAdmin();
     }
   }
 }

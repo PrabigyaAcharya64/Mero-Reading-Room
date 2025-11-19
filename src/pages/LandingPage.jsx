@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthProvider';
 import CanteenClientLanding from './Canteen/CanteenClientLanding';
 import IDCard from './IDCard';
+import Contact from './Contact';
+import { collection, query, where, onSnapshot, Timestamp, orderBy } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 const profileIcon =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
@@ -14,7 +17,29 @@ function LandingPage() {
   const { user, signOutUser, userBalance } = useAuth();
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Reader';
   const [currentView, setCurrentView] = useState('landing');
-  
+  const [announcements, setAnnouncements] = useState([]);
+
+  useEffect(() => {
+    const now = Timestamp.now();
+    const q = query(
+      collection(db, 'announcements'),
+      where('expiresAt', '>', now),
+      orderBy('expiresAt', 'asc') // Needed for compound query with range filter
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const msgs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      // Sort by createdAt desc in memory since we can't easily do it in query with expiresAt range
+      msgs.sort((a, b) => b.createdAt?.toMillis() - a.createdAt?.toMillis());
+      setAnnouncements(msgs);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const handleSignOut = async () => {
     try {
       await signOutUser();
@@ -33,6 +58,11 @@ function LandingPage() {
     return <CanteenClientLanding onBack={() => setCurrentView('landing')} />;
   }
 
+  // Show Contact page when contact is clicked
+  if (currentView === 'contact') {
+    return <Contact onBack={() => setCurrentView('landing')} />;
+  }
+
   return (
     <div className="landing-screen">
       <header className="landing-header">
@@ -47,9 +77,9 @@ function LandingPage() {
               +
             </button>
           </div>
-          <button 
-            type="button" 
-            className="landing-profile" 
+          <button
+            type="button"
+            className="landing-profile"
             aria-label="Profile"
             onClick={() => setCurrentView('idcard')}
           >
@@ -84,7 +114,7 @@ function LandingPage() {
               </span>
               <span className="landing-service-card__label">Canteen</span>
             </button>
-            <button type="button" className="landing-service-card">
+            <button type="button" className="landing-service-card" onClick={() => setCurrentView('contact')}>
               <span className="landing-service-card__icon">
                 <img src={contactIcon} alt="" aria-hidden="true" />
               </span>
@@ -95,9 +125,36 @@ function LandingPage() {
 
         <section className="landing-announcements">
           <h2>Notices</h2>
-          <div className="landing-announcements__empty">
-            No notices at this time.
-          </div>
+          {announcements.length === 0 ? (
+            <div className="landing-announcements__empty">
+              No notices at this time.
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: '1rem' }}>
+              {announcements.map(announcement => (
+                <div
+                  key={announcement.id}
+                  style={{
+                    padding: '1rem',
+                    border: '1px solid var(--color-border)',
+                    backgroundColor: '#fff',
+                    textAlign: 'left'
+                  }}
+                >
+                  <p style={{ margin: 0, whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                    {announcement.text}
+                  </p>
+                  <div style={{
+                    marginTop: '0.5rem',
+                    fontSize: '0.8rem',
+                    color: 'var(--color-text-secondary)'
+                  }}>
+                    Posted: {announcement.createdAt?.toDate().toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </main>
     </div>
