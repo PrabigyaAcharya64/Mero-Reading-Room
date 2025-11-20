@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, doc, onSnapshot, orderBy, query, updateDoc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
 import { db } from '../../lib/firebase';
 
 function AdminMessages({ onBack }) {
@@ -11,11 +11,35 @@ function AdminMessages({ onBack }) {
         const q = query(collection(db, 'messages'), orderBy('createdAt', 'desc'));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const msgs = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                createdAt: doc.data().createdAt?.toDate()
-            }));
+            const msgs = snapshot.docs.map(docSnapshot => {
+                const data = docSnapshot.data();
+                let createdAt = null;
+
+                // Handle different createdAt formats
+                if (data.createdAt) {
+                    if (typeof data.createdAt.toDate === 'function') {
+                        // Firestore Timestamp
+                        createdAt = data.createdAt.toDate();
+                    } else if (data.createdAt instanceof Date) {
+                        // JavaScript Date
+                        createdAt = data.createdAt;
+                    } else if (typeof data.createdAt === 'string' || typeof data.createdAt === 'number') {
+                        // String or number timestamp
+                        createdAt = new Date(data.createdAt);
+                    }
+                }
+
+                // If createdAt is still null, use current time as fallback
+                if (!createdAt) {
+                    createdAt = new Date();
+                }
+
+                return {
+                    id: docSnapshot.id,
+                    ...data,
+                    createdAt
+                };
+            });
             setMessages(msgs);
             setLoading(false);
         });
@@ -71,7 +95,7 @@ function AdminMessages({ onBack }) {
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
                                         <span style={{ fontWeight: msg.read ? 'normal' : 'bold' }}>{msg.name}</span>
                                         <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                                            {msg.createdAt?.toLocaleDateString()}
+                                            {msg.createdAt ? msg.createdAt.toLocaleDateString() : 'N/A'}
                                         </span>
                                     </div>
                                     <div style={{
@@ -97,7 +121,7 @@ function AdminMessages({ onBack }) {
                                     <div style={{ display: 'grid', gap: '0.25rem', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
                                         <div>Email: {selectedMessage.email}</div>
                                         <div>Phone: {selectedMessage.phone}</div>
-                                        <div>Date: {selectedMessage.createdAt?.toLocaleString()}</div>
+                                        <div>Date: {selectedMessage.createdAt ? selectedMessage.createdAt.toLocaleString() : 'N/A'}</div>
                                     </div>
                                 </div>
                                 <div style={{ lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
