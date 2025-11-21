@@ -11,6 +11,10 @@ const profileIcon =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
 const foodIcon = new URL('../assets/food.svg', import.meta.url).href;
 const contactIcon = new URL('../../assets/contact.svg', import.meta.url).href;
+const userManagementIcon = new URL('../../assets/usermanagement.svg', import.meta.url).href;
+const newUserIcon = new URL('../../assets/newuser.svg', import.meta.url).href;
+const reportsIcon = new URL('../../assets/reports.svg', import.meta.url).href;
+const canteenIcon = new URL('../../assets/canteen.svg', import.meta.url).href;
 
 function AdminLanding() {
   const { user, signOutUser } = useAuth();
@@ -94,6 +98,9 @@ function AdminLanding() {
           <h2>Admin Panel</h2>
           <div className="landing-services__grid">
             <button type="button" className="landing-service-card">
+              <span className="landing-service-card__icon">
+                <img src={userManagementIcon} alt="" aria-hidden="true" />
+              </span>
               <span className="landing-service-card__label">User Management</span>
             </button>
             <button
@@ -101,6 +108,9 @@ function AdminLanding() {
               className="landing-service-card"
               onClick={() => setCurrentView('new-users')}
             >
+              <span className="landing-service-card__icon">
+                <img src={newUserIcon} alt="" aria-hidden="true" />
+              </span>
               <span className="landing-service-card__label">New Users</span>
             </button>
             <button
@@ -109,7 +119,7 @@ function AdminLanding() {
               onClick={() => setCurrentView('canteen')}
             >
               <span className="landing-service-card__icon">
-                <img src={foodIcon} alt="" aria-hidden="true" />
+                <img src={canteenIcon} alt="" aria-hidden="true" />
               </span>
               <span className="landing-service-card__label">Canteen</span>
             </button>
@@ -144,10 +154,10 @@ function AdminLanding() {
               )}
             </button>
             <button type="button" className="landing-service-card">
+              <span className="landing-service-card__icon">
+                <img src={reportsIcon} alt="" aria-hidden="true" />
+              </span>
               <span className="landing-service-card__label">Reports</span>
-            </button>
-            <button type="button" className="landing-service-card">
-              <span className="landing-service-card__label">Analytics</span>
             </button>
           </div>
         </section>

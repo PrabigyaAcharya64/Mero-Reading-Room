@@ -41,20 +41,20 @@ function SalesDashboard({ onBack }) {
       // This is less efficient but works without index
       const q = query(ordersRef, orderBy('createdAt', 'desc'), limit(1000));
       const snapshot = await getDocs(q);
-      
+
       // Filter completed orders in memory
       const completedOrders = snapshot.docs
         .filter(doc => doc.data().status === 'completed')
         .map(doc => ({
           id: doc.id,
           ...doc.data(),
-          orderDate: doc.data().completedAt 
+          orderDate: doc.data().completedAt
             ? new Date(doc.data().completedAt).toISOString().split('T')[0]
             : new Date(doc.data().createdAt).toISOString().split('T')[0]
         }));
 
       // Filter by selected date
-      const filteredSales = selectedDate 
+      const filteredSales = selectedDate
         ? completedOrders.filter(order => order.orderDate === selectedDate)
         : completedOrders;
 
@@ -64,7 +64,7 @@ function SalesDashboard({ onBack }) {
       const today = new Date().toISOString().split('T')[0];
       const todaysOrdersData = completedOrders.filter(order => order.orderDate === today);
       const todaysTotal = todaysOrdersData.reduce((sum, order) => sum + (order.total || 0), 0);
-      
+
       setTodaysSales(todaysTotal);
       setTodaysOrders(todaysOrdersData.length);
     } catch (error) {
@@ -127,7 +127,20 @@ function SalesDashboard({ onBack }) {
   return (
     <div className="landing-screen">
       <header className="landing-header">
-        <p className="landing-greeting">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="landing-signout"
+            style={{
+              border: '1px solid var(--color-text-primary)',
+              padding: '0.5rem 0.85rem'
+            }}
+          >
+            ← Back
+          </button>
+        )}
+        <p className="landing-greeting" style={{ flex: 1, textAlign: onBack ? 'center' : 'left' }}>
           Hey <span>{displayName}</span>!
         </p>
         <div className="landing-status">
@@ -141,30 +154,12 @@ function SalesDashboard({ onBack }) {
       </header>
 
       <main className="landing-body" style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto' }}>
-        {onBack && (
-          <div style={{ marginBottom: '20px' }}>
-            <button
-              onClick={onBack}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#666',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              ← Back to Dashboard
-            </button>
-          </div>
-        )}
 
         <section>
           {/* Summary Cards */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
             gap: '20px',
             marginBottom: '30px'
           }}>
@@ -286,8 +281,8 @@ function SalesDashboard({ onBack }) {
                           transition: 'all 0.2s'
                         }}
                       >
-                        <div style={{ 
-                          display: 'grid', 
+                        <div style={{
+                          display: 'grid',
                           gridTemplateColumns: '2fr 1.5fr 1fr',
                           gap: '20px',
                           alignItems: 'center'
@@ -331,10 +326,10 @@ function SalesDashboard({ onBack }) {
                           marginBottom: '15px',
                           boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
                         }}>
-                          <div style={{ 
-                            borderBottom: '2px solid #4caf50', 
-                            paddingBottom: '15px', 
-                            marginBottom: '20px' 
+                          <div style={{
+                            borderBottom: '2px solid #4caf50',
+                            paddingBottom: '15px',
+                            marginBottom: '20px'
                           }}>
                             <h3 style={{ margin: '0 0 10px 0', fontSize: '20px', color: '#333' }}>
                               Bill Details
@@ -372,8 +367,8 @@ function SalesDashboard({ onBack }) {
                             <h4 style={{ margin: '0 0 15px 0', fontSize: '16px', color: '#333', fontWeight: 'bold' }}>
                               Items Purchased
                             </h4>
-                            <div style={{ 
-                              border: '1px solid #ddd', 
+                            <div style={{
+                              border: '1px solid #ddd',
                               borderRadius: '4px',
                               overflow: 'hidden'
                             }}>

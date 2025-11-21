@@ -12,7 +12,7 @@ const profileIcon =
 function MenuManagement({ onBack }) {
   const { user, signOutUser } = useAuth();
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Canteen Staff';
-  
+
   const [menuItems, setMenuItems] = useState([]);
   const [todaysMenu, setTodaysMenu] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]); // Array of item IDs
@@ -41,17 +41,17 @@ function MenuManagement({ onBack }) {
   const loadMenuItems = async () => {
     try {
       const menuItemsRef = collection(db, 'menuItems');
-      
+
       // Add timeout to prevent hanging (increased to 15 seconds for first load)
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Request timeout')), 15000)
       );
-      
+
       const snapshot = await Promise.race([
         getDocs(menuItemsRef),
         timeoutPromise
       ]);
-      
+
       if (snapshot && snapshot.docs) {
         const items = snapshot.docs.map((doc) => ({
           id: doc.id,
@@ -87,17 +87,17 @@ function MenuManagement({ onBack }) {
     try {
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
       const todaysMenuRef = doc(db, 'todaysMenu', today);
-      
+
       // Add timeout to prevent hanging (increased to 15 seconds)
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Request timeout')), 15000)
       );
-      
+
       const todaysMenuDoc = await Promise.race([
         getDoc(todaysMenuRef),
         timeoutPromise
       ]);
-      
+
       if (todaysMenuDoc && todaysMenuDoc.exists()) {
         const data = todaysMenuDoc.data();
         if (data && data.items) {
@@ -164,7 +164,7 @@ function MenuManagement({ onBack }) {
 
   const handleAddMenuItem = async (e) => {
     e.preventDefault();
-    
+
     setLoading(true);
     setMessage('');
 
@@ -221,7 +221,7 @@ function MenuManagement({ onBack }) {
           const uploadFormData = new FormData();
           uploadFormData.append('image', base64Image);
 
-          const uploadTimeoutPromise = new Promise((_, reject) => 
+          const uploadTimeoutPromise = new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Upload timeout')), 30000)
           );
 
@@ -238,7 +238,7 @@ function MenuManagement({ onBack }) {
           }
 
           const result = await uploadResponse.json();
-          
+
           if (result.success && result.data) {
             photoURL = result.data.url; // Use the direct image URL
           } else {
@@ -258,10 +258,10 @@ function MenuManagement({ onBack }) {
       }
 
       // Add timeout to prevent hanging (increased to 15 seconds)
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Request timeout')), 15000)
       );
-      
+
       await Promise.race([
         addDoc(collection(db, 'menuItems'), {
           name: nameValidation.sanitized,
@@ -340,7 +340,7 @@ function MenuManagement({ onBack }) {
     try {
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
       const todaysMenuRef = doc(db, 'todaysMenu', today);
-      
+
       // Get only selected items
       const itemsToSet = menuItems
         .filter(item => selectedItems.includes(item.id))
@@ -352,12 +352,12 @@ function MenuManagement({ onBack }) {
           category: item.category || 'Breakfast', // Default to Breakfast if category is missing
           photoURL: item.photoURL || null,
         }));
-      
+
       // Add timeout to prevent hanging (increased to 15 seconds)
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Request timeout')), 15000)
       );
-      
+
       await Promise.race([
         setDoc(todaysMenuRef, {
           date: today,
@@ -392,14 +392,14 @@ function MenuManagement({ onBack }) {
     try {
       const today = new Date().toISOString().split('T')[0];
       const todaysMenuRef = doc(db, 'todaysMenu', today);
-      
+
       // Remove the item from today's menu
       const updatedMenu = todaysMenu.filter(item => item.id !== itemId);
-      
-      const timeoutPromise = new Promise((_, reject) => 
+
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Request timeout')), 15000)
       );
-      
+
       await Promise.race([
         setDoc(todaysMenuRef, {
           date: today,
@@ -431,23 +431,20 @@ function MenuManagement({ onBack }) {
   return (
     <div className="landing-screen">
       <header className="landing-header">
-        <p className="landing-greeting">
-          {onBack && (
-            <button 
-              type="button" 
-              onClick={onBack}
-              style={{ 
-                marginRight: '1rem', 
-                padding: '0.5rem 1rem', 
-                background: '#f0f0f0', 
-                border: '1px solid #ccc', 
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              ← Back
-            </button>
-          )}
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="landing-signout"
+            style={{
+              border: '1px solid var(--color-text-primary)',
+              padding: '0.5rem 0.85rem'
+            }}
+          >
+            ← Back
+          </button>
+        )}
+        <p className="landing-greeting" style={{ flex: 1, textAlign: onBack ? 'center' : 'left' }}>
           Hey <span>{displayName}</span>!
         </p>
         <div className="landing-status">
@@ -530,15 +527,15 @@ function MenuManagement({ onBack }) {
               />
               {photoPreview && (
                 <div style={{ marginTop: '10px', position: 'relative', display: 'inline-block' }}>
-                  <img 
-                    src={photoPreview} 
-                    alt="Preview" 
-                    style={{ 
-                      maxWidth: '200px', 
-                      maxHeight: '200px', 
+                  <img
+                    src={photoPreview}
+                    alt="Preview"
+                    style={{
+                      maxWidth: '200px',
+                      maxHeight: '200px',
                       borderRadius: '8px',
                       border: '1px solid #ddd'
-                    }} 
+                    }}
                   />
                   <button
                     type="button"
@@ -582,7 +579,7 @@ function MenuManagement({ onBack }) {
               <span style={{ fontSize: '14px', color: '#666' }}>
                 {selectedItems.length} selected
               </span>
-              <button 
+              <button
                 onClick={handleSelectAll}
                 style={{
                   padding: '8px 16px',
@@ -597,7 +594,7 @@ function MenuManagement({ onBack }) {
               >
                 Select All
               </button>
-              <button 
+              <button
                 onClick={handleDeselectAll}
                 style={{
                   padding: '8px 16px',
@@ -612,8 +609,8 @@ function MenuManagement({ onBack }) {
               >
                 Deselect All
               </button>
-              <button 
-                onClick={handleSetTodaysMenu} 
+              <button
+                onClick={handleSetTodaysMenu}
                 className="cta-button cta-button--primary"
                 disabled={loading || selectedItems.length === 0}
               >
@@ -626,11 +623,11 @@ function MenuManagement({ onBack }) {
             {menuItems.map((item) => {
               const isSelected = selectedItems.includes(item.id);
               const isInTodaysMenu = todaysMenu.some(menuItem => menuItem.id === item.id);
-              
+
               return (
-                <div key={item.id} style={{ 
-                  border: isSelected ? '2px solid #4a4' : isInTodaysMenu ? '2px solid #4aa' : '1px solid #ddd', 
-                  borderRadius: '8px', 
+                <div key={item.id} style={{
+                  border: isSelected ? '2px solid #4a4' : isInTodaysMenu ? '2px solid #4aa' : '1px solid #ddd',
+                  borderRadius: '8px',
                   padding: '15px',
                   backgroundColor: isSelected ? '#f0fff0' : isInTodaysMenu ? '#f0f8ff' : '#fff',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
@@ -659,10 +656,10 @@ function MenuManagement({ onBack }) {
                       {isInTodaysMenu ? 'In Menu' : 'Select'}
                     </span>
                   </label>
-                  
+
                   {item.photoURL && (
-                    <img 
-                      src={item.photoURL} 
+                    <img
+                      src={item.photoURL}
                       alt={item.name}
                       style={{
                         width: '100%',
@@ -681,7 +678,7 @@ function MenuManagement({ onBack }) {
                   <p style={{ margin: '0 0 15px 0', fontSize: '20px', fontWeight: 'bold', color: '#111' }}>
                     रु {item.price != null ? Number(item.price).toFixed(2) : '0.00'}
                   </p>
-                  <button 
+                  <button
                     onClick={() => handleDeleteMenuItem(item.id)}
                     style={{
                       padding: '8px 16px',
@@ -711,17 +708,17 @@ function MenuManagement({ onBack }) {
           <h2>Today's Menu ({todaysMenu.length} items)</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' }}>
             {todaysMenu.map((item, index) => (
-              <div key={item.id || index} style={{ 
-                border: '2px solid #4a4', 
-                borderRadius: '8px', 
+              <div key={item.id || index} style={{
+                border: '2px solid #4a4',
+                borderRadius: '8px',
                 padding: '15px',
                 backgroundColor: '#f0fff0',
                 boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                 position: 'relative'
               }}>
                 {item.photoURL && (
-                  <img 
-                    src={item.photoURL} 
+                  <img
+                    src={item.photoURL}
                     alt={item.name}
                     style={{
                       width: '100%',
@@ -740,7 +737,7 @@ function MenuManagement({ onBack }) {
                 <p style={{ margin: '0 0 15px 0', fontSize: '20px', fontWeight: 'bold', color: '#111' }}>
                   रु {item.price != null ? Number(item.price).toFixed(2) : '0.00'}
                 </p>
-                <button 
+                <button
                   onClick={() => handleRemoveFromMenu(item.id)}
                   style={{
                     padding: '8px 16px',

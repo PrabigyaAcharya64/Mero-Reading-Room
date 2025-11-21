@@ -12,7 +12,7 @@ function CanteenLanding({ onBack }) {
   const { user, signOutUser } = useAuth();
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Canteen Staff';
   const [currentView, setCurrentView] = useState('dashboard');
-  
+
   const handleSignOut = async () => {
     try {
       await signOutUser();
@@ -36,23 +36,20 @@ function CanteenLanding({ onBack }) {
   return (
     <div className="landing-screen">
       <header className="landing-header">
-        <p className="landing-greeting">
-          {onBack && (
-            <button 
-              type="button" 
-              onClick={onBack}
-              style={{ 
-                marginRight: '1rem', 
-                padding: '0.5rem 1rem', 
-                background: '#f0f0f0', 
-                border: '1px solid #ccc', 
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              ← Back to Admin
-            </button>
-          )}
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="landing-signout"
+            style={{
+              border: '1px solid var(--color-text-primary)',
+              padding: '0.5rem 0.85rem'
+            }}
+          >
+            ← Back
+          </button>
+        )}
+        <p className="landing-greeting" style={{ flex: 1, textAlign: onBack ? 'center' : 'left' }}>
           Hey <span>{displayName}</span>!
         </p>
         <div className="landing-status">
@@ -70,9 +67,6 @@ function CanteenLanding({ onBack }) {
           <h2>Canteen Management</h2>
           <div className="landing-services__grid">
             <button type="button" className="landing-service-card" onClick={() => setCurrentView('menu-management')}>
-              <span className="landing-service-card__icon">
-                <img src={foodIcon} alt="" aria-hidden="true" />
-              </span>
               <span className="landing-service-card__label">Menu Management</span>
             </button>
             <button type="button" className="landing-service-card" onClick={() => setCurrentView('orders')}>

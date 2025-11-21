@@ -10,7 +10,7 @@
 }
 
 .auth-header {
-  width: min(100%, 420px);
+  width: min(100%, 600px);
   display: grid;
   gap: 0.65rem;
   text-align: left;
@@ -40,7 +40,7 @@
 }
 
 .auth-tablist {
-  width: min(100%, 420px);
+  width: min(100%, 600px);
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   border-bottom: 2px solid var(--color-border);
@@ -70,7 +70,7 @@
 }
 
 .auth-main {
-  width: min(100%, 420px);
+  width: min(100%, 600px);
 }
 
 .auth-card {
@@ -209,7 +209,8 @@
 }
 
 .intro-screen {
-  width: min(100%, 420px);
+  width: min(100%, 600px);
+  margin: 0 auto;
   display: grid;
   gap: 1.5rem;
   text-align: center;
@@ -575,4 +576,3 @@
   }
 
 }
-

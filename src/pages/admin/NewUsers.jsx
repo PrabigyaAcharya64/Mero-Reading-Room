@@ -13,6 +13,7 @@ function NewUsers({ onBack }) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pending'); // 'pending' or 'verified'
   const [verifying, setVerifying] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadUsers();
@@ -22,11 +23,11 @@ function NewUsers({ onBack }) {
     try {
       setLoading(true);
       const usersRef = collection(db, 'users');
-      
+
       // Get all users with additional details
       const q = query(usersRef, orderBy('submittedAt', 'desc'));
       const snapshot = await getDocs(q);
-      
+
       const pending = [];
       const verified = [];
 
@@ -38,7 +39,7 @@ function NewUsers({ onBack }) {
             id: docSnap.id,
             ...userData,
           };
-          
+
           if (userData.verified === true) {
             verified.push(userInfo);
           } else {
@@ -60,7 +61,7 @@ function NewUsers({ onBack }) {
     try {
       setVerifying(userId);
       const userDocRef = doc(db, 'users', userId);
-      
+
       // Use setDoc with merge to ensure the update works even if document structure is different
       await updateDoc(userDocRef, {
         verified: true,
@@ -68,7 +69,7 @@ function NewUsers({ onBack }) {
         verifiedBy: user?.uid || 'admin',
         updatedAt: new Date().toISOString(),
       });
-      
+
       // Reload users
       await loadUsers();
     } catch (error) {
@@ -100,7 +101,7 @@ function NewUsers({ onBack }) {
         rejectedAt: new Date().toISOString(),
         rejectedBy: user?.uid || 'admin',
       });
-      
+
       // Reload users
       await loadUsers();
     } catch (error) {
@@ -119,30 +120,32 @@ function NewUsers({ onBack }) {
     }
   };
 
-  const displayUsers = activeTab === 'pending' ? pendingUsers : verifiedUsers;
+  // Filter users based on search query (only for verified tab)
+  const displayUsers = activeTab === 'pending'
+    ? pendingUsers
+    : verifiedUsers.filter(user =>
+      user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.mrrNumber?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   return (
     <div className="landing-screen">
       <header className="landing-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          {onBack && (
-            <button
-              type="button"
-              onClick={onBack}
-              style={{
-                background: 'none',
-                border: '1px solid #ddd',
-                borderRadius: '8px',
-                padding: '8px 16px',
-                cursor: 'pointer',
-                fontSize: '14px',
-              }}
-            >
-              ← Back
-            </button>
-          )}
-          <p className="landing-greeting">New User Verification</p>
-        </div>
+        <button
+          type="button"
+          onClick={onBack}
+          className="landing-signout"
+          style={{
+            border: '1px solid var(--color-text-primary)',
+            padding: '0.5rem 0.85rem',
+          }}
+        >
+          ← Back
+        </button>
+        <p className="landing-greeting" style={{ flex: 1, textAlign: 'center' }}>
+          New User Verification
+        </p>
         <div className="landing-status">
           <button type="button" className="landing-profile" aria-label="Profile">
             <img src={profileIcon} alt="" />
@@ -191,6 +194,27 @@ function NewUsers({ onBack }) {
           </div>
         </div>
 
+        {/* Search bar - only visible in verified tab */}
+        {activeTab === 'verified' && (
+          <div style={{ marginBottom: '20px' }}>
+            <input
+              type="text"
+              placeholder="Search by name, email, or MRR number..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                maxWidth: '500px',
+                padding: '12px 16px',
+                fontSize: '16px',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                fontFamily: 'var(--brand-font-body)',
+              }}
+            />
+          </div>
+        )}
+
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>
             <p>Loading users...</p>
@@ -198,8 +222,8 @@ function NewUsers({ onBack }) {
         ) : displayUsers.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>
             <p style={{ color: '#666' }}>
-              {activeTab === 'pending' 
-                ? 'No pending users at this time.' 
+              {activeTab === 'pending'
+                ? 'No pending users at this time.'
                 : 'No verified users yet.'}
             </p>
           </div>
@@ -272,8 +296,8 @@ function NewUsers({ onBack }) {
                       </p>
                       <p style={{ margin: '5px 0', color: '#666' }}>
                         <strong>Interested In:</strong>{' '}
-                        {Array.isArray(userData.interestedIn) 
-                          ? userData.interestedIn.join(', ') 
+                        {Array.isArray(userData.interestedIn)
+                          ? userData.interestedIn.join(', ')
                           : userData.interestedIn || 'N/A'}
                       </p>
                       <p style={{ margin: '5px 0', color: '#666', fontSize: '12px' }}>

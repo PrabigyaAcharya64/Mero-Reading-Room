@@ -51,17 +51,17 @@ function OrderDashboard({ onBack }) {
       // If marking as completed, add completedAt timestamp
       if (newStatus === 'completed') {
         updateData.completedAt = new Date().toISOString();
-        
+
         // Get order data to create sales record
         const orderDoc = await getDoc(orderRef);
         if (orderDoc.exists()) {
           const orderData = orderDoc.data();
           const orderDate = new Date().toISOString().split('T')[0];
-          
+
           // Create/update daily sales record
           const salesRef = doc(db, 'dailySales', orderDate);
           const salesDoc = await getDoc(salesRef);
-          
+
           if (salesDoc.exists()) {
             const salesData = salesDoc.data();
             await updateDoc(salesRef, {
@@ -85,7 +85,7 @@ function OrderDashboard({ onBack }) {
     } catch (error) {
       console.error('Error updating order status:', error);
       let errorMessage = 'Failed to update order status';
-      
+
       if (error?.code === 'permission-denied') {
         errorMessage = 'Permission denied. Please check Firestore security rules.';
       } else if (error?.code === 'not-found') {
@@ -93,7 +93,7 @@ function OrderDashboard({ onBack }) {
       } else if (error?.message) {
         errorMessage = `Error: ${error.message}`;
       }
-      
+
       alert(errorMessage);
     }
   };
@@ -106,8 +106,8 @@ function OrderDashboard({ onBack }) {
     }
   };
 
-  const filteredOrders = filterStatus === 'all' 
-    ? orders 
+  const filteredOrders = filterStatus === 'all'
+    ? orders
     : orders.filter(order => order.status === filterStatus);
 
   const formatDate = (dateString) => {
@@ -138,7 +138,20 @@ function OrderDashboard({ onBack }) {
   return (
     <div className="landing-screen">
       <header className="landing-header">
-        <p className="landing-greeting">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="landing-signout"
+            style={{
+              border: '1px solid var(--color-text-primary)',
+              padding: '0.5rem 0.85rem'
+            }}
+          >
+            ← Back
+          </button>
+        )}
+        <p className="landing-greeting" style={{ flex: 1, textAlign: onBack ? 'center' : 'left' }}>
           Hey <span>{displayName}</span>!
         </p>
         <div className="landing-status">
@@ -152,24 +165,6 @@ function OrderDashboard({ onBack }) {
       </header>
 
       <main className="landing-body" style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto' }}>
-        {onBack && (
-          <div style={{ marginBottom: '20px' }}>
-            <button
-              onClick={onBack}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#666',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              ← Back to Dashboard
-            </button>
-          </div>
-        )}
 
         <section>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
@@ -337,9 +332,9 @@ function OrderDashboard({ onBack }) {
                     </div>
                   </div>
 
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                     gap: '15px',
                     marginBottom: '15px',
                     padding: '15px',

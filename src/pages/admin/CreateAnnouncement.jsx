@@ -48,11 +48,26 @@ function CreateAnnouncement({ onBack }) {
     return (
         <div className="landing-screen">
             <header className="landing-header">
-                <button onClick={onBack} className="landing-signout" style={{ border: 'none', paddingLeft: 0 }}>
+                <button
+                    onClick={onBack}
+                    className="landing-signout"
+                    style={{
+                        border: '1px solid var(--color-text-primary)',
+                        padding: '0.5rem 0.85rem'
+                    }}
+                >
                     ← Back
                 </button>
-                <h1 style={{ margin: 0, fontFamily: 'var(--brand-font-serif)', fontSize: '1.5rem' }}>New Announcement</h1>
-                <div style={{ width: '40px' }}></div>
+                <h1 style={{
+                    margin: 0,
+                    fontFamily: 'var(--brand-font-serif)',
+                    fontSize: '1.5rem',
+                    flex: 1,
+                    textAlign: 'center'
+                }}>
+                    New Announcement
+                </h1>
+                <div style={{ width: '100px' }}></div>
             </header>
 
             <main className="landing-body">

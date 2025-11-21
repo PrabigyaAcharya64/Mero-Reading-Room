@@ -1,1 +1,23 @@
+# Dependencies
 node_modules
+
+# macOS metadata files
+.DS_Store
+._*
+.AppleDouble
+.LSOverride
+
+# Build outputs
+dist
+dist-ssr
+*.local
+
+# Editor directories
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Environment files
+.env
+.env.local
+.env.*.local
