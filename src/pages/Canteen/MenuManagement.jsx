@@ -3,6 +3,7 @@ import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, addDoc, getDocs, doc, setDoc, getDoc, query, where, deleteDoc } from 'firebase/firestore';
 import { validateMenuItemName, validatePrice, validateDescription, validateCategory } from '../../utils/validation';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const IMGBB_API_KEY = 'f3836c3667cc5c73c64e1aa4f0849566';
 
@@ -560,8 +561,8 @@ function MenuManagement({ onBack }) {
               )}
             </label>
 
-            <button type="submit" className="cta-button cta-button--primary" disabled={loading}>
-              {loading ? 'Adding...' : 'Add Menu Item'}
+            <button type="submit" className="cta-button cta-button--primary" disabled={loading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              {loading ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'Add Menu Item'}
             </button>
           </form>
 
@@ -613,8 +614,9 @@ function MenuManagement({ onBack }) {
                 onClick={handleSetTodaysMenu}
                 className="cta-button cta-button--primary"
                 disabled={loading || selectedItems.length === 0}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
               >
-                Set Selected as Today's Menu ({selectedItems.length})
+                {loading ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : `Set Selected as Today's Menu (${selectedItems.length})`}
               </button>
             </div>
           </div>
@@ -746,11 +748,15 @@ function MenuManagement({ onBack }) {
                     border: 'none',
                     borderRadius: '4px',
                     cursor: 'pointer',
-                    width: '100%'
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
                   }}
                   disabled={loading}
                 >
-                  Remove from Menu
+                  {loading ? <LoadingSpinner size="16" stroke="2" color="white" /> : 'Remove from Menu'}
                 </button>
               </div>
             ))}

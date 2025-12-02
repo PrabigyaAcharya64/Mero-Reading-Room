@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../auth/AuthProvider';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 function Login({ onSwitch }) {
   const { signInEmail, signInWithGoogle, resetPassword } = useAuth();
@@ -95,8 +96,8 @@ function Login({ onSwitch }) {
             />
           </label>
 
-          <button type="submit" className="cta-button cta-button--primary" disabled={resetting}>
-            {resetting ? 'Sending…' : 'Send Reset Link'}
+          <button type="submit" className="cta-button cta-button--primary" disabled={resetting} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            {resetting ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'Send Reset Link'}
           </button>
 
           <button
@@ -149,8 +150,8 @@ function Login({ onSwitch }) {
           </button>
         </div>
 
-        <button type="submit" className="cta-button cta-button--primary" disabled={submitting}>
-          {submitting ? 'Signing in…' : 'Log in'}
+        <button type="submit" className="cta-button cta-button--primary" disabled={submitting} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          {submitting ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'Log in'}
         </button>
 
         <button
@@ -158,8 +159,9 @@ function Login({ onSwitch }) {
           className="cta-button cta-button--secondary"
           onClick={handleGoogle}
           disabled={submitting}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
         >
-          Continue with Google
+          {submitting ? <LoadingSpinner size="20" stroke="2.5" color="currentColor" /> : 'Continue with Google'}
         </button>
       </form>
 

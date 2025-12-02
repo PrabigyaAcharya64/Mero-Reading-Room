@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, orderBy } from 'firebase/firestore';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const profileIcon =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
@@ -217,7 +218,8 @@ function NewUsers({ onBack }) {
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>
-            <p>Loading users...</p>
+            <LoadingSpinner size="40" stroke="3" color="#666" />
+            <p style={{ marginTop: '15px', color: '#666' }}>Loading users...</p>
           </div>
         ) : displayUsers.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -331,9 +333,13 @@ function NewUsers({ onBack }) {
                             fontSize: '14px',
                             fontWeight: 'bold',
                             opacity: verifying === userData.id ? 0.6 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px'
                           }}
                         >
-                          {verifying === userData.id ? 'Verifying...' : '✓ Verify'}
+                          {verifying === userData.id ? <LoadingSpinner size="16" stroke="2" color="white" /> : '✓ Verify'}
                         </button>
                         <button
                           type="button"
@@ -349,9 +355,13 @@ function NewUsers({ onBack }) {
                             fontSize: '14px',
                             fontWeight: 'bold',
                             opacity: verifying === userData.id ? 0.6 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px'
                           }}
                         >
-                          ✗ Reject
+                          {verifying === userData.id ? <LoadingSpinner size="16" stroke="2" color="white" /> : '✗ Reject'}
                         </button>
                       </div>
                     )}

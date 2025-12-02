@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const profileIcon =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
@@ -216,7 +217,10 @@ function OrderDashboard({ onBack }) {
           </div>
 
           {loading ? (
-            <p style={{ textAlign: 'center', padding: '40px', color: '#666' }}>Loading orders...</p>
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <LoadingSpinner size="40" stroke="3" color="#666" />
+              <p style={{ marginTop: '15px', color: '#666' }}>Loading orders...</p>
+            </div>
           ) : filteredOrders.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
               No orders found.
@@ -274,9 +278,14 @@ function OrderDashboard({ onBack }) {
                               border: 'none',
                               borderRadius: '4px',
                               cursor: 'pointer',
-                              fontSize: '12px'
+                              fontSize: '12px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px'
                             }}
                           >
+                            <LoadingSpinner size="12" stroke="1.5" color="white" />
                             Mark Complete
                           </button>
                           <button
@@ -288,9 +297,14 @@ function OrderDashboard({ onBack }) {
                               border: 'none',
                               borderRadius: '4px',
                               cursor: 'pointer',
-                              fontSize: '12px'
+                              fontSize: '12px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px'
                             }}
                           >
+                            <LoadingSpinner size="12" stroke="1.5" color="white" />
                             Cancel
                           </button>
                         </>

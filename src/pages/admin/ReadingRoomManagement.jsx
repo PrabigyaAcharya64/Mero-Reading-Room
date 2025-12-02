@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const profileIcon =
     'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
@@ -28,21 +29,15 @@ const SeatIcon = ({ occupied, size = 50 }) => (
 );
 
 const ToiletIcon = ({ size = 45 }) => (
-    <svg width={size} height={size} viewBox="0 0 45 45" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="12" y="25" width="21" height="15" rx="2" fill="#90caf9" stroke="#1976d2" strokeWidth="1.5" />
-        <ellipse cx="22.5" cy="25" rx="8" ry="4" fill="#bbdefb" stroke="#1976d2" strokeWidth="1" />
-        <circle cx="22.5" cy="12" r="5" fill="#64b5f6" stroke="#1976d2" strokeWidth="1.5" />
-        <line x1="22.5" y1="17" x2="22.5" y2="25" stroke="#1976d2" strokeWidth="2" />
-    </svg>
-);
-
-const KitchenIcon = ({ size = 45 }) => (
-    <svg width={size} height={size} viewBox="0 0 45 45" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="10" y="15" width="25" height="20" rx="2" fill="#ffb74d" stroke="#f57c00" strokeWidth="1.5" />
-        <circle cx="17" cy="23" r="3" fill="#fff3e0" stroke="#e65100" strokeWidth="1" />
-        <circle cx="28" cy="23" r="3" fill="#fff3e0" stroke="#e65100" strokeWidth="1" />
-        <rect x="15" y="32" width="15" height="2" fill="#f57c00" />
-        <path d="M22.5 8 L26 15 L19 15 Z" fill="#ff9800" stroke="#e65100" strokeWidth="1" />
+    <svg width={size} height={size} viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <text x="50%" y="50%" 
+              font-size="140" 
+              text-anchor="middle" 
+              dominant-baseline="middle" 
+              font-family="Arial, Helvetica, sans-serif" 
+              fill="#1976d2">
+            T
+        </text>
     </svg>
 );
 
@@ -68,7 +63,6 @@ const WindowIcon = ({ size = 50 }) => (
 const ELEMENT_CONFIG = {
     seat: { width: 70, height: 70 },
     toilet: { width: 55, height: 55 },
-    kitchen: { width: 55, height: 55 },
     door: { width: 50, height: 75 },
     window: { width: 60, height: 60 }
 };
@@ -104,12 +98,23 @@ function ReadingRoomManagement({ onBack }) {
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [showStudentModal, setShowStudentModal] = useState(false);
     const [assignmentMode, setAssignmentMode] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         loadRooms();
         loadVerifiedUsers();
         loadSeatAssignments();
     }, []);
+
+    // Auto-clear success messages after 3 seconds
+    useEffect(() => {
+        if (message && !message.includes('Error')) {
+            const timer = setTimeout(() => {
+                setMessage('');
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [message]);
 
     const loadVerifiedUsers = async () => {
         try {
@@ -236,6 +241,7 @@ function ReadingRoomManagement({ onBack }) {
             loadSeatAssignments();
             setAssignmentMode(false);
             setSelectedStudent(null);
+            setSearchQuery(''); // Add this line to reset search
         } catch (error) {
             console.error('Error assigning student:', error);
             setMessage('Error assigning student');
@@ -420,6 +426,7 @@ function ReadingRoomManagement({ onBack }) {
         setAssignmentMode(false);
         setSelectedStudent(null);
         setMessage('');
+        setSearchQuery(''); // Add this line to reset search
     };
 
     const getSelectedRoomData = () => {
@@ -442,7 +449,7 @@ function ReadingRoomManagement({ onBack }) {
                             padding: '0.5rem 0.85rem'
                         }}
                     >
-                        Back
+                        ← Back
                     </button>
                 )}
                 <p className="landing-greeting" style={{ flex: 1, textAlign: onBack ? 'center' : 'left' }}>
@@ -499,16 +506,16 @@ function ReadingRoomManagement({ onBack }) {
                             </select>
                         </label>
 
-                        <button type="submit" className="cta-button cta-button--primary" disabled={loading}>
-                            {loading ? 'Creating...' : 'Create Room'}
+                        <button type="submit" className="cta-button cta-button--primary" disabled={loading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            {loading ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'Create Room'}
                         </button>
                     </form>
                 </section>
 
                 {/* All Rooms List */}
-                <section style={{ padding: '20px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fff' }}>
-                    <h2 style={{ marginBottom: '20px' }}>All Rooms ({rooms.length})</h2>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px' }}>
+                <section style={{ padding: '30px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fff' }}>
+                    <h2 style={{ marginBottom: '30px', fontSize: '1.5rem' }}>All Rooms ({rooms.length})</h2>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '25px' }}>
                         {rooms.map(room => {
                             const elements = room.elements || room.seats || [];
                             const seats = elements.filter(e => !e.type || e.type === 'seat');
@@ -563,21 +570,22 @@ function ReadingRoomManagement({ onBack }) {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     zIndex: 1000,
-                    padding: '20px'
+                    padding: 0
                 }}>
                     <div style={{
                         backgroundColor: '#fff',
-                        borderRadius: '12px',
-                        maxWidth: '95vw',
-                        maxHeight: '90vh',
-                        overflow: 'auto',
+                        borderRadius: 0,
+                        width: '100vw',
+                        height: '100vh',
+                        overflow: 'hidden',
                         position: 'relative',
-                        boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
+                        display: 'flex',
+                        flexDirection: 'column'
                     }}>
                         {/* Modal Header */}
                         <div style={{
@@ -622,92 +630,301 @@ function ReadingRoomManagement({ onBack }) {
                         </div>
 
                         {/* Modal Content */}
-                        <div style={{ padding: '20px' }}>
-                            {message && (
-                                <p style={{
-                                    padding: '10px',
-                                    backgroundColor: message.includes('Error') ? '#fee' : '#efe',
-                                    borderRadius: '4px',
-                                    marginBottom: '20px'
-                                }}>
-                                    {message}
-                                </p>
-                            )}
+                        <div style={{ padding: '20px', flex: 1, overflow: 'auto', display: 'flex', gap: '20px' }}>
+                            {/* Main Content Area - Left Side */}
+                            <div style={{ flex: 1, overflow: 'auto' }}>
+                                {message && (
+                                    <div style={{
+                                        position: 'fixed',
+                                        top: '80px',
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        zIndex: 1200,
+                                        minWidth: '400px',
+                                        maxWidth: '600px',
+                                        animation: 'slideDown 0.3s ease-out'
+                                    }}>
+                                        <div style={{
+                                            padding: '15px 20px',
+                                            backgroundColor: message.includes('Error') ? '#f44336' : '#4caf50',
+                                            color: 'white',
+                                            borderRadius: '8px',
+                                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                            fontSize: '14px',
+                                            fontWeight: '500',
+                                            textAlign: 'center'
+                                        }}>
+                                            {message}
+                                        </div>
+                                    </div>
+                                )}
 
-                            {/* Controls */}
-                            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
-                                <button
-                                    onClick={() => handleToggleLock(selectedRoom)}
-                                    style={{
-                                        padding: '8px 16px',
-                                        backgroundColor: selectedRoomData.isLocked ? '#4caf50' : '#ff9800',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        cursor: 'pointer',
-                                        fontSize: '14px',
-                                        fontWeight: 'bold'
-                                    }}
-                                >
-                                    {selectedRoomData.isLocked ? 'Unlock Layout' : 'Lock Layout'}
-                                </button>
-                                <button
-                                    onClick={() => handleDeleteRoom(selectedRoom)}
-                                    style={{
-                                        padding: '8px 16px',
-                                        backgroundColor: '#f44',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        cursor: 'pointer',
-                                        fontSize: '14px'
-                                    }}
-                                >
-                                    Delete Room
-                                </button>
+
+                                {/* Add Element Form (only when unlocked) */}
+                                {!selectedRoomData.isLocked && (
+                                    <section style={{ marginBottom: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
+                                        <h3 style={{ marginTop: 0 }}>Add Element</h3>
+                                        <form onSubmit={handleAddElement} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '15px', alignItems: 'end' }}>
+                                            <label className="input-field">
+                                                <span className="input-field__label">Type</span>
+                                                <select
+                                                    value={elementForm.type}
+                                                    onChange={(e) => setElementForm({ ...elementForm, type: e.target.value })}
+                                                    style={{ padding: '10px', fontFamily: 'inherit', fontSize: 'inherit' }}
+                                                >
+                                                    <option value="seat">Seat</option>
+                                                    <option value="toilet">Toilet</option>
+                                                    <option value="door">Door</option>
+                                                    <option value="window">Window</option>
+                                                </select>
+                                            </label>
+                                            <label className="input-field">
+                                                <span className="input-field__label">Label {elementForm.type === 'seat' && '*'}</span>
+                                                <input
+                                                    type="text"
+                                                    value={elementForm.label}
+                                                    onChange={(e) => setElementForm({ ...elementForm, label: e.target.value })}
+                                                    placeholder={elementForm.type === 'seat' ? 'e.g., A1' : 'Optional'}
+                                                    required={elementForm.type === 'seat'}
+                                                />
+                                            </label>
+                                            <button type="submit" className="cta-button cta-button--primary" disabled={loading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                                {loading ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'Add'}
+                                            </button>
+                                        </form>
+                                    </section>
+                                )}
+
+                                {/* Room Canvas */}
+                                <section>
+                                    <p style={{ fontSize: '12px', color: '#888', marginBottom: '10px' }}>
+                                        {selectedRoomData.isLocked
+                                            ? 'Click on vacant seats to assign students. Click assigned seats to view details.'
+                                            : 'Drag elements to reposition. Double-click to delete.'}
+                                    </p>
+
+                                    <div
+                                        style={{
+                                            position: 'relative',
+                                            width: `${selectedRoomData.width}px`,
+                                            height: `${selectedRoomData.height}px`,
+                                            border: '2px solid #333',
+                                            backgroundColor: '#f9f9f9',
+                                            borderRadius: '8px',
+                                            overflow: 'hidden',
+                                            cursor: isDragging ? 'grabbing' : 'default',
+                                            margin: '0 auto'
+                                        }}
+                                        onMouseMove={handleMouseMove}
+                                        onMouseUp={handleMouseUp}
+                                        onMouseLeave={handleMouseUp}
+                                    >
+                                        {/* Controls inside room canvas */}
+                                        <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 100, display: 'flex', gap: '8px' }}>
+                                            <button
+                                                onClick={() => handleToggleLock(selectedRoom)}
+                                                style={{
+                                                    padding: '8px',
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                                    color: '#333',
+                                                    border: '1px solid #ddd',
+                                                    borderRadius: '4px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '20px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    width: '40px',
+                                                    height: '40px',
+                                                    transition: 'all 0.2s',
+                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.backgroundColor = '#f5f5f5';
+                                                    e.currentTarget.style.borderColor = '#333';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+                                                    e.currentTarget.style.borderColor = '#ddd';
+                                                }}
+                                                title={selectedRoomData.isLocked ? 'Unlock Layout' : 'Lock Layout'}
+                                            >
+                                                {selectedRoomData.isLocked ? '🔓' : '🔒'}
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteRoom(selectedRoom)}
+                                                style={{
+                                                    padding: '8px',
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                                    color: '#333',
+                                                    border: '1px solid #ddd',
+                                                    borderRadius: '4px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '20px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    width: '40px',
+                                                    height: '40px',
+                                                    transition: 'all 0.2s',
+                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.backgroundColor = '#ffebee';
+                                                    e.currentTarget.style.borderColor = '#f44';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+                                                    e.currentTarget.style.borderColor = '#ddd';
+                                                }}
+                                                title="Delete Room"
+                                            >
+                                                🗑️
+                                            </button>
+                                        </div>
+                                        {(() => {
+                                            const elements = selectedRoomData.elements || selectedRoomData.seats || [];
+                                            const normalizedElements = elements.map(el => ({
+                                                ...el,
+                                                type: el.type || 'seat',
+                                                label: el.label || el.number || '',
+                                                width: el.width || ELEMENT_CONFIG[el.type || 'seat'].width,
+                                                height: el.height || ELEMENT_CONFIG[el.type || 'seat'].height
+                                            }));
+
+                                            return normalizedElements.map(element => {
+                                                const assignment = element.type === 'seat'
+                                                    ? seatAssignments.find(a => a.seatId === element.id && a.roomId === selectedRoom)
+                                                    : null;
+                                                const isAssigned = !!assignment;
+
+                                                const renderIcon = () => {
+                                                    switch (element.type) {
+                                                        case 'seat':
+                                                            return <SeatIcon occupied={isAssigned} size={element.width} />;
+                                                        case 'toilet':
+                                                            return <ToiletIcon size={element.width} />;
+                                                        case 'door':
+                                                            return <DoorIcon size={element.width} />;
+                                                        case 'window':
+                                                            return <WindowIcon size={element.width} />;
+                                                        default:
+                                                            return <SeatIcon occupied={isAssigned} size={element.width} />;
+                                                    }
+                                                };
+
+                                                const handleElementClick = () => {
+                                                    if (isDragging) return;
+
+                                                    if (element.type === 'seat') {
+                                                        if (selectedRoomData.isLocked) {
+                                                            if (isAssigned) {
+                                                                const student = verifiedUsers.find(u => u.id === assignment.userId);
+                                                                if (student) {
+                                                                    setSelectedStudent({ ...student, assignment });
+                                                                    setShowStudentModal(true);
+                                                                }
+                                                            } else {
+                                                                setAssignmentMode(element.id);
+                                                                setSelectedStudent(null);
+                                                            }
+                                                        }
+                                                    }
+                                                };
+
+                                                return (
+                                                    <div
+                                                        key={element.id}
+                                                        style={{
+                                                            position: 'absolute',
+                                                            left: `${element.x}px`,
+                                                            top: `${element.y}px`,
+                                                            width: `${element.width}px`,
+                                                            height: `${element.height + (element.type === 'seat' && isAssigned ? 20 : 0)}px`,
+                                                            cursor: selectedRoomData.isLocked
+                                                                ? (element.type === 'seat' ? 'pointer' : 'default')
+                                                                : (isDragging === element.id ? 'grabbing' : 'grab'),
+                                                            userSelect: 'none',
+                                                            display: 'flex',
+                                                            flexDirection: 'column',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'flex-start'
+                                                        }}
+                                                        onMouseDown={(e) => handleMouseDown(e, element.id)}
+                                                        onClick={handleElementClick}
+                                                        onDoubleClick={() => {
+                                                            if (!selectedRoomData.isLocked) {
+                                                                if (confirm(`Delete ${element.type} ${element.label || ''}?`)) {
+                                                                    handleDeleteElement(element.id);
+                                                                }
+                                                            }
+                                                        }}
+                                                        title={
+                                                            element.type === 'seat'
+                                                                ? (isAssigned
+                                                                    ? `${element.label} - ${assignment.userName}`
+                                                                    : `${element.label} - Available`)
+                                                                : `${element.type} ${element.label || ''}`
+                                                        }
+                                                    >
+                                                        {renderIcon()}
+                                                        {element.type === 'seat' && element.label && (
+                                                            <div style={{
+                                                                marginTop: '2px',
+                                                                fontSize: '11px',
+                                                                fontWeight: 'bold',
+                                                                textAlign: 'center',
+                                                                backgroundColor: isAssigned ? '#4caf50' : '#90caf9',
+                                                                color: 'white',
+                                                                padding: '2px 6px',
+                                                                borderRadius: '3px'
+                                                            }}>
+                                                                {element.label}
+                                                            </div>
+                                                        )}
+                                                        {element.type === 'seat' && isAssigned && (
+                                                            <div style={{
+                                                                marginTop: '2px',
+                                                                fontSize: '9px',
+                                                                textAlign: 'center',
+                                                                color: '#333',
+                                                                maxWidth: '100px',
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis',
+                                                                whiteSpace: 'nowrap'
+                                                            }}>
+                                                                {assignment.userName}
+                                                            </div>
+                                                        )}
+                                                        {element.label && element.type !== 'seat' && (
+                                                            <div style={{
+                                                                marginTop: '2px',
+                                                                fontSize: '10px',
+                                                                textAlign: 'center',
+                                                                color: '#666'
+                                                            }}>
+                                                                {element.label}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                </section>
                             </div>
 
-                            {/* Add Element Form (only when unlocked) */}
-                            {!selectedRoomData.isLocked && (
-                                <section style={{ marginBottom: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
-                                    <h3 style={{ marginTop: 0 }}>Add Element</h3>
-                                    <form onSubmit={handleAddElement} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '15px', alignItems: 'end' }}>
-                                        <label className="input-field">
-                                            <span className="input-field__label">Type</span>
-                                            <select
-                                                value={elementForm.type}
-                                                onChange={(e) => setElementForm({ ...elementForm, type: e.target.value })}
-                                                style={{ padding: '10px', fontFamily: 'inherit', fontSize: 'inherit' }}
-                                            >
-                                                <option value="seat">Seat</option>
-                                                <option value="toilet">Toilet</option>
-                                                <option value="kitchen">Kitchen</option>
-                                                <option value="door">Door</option>
-                                                <option value="window">Window</option>
-                                            </select>
-                                        </label>
-                                        <label className="input-field">
-                                            <span className="input-field__label">Label {elementForm.type === 'seat' && '*'}</span>
-                                            <input
-                                                type="text"
-                                                value={elementForm.label}
-                                                onChange={(e) => setElementForm({ ...elementForm, label: e.target.value })}
-                                                placeholder={elementForm.type === 'seat' ? 'e.g., A1' : 'Optional'}
-                                                required={elementForm.type === 'seat'}
-                                            />
-                                        </label>
-                                        <button type="submit" className="cta-button cta-button--primary" disabled={loading}>
-                                            Add
-                                        </button>
-                                    </form>
-                                </section>
-                            )}
-
-                            {/* Assignment Mode Panel */}
+                            {/* Right Side Panel - Assignment Mode */}
                             {selectedRoomData.isLocked && assignmentMode && (
-                                <section style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f0f8ff', borderRadius: '8px' }}>
+                                <div style={{
+                                    width: '320px',
+                                    borderLeft: '1px solid #ddd',
+                                    paddingLeft: '20px',
+                                    display: 'flex',
+                                    flexDirection: 'column'
+                                }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                                        <h3 style={{ margin: 0 }}>Select Student to Assign</h3>
+                                        <h3 style={{ margin: 0 }}>Assign Seat</h3>
                                         <button
                                             onClick={() => {
                                                 setAssignmentMode(false);
@@ -726,197 +943,66 @@ function ReadingRoomManagement({ onBack }) {
                                             Cancel
                                         </button>
                                     </div>
-                                    <div style={{ maxHeight: '200px', overflowY: 'auto', display: 'grid', gap: '10px' }}>
+                                    <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
+                                        Select a student to assign to the selected seat
+                                    </p>
+                                    
+                                    {/* Search Bar */}
+                                    <div style={{ marginBottom: '15px' }}>
+                                        <input
+                                            type="text"
+                                            placeholder="Search by MRR number..."
+                                            value={searchQuery || ''}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            style={{
+                                                width: '100%',
+                                                padding: '10px',
+                                                border: '1px solid #ddd',
+                                                borderRadius: '4px',
+                                                fontSize: '14px',
+                                                boxSizing: 'border-box'
+                                            }}
+                                        />
+                                    </div>
+                                    
+                                    <div style={{ flex: 1, overflowY: 'auto', display: 'grid', gap: '10px', alignContent: 'start' }}>
                                         {verifiedUsers
                                             .filter(u => !seatAssignments.some(a => a.userId === u.id))
+                                            .filter(u => !searchQuery || (u.mrrNumber && u.mrrNumber.toLowerCase().includes(searchQuery.toLowerCase())))
                                             .map(student => (
                                                 <div
                                                     key={student.id}
                                                     onClick={() => handleAssignStudent(student.id, assignmentMode)}
                                                     style={{
-                                                        padding: '10px',
+                                                        padding: '12px',
                                                         border: '1px solid #ddd',
                                                         borderRadius: '6px',
                                                         cursor: 'pointer',
                                                         backgroundColor: 'white',
-                                                        transition: 'background-color 0.2s'
+                                                        transition: 'all 0.2s'
                                                     }}
-                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0fff0'}
-                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.backgroundColor = '#f0fff0';
+                                                        e.currentTarget.style.borderColor = '#4caf50';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.backgroundColor = 'white';
+                                                        e.currentTarget.style.borderColor = '#ddd';
+                                                    }}
                                                 >
-                                                    <div style={{ fontWeight: 'bold' }}>{student.name}</div>
+                                                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{student.name}</div>
                                                     <div style={{ fontSize: '12px', color: '#666' }}>MRR: {student.mrrNumber}</div>
                                                 </div>
                                             ))
                                         }
+                                        {verifiedUsers.filter(u => !seatAssignments.some(a => a.userId === u.id)).filter(u => !searchQuery || (u.mrrNumber && u.mrrNumber.toLowerCase().includes(searchQuery.toLowerCase()))).length === 0 && (
+                                            <p style={{ textAlign: 'center', color: '#999', padding: '20px' }}>
+                                                {searchQuery ? 'No students found matching your search' : 'No available students'}
+                                            </p>
+                                        )}
                                     </div>
-                                </section>
+                                </div>
                             )}
-
-                            {/* Room Canvas */}
-                            <section>
-                                <div style={{ marginBottom: '10px', fontSize: '14px', color: '#666' }}>
-                                    {(() => {
-                                        const elements = selectedRoomData.elements || selectedRoomData.seats || [];
-                                        const seats = elements.filter(e => !e.type || e.type === 'seat');
-                                        const assigned = seatAssignments.filter(a => a.roomId === selectedRoom).length;
-                                        return `Total Seats: ${seats.length} | Assigned: ${assigned} | Available: ${seats.length - assigned}`;
-                                    })()}
-                                </div>
-                                <p style={{ fontSize: '12px', color: '#888', marginBottom: '10px' }}>
-                                    {selectedRoomData.isLocked
-                                        ? 'Click on vacant seats to assign students. Click assigned seats to view details.'
-                                        : 'Drag elements to reposition. Double-click to delete.'}
-                                </p>
-
-                                <div
-                                    style={{
-                                        position: 'relative',
-                                        width: `${selectedRoomData.width}px`,
-                                        height: `${selectedRoomData.height}px`,
-                                        border: '2px solid #333',
-                                        backgroundColor: '#f9f9f9',
-                                        borderRadius: '8px',
-                                        overflow: 'hidden',
-                                        cursor: isDragging ? 'grabbing' : 'default',
-                                        margin: '0 auto'
-                                    }}
-                                    onMouseMove={handleMouseMove}
-                                    onMouseUp={handleMouseUp}
-                                    onMouseLeave={handleMouseUp}
-                                >
-                                    {(() => {
-                                        const elements = selectedRoomData.elements || selectedRoomData.seats || [];
-                                        const normalizedElements = elements.map(el => ({
-                                            ...el,
-                                            type: el.type || 'seat',
-                                            label: el.label || el.number || '',
-                                            width: el.width || ELEMENT_CONFIG[el.type || 'seat'].width,
-                                            height: el.height || ELEMENT_CONFIG[el.type || 'seat'].height
-                                        }));
-
-                                        return normalizedElements.map(element => {
-                                            const assignment = element.type === 'seat'
-                                                ? seatAssignments.find(a => a.seatId === element.id && a.roomId === selectedRoom)
-                                                : null;
-                                            const isAssigned = !!assignment;
-
-                                            const renderIcon = () => {
-                                                switch (element.type) {
-                                                    case 'seat':
-                                                        return <SeatIcon occupied={isAssigned} size={element.width} />;
-                                                    case 'toilet':
-                                                        return <ToiletIcon size={element.width} />;
-                                                    case 'kitchen':
-                                                        return <KitchenIcon size={element.width} />;
-                                                    case 'door':
-                                                        return <DoorIcon size={element.width} />;
-                                                    case 'window':
-                                                        return <WindowIcon size={element.width} />;
-                                                    default:
-                                                        return <SeatIcon occupied={isAssigned} size={element.width} />;
-                                                }
-                                            };
-
-                                            const handleElementClick = () => {
-                                                if (isDragging) return;
-
-                                                if (element.type === 'seat') {
-                                                    if (selectedRoomData.isLocked) {
-                                                        if (isAssigned) {
-                                                            const student = verifiedUsers.find(u => u.id === assignment.userId);
-                                                            if (student) {
-                                                                setSelectedStudent({ ...student, assignment });
-                                                                setShowStudentModal(true);
-                                                            }
-                                                        } else {
-                                                            setAssignmentMode(element.id);
-                                                            setSelectedStudent(null);
-                                                        }
-                                                    }
-                                                }
-                                            };
-
-                                            return (
-                                                <div
-                                                    key={element.id}
-                                                    style={{
-                                                        position: 'absolute',
-                                                        left: `${element.x}px`,
-                                                        top: `${element.y}px`,
-                                                        width: `${element.width}px`,
-                                                        height: `${element.height + (element.type === 'seat' && isAssigned ? 20 : 0)}px`,
-                                                        cursor: selectedRoomData.isLocked
-                                                            ? (element.type === 'seat' ? 'pointer' : 'default')
-                                                            : (isDragging === element.id ? 'grabbing' : 'grab'),
-                                                        userSelect: 'none',
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'flex-start'
-                                                    }}
-                                                    onMouseDown={(e) => handleMouseDown(e, element.id)}
-                                                    onClick={handleElementClick}
-                                                    onDoubleClick={() => {
-                                                        if (!selectedRoomData.isLocked) {
-                                                            if (confirm(`Delete ${element.type} ${element.label || ''}?`)) {
-                                                                handleDeleteElement(element.id);
-                                                            }
-                                                        }
-                                                    }}
-                                                    title={
-                                                        element.type === 'seat'
-                                                            ? (isAssigned
-                                                                ? `${element.label} - ${assignment.userName}`
-                                                                : `${element.label} - Available`)
-                                                            : `${element.type} ${element.label || ''}`
-                                                    }
-                                                >
-                                                    {renderIcon()}
-                                                    {element.type === 'seat' && element.label && (
-                                                        <div style={{
-                                                            marginTop: '2px',
-                                                            fontSize: '11px',
-                                                            fontWeight: 'bold',
-                                                            textAlign: 'center',
-                                                            backgroundColor: isAssigned ? '#4caf50' : '#90caf9',
-                                                            color: 'white',
-                                                            padding: '2px 6px',
-                                                            borderRadius: '3px'
-                                                        }}>
-                                                            {element.label}
-                                                        </div>
-                                                    )}
-                                                    {element.type === 'seat' && isAssigned && (
-                                                        <div style={{
-                                                            marginTop: '2px',
-                                                            fontSize: '9px',
-                                                            textAlign: 'center',
-                                                            color: '#333',
-                                                            maxWidth: '100px',
-                                                            overflow: 'hidden',
-                                                            textOverflow: 'ellipsis',
-                                                            whiteSpace: 'nowrap'
-                                                        }}>
-                                                            {assignment.userName}
-                                                        </div>
-                                                    )}
-                                                    {element.label && element.type !== 'seat' && (
-                                                        <div style={{
-                                                            marginTop: '2px',
-                                                            fontSize: '10px',
-                                                            textAlign: 'center',
-                                                            color: '#666'
-                                                        }}>
-                                                            {element.label}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        });
-                                    })()}
-                                </div>
-                            </section>
                         </div>
                     </div>
                 </div>
@@ -930,51 +1016,347 @@ function ReadingRoomManagement({ onBack }) {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                    backgroundColor: 'rgba(0, 0, 0, 0.75)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    zIndex: 1100
+                    zIndex: 1100,
+                    padding: '20px'
                 }}>
                     <div style={{
                         backgroundColor: '#fff',
-                        borderRadius: '8px',
-                        padding: '20px',
-                        maxWidth: '400px',
-                        width: '90%'
+                        borderRadius: '12px',
+                        padding: '0',
+                        maxWidth: '600px',
+                        width: '100%',
+                        maxHeight: '90vh',
+                        overflow: 'auto',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
                     }}>
-                        <h3 style={{ marginTop: 0 }}>Student Details</h3>
-                        <div style={{ marginBottom: '15px' }}>
-                            <div style={{ fontSize: '14px', marginBottom: '8px' }}><strong>Name:</strong> {selectedStudent.name}</div>
-                            <div style={{ fontSize: '14px', marginBottom: '8px' }}><strong>MRR Number:</strong> {selectedStudent.mrrNumber}</div>
-                            <div style={{ fontSize: '14px', marginBottom: '8px' }}><strong>Email:</strong> {selectedStudent.email}</div>
-                            <div style={{ fontSize: '14px', marginBottom: '8px' }}><strong>Seat:</strong> {selectedStudent.assignment?.seatLabel}</div>
+                        {/* Modal Header */}
+                        <div style={{
+                            padding: '24px',
+                            borderBottom: '1px solid #e0e0e0',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            backgroundColor: '#f8f9fa'
+                        }}>
+                            <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '600' }}>Student Details</h3>
+                            <button
+                                onClick={() => setShowStudentModal(false)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '28px',
+                                    cursor: 'pointer',
+                                    lineHeight: '1',
+                                    padding: '0',
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: '#666',
+                                    transition: 'all 0.2s'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#e0e0e0';
+                                    e.currentTarget.style.color = '#333';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.color = '#666';
+                                }}
+                            >
+                                ×
+                            </button>
                         </div>
-                        <div style={{ display: 'flex', gap: '10px' }}>
+
+                        {/* Modal Body */}
+                        <div style={{ padding: '24px' }}>
+                            {/* Student Photo and Basic Info Section */}
+                            <div style={{
+                                display: 'flex',
+                                gap: '20px',
+                                marginBottom: '24px',
+                                flexWrap: 'wrap'
+                            }}>
+                                {/* Photo */}
+                                {selectedStudent.photoUrl && (
+                                    <div style={{ flex: '0 0 auto' }}>
+                                        <img
+                                            src={selectedStudent.photoUrl}
+                                            alt={selectedStudent.name}
+                                            style={{
+                                                width: '120px',
+                                                height: '120px',
+                                                objectFit: 'cover',
+                                                borderRadius: '12px',
+                                                border: '3px solid #e0e0e0',
+                                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                                            }}
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Name and MRR */}
+                                <div style={{ flex: 1, minWidth: '200px' }}>
+                                    <h2 style={{
+                                        margin: '0 0 8px 0',
+                                        fontSize: '24px',
+                                        fontWeight: '600',
+                                        color: '#333'
+                                    }}>
+                                        {selectedStudent.name}
+                                    </h2>
+                                    <div style={{
+                                        display: 'inline-block',
+                                        padding: '6px 12px',
+                                        backgroundColor: '#e3f2fd',
+                                        color: '#1976d2',
+                                        borderRadius: '6px',
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        marginBottom: '12px'
+                                    }}>
+                                        {selectedStudent.mrrNumber}
+                                    </div>
+
+                                    {/* Verification Badge */}
+                                    {selectedStudent.verified && (
+                                        <div style={{
+                                            display: 'inline-block',
+                                            marginLeft: '8px',
+                                            padding: '6px 12px',
+                                            backgroundColor: '#e8f5e9',
+                                            color: '#2e7d32',
+                                            borderRadius: '6px',
+                                            fontSize: '12px',
+                                            fontWeight: '600'
+                                        }}>
+                                            ✓ Verified
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Contact Information */}
+                            <div style={{
+                                marginBottom: '24px',
+                                padding: '16px',
+                                backgroundColor: '#f8f9fa',
+                                borderRadius: '8px'
+                            }}>
+                                <h4 style={{
+                                    margin: '0 0 12px 0',
+                                    fontSize: '14px',
+                                    fontWeight: '600',
+                                    color: '#666',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px'
+                                }}>
+                                    Contact Information
+                                </h4>
+                                <div style={{ display: 'grid', gap: '12px' }}>
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>Email</div>
+                                        <div style={{ fontSize: '14px', fontWeight: '500', color: '#333' }}>{selectedStudent.email}</div>
+                                    </div>
+                                    {selectedStudent.phoneNumber && (
+                                        <div>
+                                            <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>Phone</div>
+                                            <div style={{ fontSize: '14px', fontWeight: '500', color: '#333' }}>{selectedStudent.phoneNumber}</div>
+                                        </div>
+                                    )}
+                                    {selectedStudent.dateOfBirth && (
+                                        <div>
+                                            <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>Date of Birth</div>
+                                            <div style={{ fontSize: '14px', fontWeight: '500', color: '#333' }}>
+                                                {new Date(selectedStudent.dateOfBirth).toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric'
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Interests */}
+                            {selectedStudent.interestedIn && selectedStudent.interestedIn.length > 0 && (
+                                <div style={{ marginBottom: '24px' }}>
+                                    <h4 style={{
+                                        margin: '0 0 12px 0',
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        color: '#666',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.5px'
+                                    }}>
+                                        Interests
+                                    </h4>
+                                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                        {selectedStudent.interestedIn.map((interest, index) => (
+                                            <span
+                                                key={index}
+                                                style={{
+                                                    padding: '8px 16px',
+                                                    backgroundColor: '#fff3e0',
+                                                    color: '#e65100',
+                                                    borderRadius: '20px',
+                                                    fontSize: '13px',
+                                                    fontWeight: '500',
+                                                    border: '1px solid #ffe0b2'
+                                                }}
+                                            >
+                                                {interest}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Seat Assignment Information */}
+                            {selectedStudent.assignment && (
+                                <div style={{
+                                    marginBottom: '24px',
+                                    padding: '16px',
+                                    backgroundColor: '#e8f5e9',
+                                    borderRadius: '8px',
+                                    border: '1px solid #c8e6c9'
+                                }}>
+                                    <h4 style={{
+                                        margin: '0 0 12px 0',
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        color: '#2e7d32',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.5px'
+                                    }}>
+                                        Seat Assignment
+                                    </h4>
+                                    <div style={{ display: 'grid', gap: '8px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span style={{ fontSize: '13px', color: '#555' }}>Room:</span>
+                                            <span style={{ fontSize: '13px', fontWeight: '600', color: '#333' }}>
+                                                {selectedStudent.assignment.roomName}
+                                            </span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span style={{ fontSize: '13px', color: '#555' }}>Seat:</span>
+                                            <span style={{ fontSize: '13px', fontWeight: '600', color: '#333' }}>
+                                                {selectedStudent.assignment.seatLabel}
+                                            </span>
+                                        </div>
+                                        {selectedStudent.assignment.assignedAt && (
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span style={{ fontSize: '13px', color: '#555' }}>Assigned:</span>
+                                                <span style={{ fontSize: '13px', fontWeight: '500', color: '#333' }}>
+                                                    {new Date(selectedStudent.assignment.assignedAt).toLocaleDateString('en-US', {
+                                                        year: 'numeric',
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit'
+                                                    })}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Additional Metadata */}
+                            {(selectedStudent.submittedAt || selectedStudent.updatedAt) && (
+                                <div style={{
+                                    marginBottom: '24px',
+                                    padding: '12px',
+                                    backgroundColor: '#fafafa',
+                                    borderRadius: '6px',
+                                    fontSize: '12px',
+                                    color: '#666'
+                                }}>
+                                    {selectedStudent.submittedAt && (
+                                        <div style={{ marginBottom: '4px' }}>
+                                            Registered: {new Date(selectedStudent.submittedAt).toLocaleDateString('en-US', {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric'
+                                            })}
+                                        </div>
+                                    )}
+                                    {selectedStudent.updatedAt && (
+                                        <div>
+                                            Last Updated: {new Date(selectedStudent.updatedAt).toLocaleDateString('en-US', {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric'
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div style={{
+                            padding: '16px 24px',
+                            borderTop: '1px solid #e0e0e0',
+                            display: 'flex',
+                            gap: '12px',
+                            backgroundColor: '#f8f9fa'
+                        }}>
                             <button
                                 onClick={() => handleUnassignStudent(selectedStudent.assignment?.id)}
                                 style={{
                                     flex: 1,
-                                    padding: '10px',
-                                    backgroundColor: '#f44',
+                                    padding: '12px',
+                                    backgroundColor: '#f44336',
                                     color: 'white',
                                     border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer'
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    fontWeight: '600',
+                                    transition: 'all 0.2s',
+                                    boxShadow: '0 2px 4px rgba(244,67,54,0.2)'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#d32f2f';
+                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(244,67,54,0.3)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#f44336';
+                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(244,67,54,0.2)';
                                 }}
                             >
-                                Unassign
+                                Unassign Seat
                             </button>
                             <button
                                 onClick={() => setShowStudentModal(false)}
                                 style={{
                                     flex: 1,
-                                    padding: '10px',
-                                    backgroundColor: '#999',
+                                    padding: '12px',
+                                    backgroundColor: '#757575',
                                     color: 'white',
                                     border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer'
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    fontWeight: '600',
+                                    transition: 'all 0.2s',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#616161';
+                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#757575';
+                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
                                 }}
                             >
                                 Close

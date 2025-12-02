@@ -4,6 +4,8 @@ import { auth, db } from '../lib/firebase';
 import { doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { signOut } from 'firebase/auth';
+import LoadingSpinner from '../components/LoadingSpinner';
+import FullScreenLoader from '../components/FullScreenLoader';
 
 const IMGBB_API_KEY = 'f3836c3667cc5c73c64e1aa4f0849566';
 
@@ -214,13 +216,7 @@ function AdditionalDetails({ onComplete }) {
   };
 
   if (generatingMrr) {
-    return (
-      <div className="auth-screen">
-        <div className="auth-card">
-          <p>Generating your MRR number...</p>
-        </div>
-      </div>
-    );
+    return <FullScreenLoader text="Generating your MRR number..." />;
   }
 
   return (
@@ -356,8 +352,9 @@ function AdditionalDetails({ onComplete }) {
             type="submit"
             className="cta-button cta-button--primary"
             disabled={loading}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
           >
-            {loading ? 'Submitting...' : 'Submit'}
+            {loading ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'Submit'}
           </button>
         </form>
       </div>

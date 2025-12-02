@@ -3,6 +3,7 @@ import { updateProfile } from 'firebase/auth';
 import { useAuth } from '../auth/AuthProvider';
 import { auth } from '../lib/firebase';
 import { validatePassword, validateEmail, validateName } from '../utils/validation';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 function SignUp({ onSwitch, onComplete }) {
   const { signUpEmail, signInWithGoogle } = useAuth();
@@ -19,7 +20,7 @@ function SignUp({ onSwitch, onComplete }) {
   const handleChange = (event) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-    
+
     // Validate password in real-time
     if (name === 'password') {
       const validation = validatePassword(value);
@@ -175,8 +176,8 @@ function SignUp({ onSwitch, onComplete }) {
           )}
         </label>
 
-        <button type="submit" className="cta-button cta-button--primary" disabled={submitting}>
-          {submitting ? 'Creating account…' : 'Create account'}
+        <button type="submit" className="cta-button cta-button--primary" disabled={submitting} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          {submitting ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'Create account'}
         </button>
 
         <button
@@ -184,8 +185,9 @@ function SignUp({ onSwitch, onComplete }) {
           className="cta-button cta-button--secondary"
           onClick={handleGoogle}
           disabled={submitting}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
         >
-          Sign up with Google
+          {submitting ? <LoadingSpinner size="20" stroke="2.5" color="currentColor" /> : 'Sign up with Google'}
         </button>
       </form>
 

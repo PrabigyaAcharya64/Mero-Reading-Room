@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../auth/AuthProvider';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 function CreateAnnouncement({ onBack }) {
     const { user } = useAuth();
@@ -150,8 +151,8 @@ function CreateAnnouncement({ onBack }) {
 
                             {error && <div className="auth-feedback" style={{ borderColor: '#d93025', color: '#d93025' }}>{error}</div>}
 
-                            <button type="submit" className="cta-button cta-button--primary" disabled={submitting}>
-                                {submitting ? 'Creating...' : 'Create Announcement'}
+                            <button type="submit" className="cta-button cta-button--primary" disabled={submitting} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                {submitting ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'Create Announcement'}
                             </button>
                         </form>
                     )}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, query, getDocs, orderBy, onSnapshot, limit } from 'firebase/firestore';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const profileIcon =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
@@ -250,7 +251,10 @@ function SalesDashboard({ onBack }) {
           </div>
 
           {loading ? (
-            <p style={{ textAlign: 'center', padding: '40px', color: '#666' }}>Loading sales data...</p>
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <LoadingSpinner size="40" stroke="3" color="#666" />
+              <p style={{ marginTop: '15px', color: '#666' }}>Loading sales data...</p>
+            </div>
           ) : selectedDate ? (
             // Show detailed sales for selected date
             <div>

@@ -1,6 +1,7 @@
 import { collection, doc, onSnapshot, orderBy, query, updateDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { db } from '../../lib/firebase';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 function AdminMessages({ onBack }) {
     const [messages, setMessages] = useState([]);
@@ -140,7 +141,10 @@ function AdminMessages({ onBack }) {
 
                         {/* Messages List */}
                         {loading ? (
-                            <div style={{ padding: '1rem', textAlign: 'center' }}>Loading messages...</div>
+                            <div style={{ padding: '2rem', textAlign: 'center' }}>
+                                <LoadingSpinner size="40" stroke="3" color="#666" />
+                                <p style={{ marginTop: '1rem', color: '#666' }}>Loading messages...</p>
+                            </div>
                         ) : messages.filter(msg => filter === 'all' || !msg.read).length === 0 ? (
                             <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
                                 {filter === 'unread' ? 'No unread messages.' : 'No messages found.'}

@@ -3,6 +3,7 @@ import { useAuth } from '../auth/AuthProvider';
 import CanteenClientLanding from './Canteen/CanteenClientLanding';
 import IDCard from './IDCard';
 import Contact from './Contact';
+import ReadingRoomEnrollment from './ReadingRoomEnrollment';
 import { collection, query, where, onSnapshot, Timestamp, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
@@ -63,6 +64,11 @@ function LandingPage() {
     return <Contact onBack={() => setCurrentView('landing')} />;
   }
 
+  // Show Reading Room Enrollment when reading room is clicked
+  if (currentView === 'readingroom') {
+    return <ReadingRoomEnrollment onBack={() => setCurrentView('landing')} />;
+  }
+
   return (
     <div className="landing-screen">
       <header className="landing-header">
@@ -96,7 +102,7 @@ function LandingPage() {
         <section className="landing-services">
           <h2>Quick Services</h2>
           <div className="landing-services__grid">
-            <button type="button" className="landing-service-card">
+            <button type="button" className="landing-service-card" onClick={() => setCurrentView('readingroom')}>
               <span className="landing-service-card__icon">
                 <img src={readingRoomIcon} alt="" aria-hidden="true" />
               </span>
