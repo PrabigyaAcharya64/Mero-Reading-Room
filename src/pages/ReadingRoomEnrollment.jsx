@@ -7,7 +7,7 @@ import logo from '../assets/logo.png';
 
 const IMGBB_API_KEY = 'f3836c3667cc5c73c64e1aa4f0849566';
 
-function ReadingRoomEnrollment({ onBack }) {
+function ReadingRoomEnrollment({ onBack, onComplete }) {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -145,8 +145,8 @@ function ReadingRoomEnrollment({ onBack }) {
 
             setSuccess('Enrollment form submitted successfully!');
             setTimeout(() => {
-                if (onBack) onBack();
-            }, 2000);
+                if (onComplete) onComplete();
+            }, 1000);
         } catch (err) {
             console.error('Error submitting enrollment:', err);
             setError(err instanceof Error ? err.message : 'Failed to submit enrollment. Please try again.');
@@ -165,10 +165,31 @@ function ReadingRoomEnrollment({ onBack }) {
 
     return (
         <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5', padding: '20px' }}>
+            {/* Back Button */}
+            {onBack && (
+                <button
+                    onClick={onBack}
+                    style={{
+                        marginBottom: '20px',
+                        padding: '8px 16px',
+                        backgroundColor: '#333',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        display: 'block',
+                        maxWidth: '900px',
+                        margin: '0 auto 20px auto'
+                    }}
+                >
+                    ← Back
+                </button>
+            )}
+
             <div style={{ maxWidth: '900px', margin: '0 auto', backgroundColor: 'white', padding: '40px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
                 {/* Header */}
                 <div style={{ textAlign: 'center', marginBottom: '30px', borderBottom: '2px solid #333', paddingBottom: '20px' }}>
-                    <img src={logo} alt="Logo" style={{ width: '80px', height: '80px', marginBottom: '10px' }} />
+                    <img src={logo} alt="Logo" style={{ width: '80px', height: '80px', marginBottom: '10px', display: 'block', margin: '0 auto 10px auto' }} />
                     <h1 style={{ margin: '10px 0', fontSize: '24px', fontWeight: 'bold', textTransform: 'uppercase' }}>
                         Membership Registration Form
                     </h1>
@@ -176,24 +197,6 @@ function ReadingRoomEnrollment({ onBack }) {
                         Mero Reading Room
                     </h2>
                 </div>
-
-                {/* Back Button */}
-                {onBack && (
-                    <button
-                        onClick={onBack}
-                        style={{
-                            marginBottom: '20px',
-                            padding: '8px 16px',
-                            backgroundColor: '#666',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        ← Back
-                    </button>
-                )}
 
                 {/* Messages */}
                 {error && (
@@ -387,7 +390,7 @@ function ReadingRoomEnrollment({ onBack }) {
                             disabled={submitting}
                             style={{
                                 padding: '12px 40px',
-                                backgroundColor: submitting ? '#ccc' : '#1976d2',
+                                backgroundColor: submitting ? '#ccc' : '#333',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '4px',

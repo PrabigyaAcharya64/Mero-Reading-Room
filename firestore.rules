@@ -190,7 +190,22 @@ service cloud.firestore {
     // SEAT ASSIGNMENTS
     match /seatAssignments/{assignmentId} {
       allow read: if loggedIn();
-      allow create, update, delete: if loggedIn() && isAdmin();
+      allow create: if loggedIn() && (isAdmin() || request.resource.data.userId == request.auth.uid);
+      allow update, delete: if loggedIn() && isAdmin();
+    }
+
+    // READING ROOM ENROLLMENTS
+    match /readingRoomEnrollments/{enrollmentId} {
+      // Users can read their own enrollments, admins can read all
+      allow read: if loggedIn() && (
+        isAdmin() ||
+        (resource != null && resource.data.userId == request.auth.uid)
+      );
+      // Users can only create enrollments for themselves
+      allow create: if loggedIn() &&
+        request.resource.data.userId == request.auth.uid;
+      // Only admins can update and delete enrollments
+      allow update, delete: if loggedIn() && isAdmin();
     }
   }
 }

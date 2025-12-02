@@ -7,7 +7,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 const profileIcon =
     'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
 
-// SVG Icon Components
+
 const SeatIcon = ({ occupied, size = 50 }) => (
     <svg width={size} height={size} viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
         {/* Theater-style seat */}
@@ -30,12 +30,12 @@ const SeatIcon = ({ occupied, size = 50 }) => (
 
 const ToiletIcon = ({ size = 45 }) => (
     <svg width={size} height={size} viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-        <text x="50%" y="50%" 
-              font-size="140" 
-              text-anchor="middle" 
-              dominant-baseline="middle" 
-              font-family="Arial, Helvetica, sans-serif" 
-              fill="#1976d2">
+        <text x="50%" y="50%"
+            font-size="140"
+            text-anchor="middle"
+            dominant-baseline="middle"
+            font-family="Arial, Helvetica, sans-serif"
+            fill="#1976d2">
             T
         </text>
     </svg>
@@ -946,7 +946,7 @@ function ReadingRoomManagement({ onBack }) {
                                     <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
                                         Select a student to assign to the selected seat
                                     </p>
-                                    
+
                                     {/* Search Bar */}
                                     <div style={{ marginBottom: '15px' }}>
                                         <input
@@ -964,7 +964,7 @@ function ReadingRoomManagement({ onBack }) {
                                             }}
                                         />
                                     </div>
-                                    
+
                                     <div style={{ flex: 1, overflowY: 'auto', display: 'grid', gap: '10px', alignContent: 'start' }}>
                                         {verifiedUsers
                                             .filter(u => !seatAssignments.some(a => a.userId === u.id))
@@ -1186,7 +1186,7 @@ function ReadingRoomManagement({ onBack }) {
                             </div>
 
                             {/* Interests */}
-                            {selectedStudent.interestedIn && selectedStudent.interestedIn.length > 0 && (
+                            {selectedStudent.interestedIn && Array.isArray(selectedStudent.interestedIn) && selectedStudent.interestedIn.length > 0 && (
                                 <div style={{ marginBottom: '24px' }}>
                                     <h4 style={{
                                         margin: '0 0 12px 0',
