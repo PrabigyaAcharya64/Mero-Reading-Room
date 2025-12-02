@@ -35,14 +35,11 @@ function SalesDashboard({ onBack }) {
   const loadSales = async () => {
     setLoading(true);
     try {
-      // Get all completed orders - using simpler query to avoid index requirement
+ 
       const ordersRef = collection(db, 'orders');
-      // First get all orders, then filter in memory (for now, until index is created)
-      // This is less efficient but works without index
+
       const q = query(ordersRef, orderBy('createdAt', 'desc'), limit(1000));
       const snapshot = await getDocs(q);
-
-      // Filter completed orders in memory
       const completedOrders = snapshot.docs
         .filter(doc => doc.data().status === 'completed')
         .map(doc => ({

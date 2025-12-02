@@ -38,17 +38,17 @@ function AdditionalDetails({ onComplete }) {
 
   const generateMrrNumber = async () => {
     try {
-      // Get the latest MRR number from Firestore
+
       const usersRef = collection(db, 'users');
       const q = query(usersRef, orderBy('mrrNumber', 'desc'), limit(1));
-      
+
       const snapshot = await getDocs(q);
       let nextMrrNumber = 'MRR001';
 
       if (!snapshot.empty) {
         const latestUser = snapshot.docs[0].data();
         if (latestUser.mrrNumber) {
-          // Extract number from MRR001, MRR002, etc.
+
           const latestNum = parseInt(latestUser.mrrNumber.replace('MRR', ''), 10);
           const nextNum = latestNum + 1;
           nextMrrNumber = `MRR${nextNum.toString().padStart(3, '0')}`;
@@ -197,7 +197,7 @@ function AdditionalDetails({ onComplete }) {
 
       // Sign out user and redirect to pending verification page
       await signOut(auth);
-      
+
       // Update URL to show pending verification
       window.history.replaceState({}, '', '?pending=true');
 

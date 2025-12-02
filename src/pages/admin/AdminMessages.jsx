@@ -6,6 +6,7 @@ function AdminMessages({ onBack }) {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedMessage, setSelectedMessage] = useState(null);
+    const [filter, setFilter] = useState('unread'); // 'unread' or 'all'
 
     useEffect(() => {
         const q = query(collection(db, 'messages'), orderBy('createdAt', 'desc'));
@@ -90,40 +91,92 @@ function AdminMessages({ onBack }) {
 
                     {/* Message List */}
                     <div className="auth-card" style={{ overflowY: 'auto', alignContent: 'start', gap: '0' }}>
+                        {/* Filter Buttons */}
+                        <div style={{
+                            display: 'flex',
+                            gap: '0.5rem',
+                            padding: '1rem',
+                            borderBottom: '2px solid var(--color-border)',
+                            position: 'sticky',
+                            top: 0,
+                            backgroundColor: 'var(--color-bg-primary)',
+                            zIndex: 1
+                        }}>
+                            <button
+                                onClick={() => setFilter('unread')}
+                                style={{
+                                    flex: 1,
+                                    padding: '0.5rem 1rem',
+                                    border: '1px solid var(--color-border)',
+                                    borderRadius: '0.375rem',
+                                    backgroundColor: filter === 'unread' ? '#000' : 'transparent',
+                                    color: filter === 'unread' ? '#fff' : '#000',
+                                    fontWeight: filter === 'unread' ? 'bold' : 'normal',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    fontFamily: 'inherit'
+                                }}
+                            >
+                                Unread {messages.filter(m => !m.read).length > 0 && `(${messages.filter(m => !m.read).length})`}
+                            </button>
+                            <button
+                                onClick={() => setFilter('all')}
+                                style={{
+                                    flex: 1,
+                                    padding: '0.5rem 1rem',
+                                    border: '1px solid var(--color-border)',
+                                    borderRadius: '0.375rem',
+                                    backgroundColor: filter === 'all' ? '#000' : 'transparent',
+                                    color: filter === 'all' ? '#fff' : '#000',
+                                    fontWeight: filter === 'all' ? 'bold' : 'normal',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    fontFamily: 'inherit'
+                                }}
+                            >
+                                All ({messages.length})
+                            </button>
+                        </div>
+
+                        {/* Messages List */}
                         {loading ? (
                             <div style={{ padding: '1rem', textAlign: 'center' }}>Loading messages...</div>
-                        ) : messages.length === 0 ? (
-                            <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>No messages found.</div>
+                        ) : messages.filter(msg => filter === 'all' || !msg.read).length === 0 ? (
+                            <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                                {filter === 'unread' ? 'No unread messages.' : 'No messages found.'}
+                            </div>
                         ) : (
-                            messages.map(msg => (
-                                <div
-                                    key={msg.id}
-                                    onClick={() => handleMessageClick(msg)}
-                                    style={{
-                                        padding: '1rem',
-                                        borderBottom: '1px solid var(--color-border)',
-                                        cursor: 'pointer',
-                                        backgroundColor: selectedMessage?.id === msg.id ? '#f5f5f5' : (msg.read ? 'transparent' : '#e8f0fe'),
-                                        transition: 'background-color 0.2s'
-                                    }}
-                                >
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                                        <span style={{ fontWeight: msg.read ? 'normal' : 'bold' }}>{msg.name}</span>
-                                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                                            {msg.createdAt ? msg.createdAt.toLocaleDateString() : 'N/A'}
-                                        </span>
+                            messages
+                                .filter(msg => filter === 'all' || !msg.read)
+                                .map(msg => (
+                                    <div
+                                        key={msg.id}
+                                        onClick={() => handleMessageClick(msg)}
+                                        style={{
+                                            padding: '1rem',
+                                            borderBottom: '1px solid var(--color-border)',
+                                            cursor: 'pointer',
+                                            backgroundColor: selectedMessage?.id === msg.id ? '#f5f5f5' : (msg.read ? 'transparent' : '#e8f0fe'),
+                                            transition: 'background-color 0.2s'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                            <span style={{ fontWeight: msg.read ? 'normal' : 'bold' }}>{msg.name}</span>
+                                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                                                {msg.createdAt ? msg.createdAt.toLocaleDateString() : 'N/A'}
+                                            </span>
+                                        </div>
+                                        <div style={{
+                                            fontSize: '0.9rem',
+                                            color: 'var(--color-text-secondary)',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis'
+                                        }}>
+                                            {msg.message}
+                                        </div>
                                     </div>
-                                    <div style={{
-                                        fontSize: '0.9rem',
-                                        color: 'var(--color-text-secondary)',
-                                        whiteSpace: 'nowrap',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis'
-                                    }}>
-                                        {msg.message}
-                                    </div>
-                                </div>
-                            ))
+                                ))
                         )}
                     </div>
 

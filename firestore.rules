@@ -180,5 +180,17 @@ service cloud.firestore {
       allow read: if loggedIn();
       allow create, delete: if loggedIn() && isAdmin();
     }
+
+    // READING ROOMS
+    match /readingRooms/{roomId} {
+      allow read: if loggedIn();
+      allow create, update, delete: if loggedIn() && isAdmin();
+    }
+
+    // SEAT ASSIGNMENTS
+    match /seatAssignments/{assignmentId} {
+      allow read: if loggedIn();
+      allow create, update, delete: if loggedIn() && isAdmin();
+    }
   }
 }

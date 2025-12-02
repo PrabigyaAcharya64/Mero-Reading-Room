@@ -4,6 +4,7 @@ import NewUsers from './NewUsers';
 import CanteenLanding from '../Canteen/CanteenLanding';
 import AdminMessages from './AdminMessages';
 import CreateAnnouncement from './CreateAnnouncement';
+import ReadingRoomManagement from './ReadingRoomManagement';
 import { collection, query, where, onSnapshot, deleteDoc, doc, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
@@ -15,6 +16,7 @@ const userManagementIcon = new URL('../../assets/usermanagement.svg', import.met
 const newUserIcon = new URL('../../assets/newuser.svg', import.meta.url).href;
 const reportsIcon = new URL('../../assets/reports.svg', import.meta.url).href;
 const canteenIcon = new URL('../../assets/canteen.svg', import.meta.url).href;
+const readingRoomIcon = new URL('../../assets/readingroom.svg', import.meta.url).href;
 
 function AdminLanding() {
   const { user, signOutUser } = useAuth();
@@ -77,6 +79,10 @@ function AdminLanding() {
     return <CreateAnnouncement onBack={() => setCurrentView('dashboard')} />;
   }
 
+  if (currentView === 'reading-rooms') {
+    return <ReadingRoomManagement onBack={() => setCurrentView('dashboard')} />;
+  }
+
   return (
     <div className="landing-screen">
       <header className="landing-header">
@@ -122,6 +128,16 @@ function AdminLanding() {
                 <img src={canteenIcon} alt="" aria-hidden="true" />
               </span>
               <span className="landing-service-card__label">Canteen</span>
+            </button>
+            <button
+              type="button"
+              className="landing-service-card"
+              onClick={() => setCurrentView('reading-rooms')}
+            >
+              <span className="landing-service-card__icon">
+                <img src={readingRoomIcon} alt="" aria-hidden="true" />
+              </span>
+              <span className="landing-service-card__label">Reading Rooms</span>
             </button>
             <button
               type="button"
