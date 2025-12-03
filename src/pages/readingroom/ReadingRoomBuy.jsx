@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../auth/AuthProvider';
-import { db } from '../lib/firebase';
+import { useAuth } from '../../auth/AuthProvider';
+import { db } from '../../lib/firebase';
 import { doc, getDoc, setDoc, collection, getDocs, addDoc, query, where } from 'firebase/firestore';
-import LoadingSpinner from '../components/LoadingSpinner';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 function ReadingRoomBuy({ onBack, selectedOption, onComplete }) {
     const { user, userBalance, deductBalance } = useAuth();

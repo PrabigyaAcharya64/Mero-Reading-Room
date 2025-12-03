@@ -3,10 +3,10 @@ import { useAuth } from '../auth/AuthProvider';
 import CanteenClientLanding from './Canteen/CanteenClientLanding';
 import IDCard from './IDCard';
 import Contact from './Contact';
-import ReadingRoomEnrollment from './ReadingRoomEnrollment';
-import ReadingRoomOptions from './ReadingRoomOptions';
-import ReadingRoomBuy from './ReadingRoomBuy';
-import ReadingRoomDashboard from './ReadingRoomDashboard';
+import ReadingRoomEnrollment from './readingroom/ReadingRoomEnrollment';
+import ReadingRoomOptions from './readingroom/ReadingRoomOptions';
+import ReadingRoomBuy from './readingroom/ReadingRoomBuy';
+import ReadingRoomDashboard from './readingroom/ReadingRoomDashboard';
 import { collection, query, where, onSnapshot, Timestamp, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
@@ -39,19 +39,19 @@ function LandingPage() {
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        
+
         // Check if user has completed registration and has an active membership
         if (userData.registrationCompleted && userData.currentSeat) {
           // Check if membership is still valid
           const isExpired = userData.nextPaymentDue && new Date(userData.nextPaymentDue) < new Date();
-          
+
           if (!isExpired) {
             setCurrentView('readingroom-dashboard');
             return;
           }
         }
       }
-      
+
       // If no valid membership or registration not completed, go to options
       setCurrentView('readingroom-options');
     } catch (error) {

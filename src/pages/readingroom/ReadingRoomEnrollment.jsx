@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../auth/AuthProvider';
-import { db } from '../lib/firebase';
+import { useAuth } from '../../auth/AuthProvider';
+import { db } from '../../lib/firebase';
 import { doc, getDoc, addDoc, collection } from 'firebase/firestore';
-import LoadingSpinner from '../components/LoadingSpinner';
-import logo from '../assets/logo.png';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import logo from "../../assets/logo.png";
 
 const IMGBB_API_KEY = 'f3836c3667cc5c73c64e1aa4f0849566';
 

@@ -212,7 +212,7 @@ function ReadingRoomManagement({ onBack }) {
         try {
             const room = rooms.find(r => r.id === selectedRoom);
             const student = verifiedUsers.find(u => u.id === userId);
-            const elements = room.elements || [];
+            const elements = room.elements || room.seats || [];
             const seat = elements.find(e => e.id === seatId);
 
             if (!student || !seat) return;
@@ -295,7 +295,7 @@ function ReadingRoomManagement({ onBack }) {
                 ...(elementForm.type === 'seat' && { occupied: false })
             };
 
-            const currentElements = room.elements || [];
+            const currentElements = room.elements || room.seats || [];
             const updatedElements = [...currentElements, newElement];
             const roomRef = doc(db, 'readingRooms', selectedRoom);
             await updateDoc(roomRef, { elements: updatedElements });
@@ -335,7 +335,7 @@ function ReadingRoomManagement({ onBack }) {
 
         try {
             const room = rooms.find(r => r.id === selectedRoom);
-            const currentElements = room.elements || [];
+            const currentElements = room.elements || room.seats || [];
             const updatedElements = currentElements.filter(e => e.id !== elementId);
             const roomRef = doc(db, 'readingRooms', selectedRoom);
             await updateDoc(roomRef, { elements: updatedElements });
@@ -380,7 +380,7 @@ function ReadingRoomManagement({ onBack }) {
 
         setRooms(prevRooms => prevRooms.map(r => {
             if (r.id === selectedRoom) {
-                const updatedElements = (r.elements || []).map(el =>
+                const updatedElements = (r.elements || r.seats || []).map(el =>
                     el.id === isDragging ? { ...el, x: newX, y: newY } : el
                 );
                 return { ...r, elements: updatedElements };
@@ -394,7 +394,7 @@ function ReadingRoomManagement({ onBack }) {
 
         try {
             const room = rooms.find(r => r.id === selectedRoom);
-            const currentElements = room.elements || [];
+            const currentElements = room.elements || room.seats || [];
             const roomRef = doc(db, 'readingRooms', selectedRoom);
             await updateDoc(roomRef, { elements: currentElements });
         } catch (error) {
@@ -513,7 +513,7 @@ function ReadingRoomManagement({ onBack }) {
                     <h2 style={{ marginBottom: '30px', fontSize: '1.5rem' }}>All Rooms ({rooms.length})</h2>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '25px' }}>
                         {rooms.map(room => {
-                            const elements = room.elements || [];
+                            const elements = room.elements || room.seats || [];
                             const seats = elements.filter(e => !e.type || e.type === 'seat');
                             const roomAssignments = seatAssignments.filter(a => a.roomId === room.id);
                             const assignedCount = roomAssignments.length;
@@ -778,7 +778,7 @@ function ReadingRoomManagement({ onBack }) {
                                             </button>
                                         </div>
                                         {(() => {
-                                            const elements = selectedRoomData.elements || [];
+                                            const elements = selectedRoomData.elements || selectedRoomData.seats || [];
                                             const normalizedElements = elements.map(el => ({
                                                 ...el,
                                                 type: el.type || 'seat',

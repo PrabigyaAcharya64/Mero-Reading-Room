@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../auth/AuthProvider';
-import { db } from '../lib/firebase';
+import { useAuth } from '../../auth/AuthProvider';
+import { db } from '../../lib/firebase';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
-import LoadingSpinner from '../components/LoadingSpinner';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 // SVG Icon Components (Reused from ReadingRoomManagement)
 const SeatIcon = ({ occupied, isMySeat, size = 40 }) => (
@@ -102,8 +102,8 @@ function ReadingRoomDashboard({ onBack }) {
             <div style={{ padding: '40px', textAlign: 'center' }}>
                 <h2>{isExpired ? 'Membership Expired' : 'No Active Membership'}</h2>
                 <p>
-                    {isExpired 
-                        ? 'Your reading room membership has expired. Please renew to continue accessing the reading room.' 
+                    {isExpired
+                        ? 'Your reading room membership has expired. Please renew to continue accessing the reading room.'
                         : 'You don\'t have an active reading room membership.'}
                 </p>
                 <button onClick={onBack} style={{ marginTop: '20px', padding: '10px 20px', cursor: 'pointer' }}>
