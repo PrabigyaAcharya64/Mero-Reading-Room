@@ -222,7 +222,18 @@ function ReadingRoomManagement({ onBack }) {
                 if (!confirm(`${student.name} is already assigned to ${existingAssignment.seatLabel} in ${existingAssignment.roomName}. Move them here?`)) {
                     return;
                 }
+
                 await deleteDoc(doc(db, 'seatAssignments', existingAssignment.id));
+
+                // Clear fields for the user before re-assigning
+                await setDoc(doc(db, 'users', userId), {
+                    registrationCompleted: false,
+                    enrollmentCompleted: false,
+                    currentSeat: null,
+                    nextPaymentDue: null,
+                    lastPaymentDate: null,
+                    selectedRoomType: null
+                }, { merge: true });
             }
 
             await addDoc(collection(db, 'seatAssignments'), {
@@ -253,6 +264,7 @@ function ReadingRoomManagement({ onBack }) {
             // Update user document with critical fields for mobile app
             await setDoc(doc(db, 'users', userId), {
                 registrationCompleted: true,
+                enrollmentCompleted: true,
                 currentSeat: {
                     roomId: selectedRoom,
                     roomName: room.name,
@@ -283,7 +295,29 @@ function ReadingRoomManagement({ onBack }) {
         }
 
         try {
+            // First, get the assignment to find the userId
+            const assignment = seatAssignments.find(a => a.id === assignmentId);
+
+            if (!assignment) {
+                setMessage('Error: Assignment not found');
+                return;
+            }
+
+            // Delete the seat assignment
             await deleteDoc(doc(db, 'seatAssignments', assignmentId));
+
+            // Update user document to clear registration status
+            await setDoc(doc(db, 'users', assignment.userId), {
+                registrationCompleted: false,
+                enrollmentCompleted: false,
+                currentSeat: null,
+                nextPaymentDue: null,
+                lastPaymentDate: null,
+                selectedRoomType: null
+            }, { merge: true });
+
+            console.log('User unassigned and registration cleared for userId:', assignment.userId);
+
             setMessage('Student unassigned successfully');
             loadSeatAssignments();
             setShowStudentModal(false);
