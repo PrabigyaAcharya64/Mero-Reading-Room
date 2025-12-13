@@ -31,10 +31,10 @@ const SeatIcon = ({ occupied, size = 50 }) => (
 const ToiletIcon = ({ size = 45 }) => (
     <svg width={size} height={size} viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
         <text x="50%" y="50%"
-            font-size="140"
-            text-anchor="middle"
-            dominant-baseline="middle"
-            font-family="Arial, Helvetica, sans-serif"
+            fontSize="140"
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontFamily="Arial, Helvetica, sans-serif"
             fill="#1976d2">
             T
         </text>

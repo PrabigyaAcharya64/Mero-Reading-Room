@@ -237,6 +237,19 @@ function ReadingRoomManagement({ onBack }) {
                 assignedBy: user?.uid || 'admin'
             });
 
+            console.log('Updating user document with:', {
+                registrationCompleted: true,
+                currentSeat: {
+                    roomId: selectedRoom,
+                    roomName: room.name,
+                    seatId: seatId,
+                    seatLabel: seat.label
+                },
+                nextPaymentDue: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                lastPaymentDate: new Date().toISOString(),
+                selectedRoomType: room.type
+            });
+
             // Update user document with critical fields for mobile app
             await setDoc(doc(db, 'users', userId), {
                 registrationCompleted: true,
@@ -250,6 +263,8 @@ function ReadingRoomManagement({ onBack }) {
                 lastPaymentDate: new Date().toISOString(),
                 selectedRoomType: room.type
             }, { merge: true });
+
+            console.log('User document updated successfully for userId:', userId);
 
             setMessage(`Assigned ${student.name} to ${seat.label}`);
             loadSeatAssignments();
