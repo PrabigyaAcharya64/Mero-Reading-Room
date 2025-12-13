@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, onSnapshot, query, where } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 // SVG Icon Components (Reused from ReadingRoomManagement)
@@ -48,42 +48,71 @@ function ReadingRoomDashboard({ onBack }) {
     const [roomData, setRoomData] = useState(null);
     const [assignments, setAssignments] = useState([]);
 
+    // 1. Listen for User Data Changes
     useEffect(() => {
-        loadDashboardData();
+        if (!user) return;
+
+        const unsubscribeUser = onSnapshot(doc(db, 'users', user.uid), (docSnapshot) => {
+            if (docSnapshot.exists()) {
+                const data = docSnapshot.data();
+                setUserData(data);
+
+                // If user has no seat or is not fully enrolled, stop loading immediately
+                // so the "No Active Membership" screen can show if appropriate
+                if (!data.currentSeat || !data.enrollmentCompleted) {
+                    setLoading(false);
+                    setRoomData(null);
+                    setAssignments([]);
+                }
+            } else {
+                setUserData(null);
+                setLoading(false);
+            }
+        }, (error) => {
+            console.error('Error listening to user data:', error);
+            setLoading(false);
+        });
+
+        return () => unsubscribeUser();
     }, [user]);
 
-    const loadDashboardData = async () => {
-        try {
-            if (!user) return;
+    // 2. Listen for Room and Assignment Changes (dependent on userData)
+    useEffect(() => {
+        if (!userData?.currentSeat?.roomId) return;
 
-            // 1. Get User Data
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-            if (!userDoc.exists()) return;
+        let unsubscribeAssignments = () => { };
 
-            const data = userDoc.data();
-            setUserData(data);
-
-            if (data.currentSeat?.roomId) {
-                // 2. Get Room Data
-                const roomDoc = await getDoc(doc(db, 'readingRooms', data.currentSeat.roomId));
+        const fetchRoomAndListenToAssignments = async () => {
+            try {
+                // Get Room Data (One-time fetch usually sufficient for layout)
+                const roomDoc = await getDoc(doc(db, 'readingRooms', userData.currentSeat.roomId));
                 if (roomDoc.exists()) {
                     setRoomData({ id: roomDoc.id, ...roomDoc.data() });
                 }
 
-                // 3. Get All Assignments for this room (to show occupied seats)
+                // Listen to Assignments for this room
                 const assignmentsRef = collection(db, 'seatAssignments');
-                const assignmentsSnapshot = await getDocs(assignmentsRef);
-                const roomAssignments = assignmentsSnapshot.docs
-                    .map(doc => doc.data())
-                    .filter(a => a.roomId === data.currentSeat.roomId);
-                setAssignments(roomAssignments);
+                const q = query(assignmentsRef, where('roomId', '==', userData.currentSeat.roomId));
+
+                unsubscribeAssignments = onSnapshot(q, (snapshot) => {
+                    const roomAssignments = snapshot.docs.map(doc => doc.data());
+                    setAssignments(roomAssignments);
+                    setLoading(false); // Data is fully ready now
+                }, (error) => {
+                    console.error('Error listening to assignments:', error);
+                    setLoading(false);
+                });
+
+            } catch (err) {
+                console.error('Error fetching room/assignments:', err);
+                setLoading(false);
             }
-        } catch (err) {
-            console.error('Error loading dashboard:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
+        };
+
+        fetchRoomAndListenToAssignments();
+
+        return () => unsubscribeAssignments();
+    }, [userData?.currentSeat?.roomId]);
 
     if (loading) {
         return (
