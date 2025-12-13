@@ -55,11 +55,13 @@ function ReadingRoomDashboard({ onBack }) {
         const unsubscribeUser = onSnapshot(doc(db, 'users', user.uid), (docSnapshot) => {
             if (docSnapshot.exists()) {
                 const data = docSnapshot.data();
+                console.log('User data updated:', data);
                 setUserData(data);
 
                 // If user has no seat or is not fully enrolled, stop loading immediately
                 // so the "No Active Membership" screen can show if appropriate
                 if (!data.currentSeat || !data.enrollmentCompleted) {
+                    console.log('Clearing room data: No seat or not enrolled');
                     setLoading(false);
                     setRoomData(null);
                     setAssignments([]);
@@ -78,7 +80,10 @@ function ReadingRoomDashboard({ onBack }) {
 
     // 2. Listen for Room and Assignment Changes (dependent on userData)
     useEffect(() => {
-        if (!userData?.currentSeat?.roomId) return;
+        const roomId = userData?.currentSeat?.roomId;
+        console.log('Room/Assignment effect triggered. RoomID:', roomId);
+
+        if (!roomId) return;
 
         let unsubscribeAssignments = () => { };
 
@@ -96,6 +101,7 @@ function ReadingRoomDashboard({ onBack }) {
 
                 unsubscribeAssignments = onSnapshot(q, (snapshot) => {
                     const roomAssignments = snapshot.docs.map(doc => doc.data());
+                    console.log('Assignments updated:', roomAssignments.length);
                     setAssignments(roomAssignments);
                     setLoading(false); // Data is fully ready now
                 }, (error) => {
