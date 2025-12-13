@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, setDoc } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 const profileIcon =
@@ -236,6 +236,20 @@ function ReadingRoomManagement({ onBack }) {
                 assignedAt: new Date().toISOString(),
                 assignedBy: user?.uid || 'admin'
             });
+
+            // Update user document with critical fields for mobile app
+            await setDoc(doc(db, 'users', userId), {
+                registrationCompleted: true,
+                currentSeat: {
+                    roomId: selectedRoom,
+                    roomName: room.name,
+                    seatId: seatId,
+                    seatLabel: seat.label
+                },
+                nextPaymentDue: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                lastPaymentDate: new Date().toISOString(),
+                selectedRoomType: room.type
+            }, { merge: true });
 
             setMessage(`Assigned ${student.name} to ${seat.label}`);
             loadSeatAssignments();
@@ -946,7 +960,7 @@ function ReadingRoomManagement({ onBack }) {
                                     <div style={{ marginBottom: '15px' }}>
                                         <input
                                             type="text"
-                                            placeholder="Search by MRR number..."
+                                            placeholder="Search by MRR ID..."
                                             value={searchQuery || ''}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             style={{

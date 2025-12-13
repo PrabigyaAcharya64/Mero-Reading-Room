@@ -7,6 +7,7 @@ import ReadingRoomEnrollment from './readingroom/ReadingRoomEnrollment';
 import ReadingRoomOptions from './readingroom/ReadingRoomOptions';
 import ReadingRoomBuy from './readingroom/ReadingRoomBuy';
 import ReadingRoomDashboard from './readingroom/ReadingRoomDashboard';
+import Discussion from './discussion/Discussion';
 import { collection, query, where, onSnapshot, Timestamp, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
@@ -148,6 +149,11 @@ function LandingPage() {
     return <ReadingRoomDashboard onBack={() => setCurrentView('landing')} />;
   }
 
+  // Show Discussion
+  if (currentView === 'discussion') {
+    return <Discussion onBack={() => setCurrentView('landing')} />;
+  }
+
   return (
     <div className="landing-screen">
       <header className="landing-header">
@@ -196,6 +202,15 @@ function LandingPage() {
                 <img src={hostelIcon} alt="" aria-hidden="true" />
               </span>
               <span className="landing-service-card__label">Hostel</span>
+            </button>
+            <button type="button" className="landing-service-card" onClick={() => setCurrentView('discussion')}>
+              <span className="landing-service-card__icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M17 20H7C6 20 5 20 4 20C4 20 4 15 4 15C4 12.2386 6.23858 10 9 10H15C17.7614 10 20 12.2386 20 15V15C20 15 20 20 20 20H17Z" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M12 10C13.6569 10 15 8.65685 15 7C15 5.34315 13.6569 4 12 4C10.3431 4 9 5.34315 9 7C9 8.65685 10.3431 10 12 10Z" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+              <span className="landing-service-card__label">Discussion</span>
             </button>
             <button type="button" className="landing-service-card" onClick={() => setCurrentView('canteen')}>
               <span className="landing-service-card__icon">

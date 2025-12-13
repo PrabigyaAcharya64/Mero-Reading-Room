@@ -200,7 +200,7 @@ function NewUsers({ onBack }) {
           <div style={{ marginBottom: '20px' }}>
             <input
               type="text"
-              placeholder="Search by name, email, or MRR number..."
+              placeholder="Search by name, email, or MRR ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
@@ -282,7 +282,7 @@ function NewUsers({ onBack }) {
                         {userData.name || 'N/A'}
                       </h3>
                       <p style={{ margin: '5px 0', color: '#666' }}>
-                        <strong>MRR Number:</strong> {userData.mrrNumber || 'N/A'}
+                        <strong>MRR ID:</strong> {userData.mrrNumber || 'N/A'}
                       </p>
                       <p style={{ margin: '5px 0', color: '#666' }}>
                         <strong>Email:</strong> {userData.email || 'N/A'}

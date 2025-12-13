@@ -946,7 +946,7 @@ function ReadingRoomManagement({ onBack }) {
                                     <div style={{ marginBottom: '15px' }}>
                                         <input
                                             type="text"
-                                            placeholder="Search by MRR number..."
+                                            placeholder="Search by MRR ID..."
                                             value={searchQuery || ''}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             style={{

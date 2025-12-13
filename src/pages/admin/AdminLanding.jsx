@@ -6,7 +6,7 @@ import NewUsers from './NewUsers';
 import CanteenLanding from '../Canteen/CanteenLanding';
 import AdminMessages from './AdminMessages';
 import CreateAnnouncement from './CreateAnnouncement';
-import ReadingRoomManagement from './ReadingRoomManagement';
+import ReadingRoomManagement from '../readingroom/ReadingRoomManagement';
 import { collection, query, where, onSnapshot, deleteDoc, doc, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
