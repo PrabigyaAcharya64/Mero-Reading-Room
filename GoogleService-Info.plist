@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>949466497845-mccphso97bjbfi7epeij1b558b89iau6.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.949466497845-mccphso97bjbfi7epeij1b558b89iau6</string>
+	<key>API_KEY</key>
+	<string>AIzaSyB3akHs7gn5kSwn4myMTmTLBkLCcDiCau8</string>
+	<key>GCM_SENDER_ID</key>
+	<string>949466497845</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.mycompany.meroreadingroom</string>
+	<key>PROJECT_ID</key>
+	<string>mero-reading-room-app</string>
+	<key>STORAGE_BUCKET</key>
+	<string>mero-reading-room-app.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:949466497845:ios:85c9d70fc2ae34bdd6427c</string>
+</dict>
+</plist>

@@ -1,0 +1,211 @@
+rules_version = '2';
+
+service cloud.firestore {
+
+  match /databases/{database}/documents {
+
+    function loggedIn() {
+
+      return request.auth != null;
+
+    }
+
+    
+
+    function userDoc() {
+
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+
+    }
+
+    
+
+    // Get user role safely - default to 'client' if null/missing/undefined
+
+    function role() {
+
+      return loggedIn() && exists(userDoc()) 
+
+        ? (get(userDoc()).data.role != null && get(userDoc()).data.role != '' 
+
+           ? get(userDoc()).data.role 
+
+           : 'client')
+
+        : 'client';
+
+    }
+
+    
+
+    function isAdmin() {
+
+      return role() == "admin";
+
+    }
+
+    
+
+    function isCanteen() {
+
+      return role() == "canteen";
+
+    }
+
+    
+
+    function isStaff() {
+
+      return isAdmin() || isCanteen();
+
+    }
+
+    match /users/{uid} {
+
+      allow read: if loggedIn() && (uid == request.auth.uid || isStaff());
+
+      allow create: if loggedIn() && uid == request.auth.uid;
+
+      allow update: if loggedIn() && (uid == request.auth.uid || isAdmin());
+
+      allow delete: if loggedIn() && isAdmin();
+
+    }
+
+    match /menuItems/{itemId} {
+
+      allow read: if loggedIn();
+
+      allow create, update, delete: if loggedIn() && isStaff();
+
+    }
+
+    match /todaysMenu/{id} {
+
+      allow read: if loggedIn();
+
+      allow write: if loggedIn() && isStaff();
+
+    }
+
+    match /orders/{orderId} {
+
+      // Allow list for all authenticated users - Firestore will filter by get rule
+
+      allow list: if loggedIn();
+
+      
+
+      // Users can read their own orders OR staff can read any order
+
+      allow get: if loggedIn() && (
+
+        isStaff() ||
+
+        (resource != null && resource.data.userId == request.auth.uid)
+
+      );
+
+      
+
+      // Users can only create orders for themselves
+
+      allow create: if loggedIn() &&
+
+        request.resource.data.userId == request.auth.uid;
+
+      
+
+      // Users can update their own orders, staff can update any
+
+      allow update: if loggedIn() && (
+
+        isStaff() ||
+
+        (resource != null && resource.data.userId == request.auth.uid)
+
+      );
+
+      
+
+      // Only staff can delete orders
+
+      allow delete: if loggedIn() && isStaff();
+
+    }
+
+    match /dailySales/{date} {
+
+      allow read: if loggedIn();
+
+      allow write: if loggedIn() && isStaff();
+
+    }
+
+    match /payments/{payId} {
+
+      allow read: if loggedIn() && (
+
+        isStaff() ||
+
+        (resource != null && resource.data.userId == request.auth.uid)
+
+      );
+
+      allow create: if loggedIn() &&
+
+        request.resource.data.userId == request.auth.uid;
+
+      allow update: if loggedIn() && (
+
+        isStaff() ||
+
+        (resource != null && resource.data.userId == request.auth.uid)
+
+      );
+
+      allow delete: if loggedIn() && isAdmin();
+
+    }
+
+
+    // MESSAGES
+    match /messages/{messageId} {
+      allow create: if loggedIn();
+      allow read, update: if loggedIn() && isAdmin();
+    }
+
+    // ANNOUNCEMENTS
+    match /announcements/{announcementId} {
+      allow read: if loggedIn();
+      allow create, delete: if loggedIn() && isAdmin();
+    }
+
+    // READING ROOMS
+    match /readingRooms/{roomId} {
+      allow read: if loggedIn();
+      allow create, update, delete: if loggedIn() && isAdmin();
+    }
+
+    // SEAT ASSIGNMENTS
+    match /seatAssignments/{assignmentId} {
+      allow read: if loggedIn();
+      allow create: if loggedIn() && (isAdmin() || request.resource.data.userId == request.auth.uid);
+      allow update, delete: if loggedIn() && isAdmin();
+    }
+
+    // READING ROOM ENROLLMENTS
+    match /readingRoomEnrollments/{enrollmentId} {
+      // Users can read their own enrollments, admins can read all
+      allow read: if loggedIn() && (
+        isAdmin() ||
+        (resource != null && resource.data.userId == request.auth.uid)
+      );
+      // Users can only create enrollments for themselves
+      allow create: if loggedIn() &&
+        request.resource.data.userId == request.auth.uid;
+      // Only admins can update and delete enrollments
+      allow update, delete: if loggedIn() && isAdmin();
+    }
+  }
+}
