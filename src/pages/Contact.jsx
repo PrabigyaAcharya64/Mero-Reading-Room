@@ -68,6 +68,7 @@ function Contact({ onBack }) {
     return (
         <div className="landing-screen">
             <header className="landing-header">
+<<<<<<< HEAD
                 <button 
                     onClick={onBack} 
                     style={{
@@ -101,6 +102,10 @@ function Contact({ onBack }) {
                         <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                     Back
+=======
+                <button onClick={onBack} className="landing-signout" style={{ border: 'none', paddingLeft: 0 }}>
+                    ← Back
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
                 </button>
                 <h1 style={{ margin: 0, fontFamily: 'var(--brand-font-serif)', fontSize: '1.5rem' }}>Contact Us</h1>
                 <div style={{ width: '40px' }}></div> {/* Spacer for alignment */}

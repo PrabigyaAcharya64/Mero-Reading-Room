@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { useState, useEffect, useRef } from 'react';
+=======
+import { useState, useEffect } from 'react';
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { doc, onSnapshot, collection, addDoc } from 'firebase/firestore';
@@ -16,6 +20,7 @@ function CanteenClient({ onBack }) {
   const [orderMessage, setOrderMessage] = useState('');
   const [orderNote, setOrderNote] = useState('');
   
+<<<<<<< HEAD
   // Hover and Focus state for cards
   const [hoveredCard, setHoveredCard] = useState(null);
   const [focusedCardId, setFocusedCardId] = useState(null);
@@ -23,10 +28,16 @@ function CanteenClient({ onBack }) {
   const scrollContainerRefs = useRef(new Map()); // Handle multiple categories
 
   // Menu Data Listener
+=======
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     const todaysMenuRef = doc(db, 'todaysMenu', today);
     
+<<<<<<< HEAD
+=======
+    // Set up real-time listener for menu updates
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
     const unsubscribe = onSnapshot(
       todaysMenuRef,
       (snapshot) => {
@@ -42,12 +53,22 @@ function CanteenClient({ onBack }) {
         }
       },
       (error) => {
+<<<<<<< HEAD
         console.error('Error listening to menu updates:', error);
         if (error?.code === 'permission-denied') {
           console.error('Permission denied: Firestore security rules are blocking access.');
           setTodaysMenu([]);
         } else if (error?.code === 'unavailable' || error?.message?.includes('offline')) {
           console.warn('Firestore is offline.');
+=======
+        // Handle different error types
+        console.error('Error listening to menu updates:', error);
+        if (error?.code === 'permission-denied') {
+          console.error('Permission denied: Firestore security rules are blocking access. Please check rules in Firebase Console.');
+          setTodaysMenu([]);
+        } else if (error?.code === 'unavailable' || error?.code === 'failed-precondition' || error?.message?.includes('offline')) {
+          console.warn('Firestore is offline. Menu will load when connection is restored.');
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
           setTodaysMenu([]);
         } else {
           console.error('Error loading today\'s menu:', error);
@@ -56,11 +77,16 @@ function CanteenClient({ onBack }) {
       }
     );
 
+<<<<<<< HEAD
+=======
+    
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
     return () => {
       unsubscribe();
     };
   }, []);
 
+<<<<<<< HEAD
   const handleScroll = (categoryId) => {
     const container = scrollContainerRefs.current.get(categoryId);
     if (!container) return;
@@ -108,6 +134,8 @@ function CanteenClient({ onBack }) {
     return () => clearTimeout(timer);
   }, [todaysMenu]);
 
+=======
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
   const addToCart = (item) => {
     setCart(prev => {
       const existingItem = prev.find(cartItem => cartItem.id === item.id);
@@ -158,6 +186,10 @@ function CanteenClient({ onBack }) {
     setOrderMessage('');
 
     try {
+<<<<<<< HEAD
+=======
+      
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
       const success = await deductBalance(total);
       if (!success) {
         setOrderMessage('Failed to process payment. Please try again.');
@@ -165,6 +197,10 @@ function CanteenClient({ onBack }) {
         return;
       }
 
+<<<<<<< HEAD
+=======
+      // Validate and sanitize order note
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
       let sanitizedNote = null;
       if (orderNote && orderNote.trim()) {
         const noteValidation = validateOrderNote(orderNote, 500);
@@ -176,6 +212,10 @@ function CanteenClient({ onBack }) {
         sanitizedNote = noteValidation.sanitized || null;
       }
 
+<<<<<<< HEAD
+=======
+      // Create order
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
       await addDoc(collection(db, 'orders'), {
         userId: user.uid,
         userEmail: user.email,
@@ -184,7 +224,11 @@ function CanteenClient({ onBack }) {
         total: total,
         status: 'pending',
         note: sanitizedNote,
+<<<<<<< HEAD
         location: null,
+=======
+        location: null, // Will be set when hostel/reading room features are added
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
         createdAt: new Date().toISOString(),
       });
 
@@ -194,11 +238,19 @@ function CanteenClient({ onBack }) {
     } catch (error) {
       console.error('Error placing order:', error);
       if (error?.code === 'permission-denied') {
+<<<<<<< HEAD
         setOrderMessage('Permission denied. You must be authenticated.');
       } else if (error?.code === 'unavailable' || error?.message?.includes('offline')) {
         setOrderMessage('Offline: Order will be saved when connection is restored.');
       } else {
         setOrderMessage(`Error placing order: ${error?.message || 'Unknown error'}.`);
+=======
+        setOrderMessage('Permission denied. Please check Firestore security rules. You must be authenticated.');
+      } else if (error?.code === 'unavailable' || error?.message?.includes('offline')) {
+        setOrderMessage('Offline: Order will be saved when connection is restored.');
+      } else {
+        setOrderMessage(`Error placing order: ${error?.message || 'Unknown error'}. Please check Firestore security rules.`);
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
       }
     } finally {
       setOrdering(false);
@@ -213,6 +265,10 @@ function CanteenClient({ onBack }) {
     }
   };
 
+<<<<<<< HEAD
+=======
+  // Group menu items by category
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
   const groupedMenu = todaysMenu.reduce((acc, item) => {
     const category = item.category || 'Other';
     if (!acc[category]) {
@@ -222,12 +278,17 @@ function CanteenClient({ onBack }) {
     return acc;
   }, {});
 
+<<<<<<< HEAD
+=======
+  // Define category order
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
   const categoryOrder = ['Breakfast', 'Meal', 'Dinner', 'Snacks', 'Drinks'];
   const sortedCategories = categoryOrder.filter(cat => groupedMenu[cat]?.length > 0);
 
   return (
     <div className="landing-screen">
       <header className="landing-header">
+<<<<<<< HEAD
         {/* Left: Back Button */}
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
             {onBack && (
@@ -277,6 +338,12 @@ function CanteenClient({ onBack }) {
 
         {/* Right: Status */}
         <div className="landing-status" style={{ flex: 1, justifyContent: 'flex-end' }}>
+=======
+        <p className="landing-greeting">
+          Hey <span>{displayName}</span>!
+        </p>
+        <div className="landing-status">
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
           <div className="landing-balance" aria-label="Current balance">
             <div className="landing-balance__label">Balance</div>
             <div className="landing-balance__value">रु {userBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
@@ -294,6 +361,27 @@ function CanteenClient({ onBack }) {
       </header>
 
       <main className="landing-body" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+<<<<<<< HEAD
+=======
+        {onBack && (
+          <div style={{ marginBottom: '20px' }}>
+            <button
+              onClick={onBack}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#666',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              ← Back to Home
+            </button>
+          </div>
+        )}
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
         <section style={{ marginBottom: '30px' }}>
           <h2>Today's Menu</h2>
           {todaysMenu.length > 0 ? (
@@ -310,6 +398,7 @@ function CanteenClient({ onBack }) {
                   }}>
                     {category}
                   </h3>
+<<<<<<< HEAD
                   <div 
                     ref={(el) => {
                         if(el) scrollContainerRefs.current.set(category, el);
@@ -367,11 +456,24 @@ function CanteenClient({ onBack }) {
                         onMouseLeave={() => setHoveredCard(null)}
                       >
                         {item.photoURL ? (
+=======
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' }}>
+                    {groupedMenu[category].map((item, index) => (
+                      <div key={item.id || index} style={{
+                        border: '1px solid #ddd',
+                        borderRadius: '8px',
+                        padding: '15px',
+                        backgroundColor: '#fff',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                      }}>
+                        {item.photoURL && (
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
                           <img 
                             src={item.photoURL} 
                             alt={item.name}
                             style={{
                               width: '100%',
+<<<<<<< HEAD
                               height: '220px',
                               objectFit: 'cover',
                               borderBottom: '1px solid #f0f0f0'
@@ -454,6 +556,31 @@ function CanteenClient({ onBack }) {
                       </div>
                     );
                     })}
+=======
+                              height: '200px',
+                              objectFit: 'cover',
+                              borderRadius: '8px',
+                              marginBottom: '10px'
+                            }}
+                          />
+                        )}
+                        <h4 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>{item.name}</h4>
+                        <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '14px' }}>{item.description}</p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <p style={{ margin: '0', fontSize: '20px', fontWeight: 'bold', color: '#111' }}>
+                            रु {item.price.toFixed(2)}
+                          </p>
+                          <button
+                            onClick={() => addToCart(item)}
+                            className="cta-button cta-button--primary"
+                            style={{ padding: '8px 16px', fontSize: '14px' }}
+                          >
+                            Add to Cart
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
                   </div>
                 </div>
               ))}
@@ -490,20 +617,32 @@ function CanteenClient({ onBack }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <button
                       onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
+<<<<<<< HEAD
                       style={{ padding: '5px 8px', fontSize: '18px', cursor: 'pointer' }}
+=======
+                      style={{ padding: '5px 10px', fontSize: '18px' }}
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
                     >
                       -
                     </button>
                     <span>{item.quantity}</span>
                     <button
                       onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
+<<<<<<< HEAD
                       style={{ padding: '5px 8px', fontSize: '18px', cursor: 'pointer' }}
+=======
+                      style={{ padding: '5px 10px', fontSize: '18px' }}
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
                     >
                       +
                     </button>
                     <button
                       onClick={() => removeFromCart(item.id)}
+<<<<<<< HEAD
                       style={{ padding: '5px 10px', marginLeft: '10px', backgroundColor: '#f44', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+=======
+                      style={{ padding: '5px 10px', marginLeft: '10px', backgroundColor: '#f44', color: 'white', border: 'none', borderRadius: '4px' }}
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
                     >
                       Remove
                     </button>
@@ -567,3 +706,7 @@ function CanteenClient({ onBack }) {
 }
 
 export default CanteenClient;
+<<<<<<< HEAD
+=======
+
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754

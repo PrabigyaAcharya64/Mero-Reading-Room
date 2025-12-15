@@ -40,6 +40,7 @@ function CanteenLanding({ onBack }) {
           <button
             type="button"
             onClick={onBack}
+<<<<<<< HEAD
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -71,6 +72,15 @@ function CanteenLanding({ onBack }) {
               <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             Back
+=======
+            className="landing-signout"
+            style={{
+              border: '1px solid var(--color-text-primary)',
+              padding: '0.5rem 0.85rem'
+            }}
+          >
+            ← Back
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
           </button>
         )}
         <p className="landing-greeting" style={{ flex: 1, textAlign: onBack ? 'center' : 'left' }}>

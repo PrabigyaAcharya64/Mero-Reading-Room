@@ -13,8 +13,11 @@ function ClientOrderHistory({ onBack }) {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'pending', 'completed', 'cancelled'
   const [selectedOrder, setSelectedOrder] = useState(null);
+<<<<<<< HEAD
   const [currentPage, setCurrentPage] = useState(1);
   const [ordersPerPage] = useState(10); // Show 10 orders per page
+=======
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 
   useEffect(() => {
     if (!user) return;
@@ -105,6 +108,7 @@ function ClientOrderHistory({ onBack }) {
     ? orders 
     : orders.filter(order => order.status === filterStatus);
 
+<<<<<<< HEAD
   // Calculate pagination
   const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
   const indexOfLastOrder = currentPage * ordersPerPage;
@@ -168,6 +172,15 @@ function ClientOrderHistory({ onBack }) {
 
         {/* Right: Status */}
         <div className="landing-status" style={{ flex: 1, justifyContent: 'flex-end' }}>
+=======
+  return (
+    <div className="landing-screen">
+      <header className="landing-header">
+        <p className="landing-greeting">
+          Hey <span>{displayName}</span>!
+        </p>
+        <div className="landing-status">
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
           <div className="landing-balance" aria-label="Current balance">
             <div className="landing-balance__label">Balance</div>
             <div className="landing-balance__value">रु {userBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
@@ -185,6 +198,28 @@ function ClientOrderHistory({ onBack }) {
       </header>
 
       <main className="landing-body" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+<<<<<<< HEAD
+=======
+        {onBack && (
+          <div style={{ marginBottom: '20px' }}>
+            <button
+              onClick={onBack}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#666',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              ← Back to Canteen
+            </button>
+          </div>
+        )}
+
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
         <section>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
             <h2>My Orders ({filteredOrders.length})</h2>
@@ -241,9 +276,14 @@ function ClientOrderHistory({ onBack }) {
               No orders found.
             </div>
           ) : (
+<<<<<<< HEAD
             <>
               <div style={{ display: 'grid', gap: '20px' }}>
                 {currentOrders.map((order) => (
+=======
+            <div style={{ display: 'grid', gap: '20px' }}>
+              {filteredOrders.map((order) => (
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
                 <div key={order.id}>
                   {/* Surface View - Order Summary */}
                   <div
@@ -435,6 +475,7 @@ function ClientOrderHistory({ onBack }) {
                 </div>
               ))}
             </div>
+<<<<<<< HEAD
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
@@ -485,6 +526,8 @@ function ClientOrderHistory({ onBack }) {
               </div>
             )}
           </>
+=======
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
           )}
         </section>
       </main>
@@ -493,3 +536,7 @@ function ClientOrderHistory({ onBack }) {
 }
 
 export default ClientOrderHistory;
+<<<<<<< HEAD
+=======
+
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754

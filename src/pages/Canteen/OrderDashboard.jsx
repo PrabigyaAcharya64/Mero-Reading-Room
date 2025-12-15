@@ -13,8 +13,11 @@ function OrderDashboard({ onBack }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'pending', 'completed', 'cancelled'
+<<<<<<< HEAD
   const [currentPage, setCurrentPage] = useState(1);
   const [ordersPerPage] = useState(10); // Show 10 orders per page
+=======
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 
   useEffect(() => {
     const ordersRef = collection(db, 'orders');
@@ -113,6 +116,7 @@ function OrderDashboard({ onBack }) {
     ? orders
     : orders.filter(order => order.status === filterStatus);
 
+<<<<<<< HEAD
   // Calculate pagination
   const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
   const indexOfLastOrder = currentPage * ordersPerPage;
@@ -124,6 +128,8 @@ function OrderDashboard({ onBack }) {
     setCurrentPage(1);
   }, [filterStatus]);
 
+=======
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
@@ -156,6 +162,7 @@ function OrderDashboard({ onBack }) {
           <button
             type="button"
             onClick={onBack}
+<<<<<<< HEAD
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -187,6 +194,15 @@ function OrderDashboard({ onBack }) {
               <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             Back
+=======
+            className="landing-signout"
+            style={{
+              border: '1px solid var(--color-text-primary)',
+              padding: '0.5rem 0.85rem'
+            }}
+          >
+            ← Back
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
           </button>
         )}
         <p className="landing-greeting" style={{ flex: 1, textAlign: onBack ? 'center' : 'left' }}>
@@ -263,9 +279,14 @@ function OrderDashboard({ onBack }) {
               No orders found.
             </div>
           ) : (
+<<<<<<< HEAD
             <>
               <div style={{ display: 'grid', gap: '20px' }}>
                 {currentOrders.map((order) => (
+=======
+            <div style={{ display: 'grid', gap: '20px' }}>
+              {filteredOrders.map((order) => (
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
                 <div
                   key={order.id}
                   style={{
@@ -421,6 +442,7 @@ function OrderDashboard({ onBack }) {
                 </div>
               ))}
             </div>
+<<<<<<< HEAD
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
@@ -471,6 +493,8 @@ function OrderDashboard({ onBack }) {
               </div>
             )}
           </>
+=======
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
           )}
         </section>
       </main>

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 .center-screen {
   min-height: 100vh;
   display: flex;
@@ -8,6 +9,8 @@
   background-color: var(--color-background);
 }
 
+=======
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 .auth-screen {
   min-height: 100vh;
   display: flex;
@@ -27,6 +30,7 @@
 }
 
 .auth-header__eyebrow {
+<<<<<<< HEAD
   font-family: var(--brand-font-sans);
   letter-spacing: 4px;
   text-transform: uppercase;
@@ -35,6 +39,14 @@
   margin: 0;
   text-align: center;
   width: 100%;
+=======
+  font-family: var(--brand-font-serif);
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 }
 
 .auth-header__headline {
@@ -87,11 +99,15 @@
 
 .auth-card {
   width: 100%;
+<<<<<<< HEAD
   max-width: 480px;
+=======
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
   display: grid;
   gap: 1.5rem;
   background-color: var(--color-surface);
   color: var(--color-text-primary);
+<<<<<<< HEAD
   padding: 2.5rem;
   border-radius: 12px;
   border: 1px solid var(--color-border);
@@ -133,6 +149,12 @@
 
 .auth-title {
     animation: fadeInDown 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+=======
+  padding: clamp(1.75rem, 6vw, 2.5rem);
+  border-radius: 0;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 }
 
 .auth-form {
@@ -154,6 +176,7 @@
 
 .input-field input {
   width: 100%;
+<<<<<<< HEAD
   border: none;
   border-radius: var(--radius-default);
   padding: 0 1.25rem;
@@ -163,6 +186,16 @@
   color: var(--color-text-primary);
   background-color: var(--color-input-bg);
   transition: all var(--transition-default);
+=======
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  font-family: var(--brand-font-body);
+  color: var(--color-text-primary);
+  background-color: var(--color-surface);
+  transition: border-color var(--transition-default), box-shadow var(--transition-default);
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 }
 
 .input-field input::placeholder {
@@ -213,12 +246,17 @@
 
 .cta-button {
   width: 100%;
+<<<<<<< HEAD
   border-radius: var(--radius-default);
   border: 1px solid transparent;
   height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
+=======
+  border-radius: 0;
+  border: 1px solid transparent;
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
   padding: 1rem 1.25rem;
   font-size: 0.9rem;
   letter-spacing: 0.18em;
@@ -242,8 +280,13 @@
 }
 
 .cta-button--secondary {
+<<<<<<< HEAD
   background-color: transparent;
   border: 1px solid var(--color-text-primary);
+=======
+  background-color: #ffffff;
+  border: 2px solid var(--color-text-primary);
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
   color: var(--color-text-primary);
 }
 
@@ -288,9 +331,14 @@
 .intro-image {
   width: 100%;
   height: auto;
+<<<<<<< HEAD
   max-height: 320px; /* Increased from 250px */
   object-fit: contain;
   margin: 0 auto;
+=======
+  object-fit: cover;
+  margin: 0;
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 }
 
 .intro-headline {
@@ -303,7 +351,10 @@
 
 .intro-subtext {
   margin: 0;
+<<<<<<< HEAD
   margin-top: 1rem; /* Move text down */
+=======
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
   font-size: 1rem;
   color: var(--color-text-secondary);
   line-height: 1.6;
@@ -318,6 +369,7 @@
   min-height: 100vh;
   background-color: var(--color-background);
   color: var(--color-text-primary);
+<<<<<<< HEAD
   padding: clamp(1rem, 3vw, 1.5rem);
   display: flex;
   flex-direction: column;
@@ -329,6 +381,12 @@
   max-height: 100vh;
   overflow: hidden;
   gap: 1.5rem;
+=======
+  padding: clamp(1.25rem, 4vw, 2rem);
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 }
 
 .landing-header {
@@ -428,9 +486,15 @@
 }
 
 .landing-profile {
+<<<<<<< HEAD
   width: 44px;
   height: 44px;
   border: 1.5px solid var(--color-text-primary);
+=======
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--color-text-primary);
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
   border-radius: 50%;
   background-color: #fff;
   display: inline-flex;
@@ -438,6 +502,7 @@
   justify-content: center;
   padding: 0;
   cursor: pointer;
+<<<<<<< HEAD
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
@@ -448,6 +513,13 @@
 .landing-profile img {
   width: 26px;
   height: 26px;
+=======
+}
+
+.landing-profile img {
+  width: 24px;
+  height: 24px;
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 }
 
 .landing-signout {
@@ -470,6 +542,7 @@
 
 .landing-body {
   display: grid;
+<<<<<<< HEAD
   gap: 1.25rem;
 }
 
@@ -477,16 +550,26 @@
   flex: 1;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
+=======
+  gap: 1.75rem;
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 }
 
 .landing-services {
   border: 1px solid var(--color-border);
   background-color: #fff;
+<<<<<<< HEAD
   padding: 1.25rem;
   display: grid;
   gap: 1rem;
   text-align: center;
   flex-shrink: 0;
+=======
+  padding: clamp(1.5rem, 4vw, 2rem);
+  display: grid;
+  gap: 1.5rem;
+  text-align: center;
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 }
 
 .landing-services h2 {
@@ -554,6 +637,7 @@
 .landing-announcements {
   border: 1px solid var(--color-border);
   background-color: #fff;
+<<<<<<< HEAD
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
@@ -572,6 +656,12 @@
     display: grid;
     gap: 1rem;
     padding-right: 0.5rem; /* Space for scrollbar */
+=======
+  padding: clamp(1.5rem, 4vw, 2rem);
+  display: grid;
+  gap: 1.2rem;
+  text-align: center;
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 }
 
 .landing-announcements h2 {

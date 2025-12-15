@@ -200,7 +200,11 @@ function NewUsers({ onBack }) {
           <div style={{ marginBottom: '20px' }}>
             <input
               type="text"
+<<<<<<< HEAD
               placeholder="Search by name, email, or MRR number..."
+=======
+              placeholder="Search by name, email, or MRR ID..."
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
@@ -282,7 +286,11 @@ function NewUsers({ onBack }) {
                         {userData.name || 'N/A'}
                       </h3>
                       <p style={{ margin: '5px 0', color: '#666' }}>
+<<<<<<< HEAD
                         <strong>MRR Number:</strong> {userData.mrrNumber || 'N/A'}
+=======
+                        <strong>MRR ID:</strong> {userData.mrrNumber || 'N/A'}
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
                       </p>
                       <p style={{ margin: '5px 0', color: '#666' }}>
                         <strong>Email:</strong> {userData.email || 'N/A'}

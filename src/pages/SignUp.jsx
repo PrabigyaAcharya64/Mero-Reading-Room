@@ -16,8 +16,11 @@ function SignUp({ onSwitch, onComplete }) {
   const [feedback, setFeedback] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(null);
+<<<<<<< HEAD
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+=======
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -102,6 +105,7 @@ function SignUp({ onSwitch, onComplete }) {
   };
 
   return (
+<<<<<<< HEAD
     <div className="center-screen">
        <div className="auth-card">
       <h1 className="auth-header__eyebrow auth-title">SIGN UP</h1>
@@ -112,11 +116,22 @@ function SignUp({ onSwitch, onComplete }) {
             type="text"
             name="name"
             placeholder="Full Name"
+=======
+    <div className="auth-card">
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <label className="input-field">
+          <span className="input-field__label">Full name</span>
+          <input
+            type="text"
+            name="name"
+            placeholder="Reader Name"
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             value={form.name}
             onChange={handleChange}
             autoComplete="name"
             required
           />
+<<<<<<< HEAD
         </div>
 
         <div className="input-field animate-enter animate-enter-delay-1">
@@ -124,11 +139,22 @@ function SignUp({ onSwitch, onComplete }) {
             type="email"
             name="email"
             placeholder="Email"
+=======
+        </label>
+
+        <label className="input-field">
+          <span className="input-field__label">Email</span>
+          <input
+            type="email"
+            name="email"
+            placeholder="reader@example.com"
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             value={form.email}
             onChange={handleChange}
             autoComplete="email"
             required
           />
+<<<<<<< HEAD
         </div>
 
         <div className="input-field animate-enter animate-enter-delay-2" style={{ position: 'relative' }}>
@@ -136,11 +162,22 @@ function SignUp({ onSwitch, onComplete }) {
             type={showPassword ? "text" : "password"}
             name="password"
             placeholder="Password (min. 8 chars, uppercase, lowercase, number...)"
+=======
+        </label>
+
+        <label className="input-field">
+          <span className="input-field__label">Password</span>
+          <input
+            type="password"
+            name="password"
+            placeholder="Create a password (min. 8 chars, uppercase, lowercase, number, special)"
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             value={form.password}
             onChange={handleChange}
             autoComplete="new-password"
             required
             minLength={8}
+<<<<<<< HEAD
             style={{ paddingRight: '45px' }}
           />
           <button
@@ -179,10 +216,16 @@ function SignUp({ onSwitch, onComplete }) {
           </button>
           {passwordStrength && !passwordStrength.valid && form.password && (
             <p style={{ fontSize: '12px', color: '#f44', marginTop: '5px', paddingLeft: '4px' }}>
+=======
+          />
+          {passwordStrength && !passwordStrength.valid && form.password && (
+            <p style={{ fontSize: '12px', color: '#f44', marginTop: '5px' }}>
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
               {passwordStrength.error}
             </p>
           )}
           {passwordStrength && passwordStrength.valid && (
+<<<<<<< HEAD
             <p style={{ fontSize: '12px', color: '#4a4', marginTop: '5px', paddingLeft: '4px' }}>
               ✓ Password strength: Good
             </p>
@@ -194,11 +237,26 @@ function SignUp({ onSwitch, onComplete }) {
             type={showConfirmPassword ? "text" : "password"}
             name="confirmPassword"
             placeholder="Confirm Password"
+=======
+            <p style={{ fontSize: '12px', color: '#4a4', marginTop: '5px' }}>
+              ✓ Password strength: Good
+            </p>
+          )}
+        </label>
+
+        <label className="input-field">
+          <span className="input-field__label">Confirm password</span>
+          <input
+            type="password"
+            name="confirmPassword"
+            placeholder="Re-enter your password"
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             value={form.confirmPassword}
             onChange={handleChange}
             autoComplete="new-password"
             required
             minLength={8}
+<<<<<<< HEAD
             style={{ paddingRight: '45px' }}
           />
           <button
@@ -237,10 +295,16 @@ function SignUp({ onSwitch, onComplete }) {
           </button>
           {form.confirmPassword && form.password !== form.confirmPassword && (
             <p style={{ fontSize: '12px', color: '#f44', marginTop: '5px', paddingLeft: '4px' }}>
+=======
+          />
+          {form.confirmPassword && form.password !== form.confirmPassword && (
+            <p style={{ fontSize: '12px', color: '#f44', marginTop: '5px' }}>
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
               Passwords do not match.
             </p>
           )}
           {form.confirmPassword && form.password === form.confirmPassword && form.password && (
+<<<<<<< HEAD
             <p style={{ fontSize: '12px', color: '#4a4', marginTop: '5px', paddingLeft: '4px' }}>
               ✓ Passwords match
             </p>
@@ -282,6 +346,38 @@ function SignUp({ onSwitch, onComplete }) {
 
     </div>
    </div>
+=======
+            <p style={{ fontSize: '12px', color: '#4a4', marginTop: '5px' }}>
+              ✓ Passwords match
+            </p>
+          )}
+        </label>
+
+        <button type="submit" className="cta-button cta-button--primary" disabled={submitting} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          {submitting ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'Create account'}
+        </button>
+
+        <button
+          type="button"
+          className="cta-button cta-button--secondary"
+          onClick={handleGoogle}
+          disabled={submitting}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+        >
+          {submitting ? <LoadingSpinner size="20" stroke="2.5" color="currentColor" /> : 'Sign up with Google'}
+        </button>
+      </form>
+
+      {feedback ? <p className="auth-feedback">{feedback}</p> : null}
+
+      <p className="auth-footnote">
+        Already have an account?{' '}
+        <button type="button" className="link-button" onClick={onSwitch}>
+          Log in instead
+        </button>
+      </p>
+    </div>
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
   );
 }
 

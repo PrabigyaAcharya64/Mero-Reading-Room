@@ -10,7 +10,10 @@ function Login({ onSwitch }) {
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetting, setResetting] = useState(false);
+<<<<<<< HEAD
   const [showPassword, setShowPassword] = useState(false);
+=======
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -117,6 +120,7 @@ function Login({ onSwitch }) {
   }
 
   return (
+<<<<<<< HEAD
     <div className="center-screen">
       <div className="auth-card">
         <h1 className="auth-header__eyebrow auth-title">LOGIN</h1>
@@ -127,11 +131,22 @@ function Login({ onSwitch }) {
             type="email"
             name="email"
             placeholder="Email"
+=======
+    <div className="auth-card">
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <label className="input-field">
+          <span className="input-field__label">Email</span>
+          <input
+            type="email"
+            name="email"
+            placeholder="reader@example.com"
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             value={form.email}
             onChange={handleChange}
             autoComplete="email"
             required
           />
+<<<<<<< HEAD
         </div>
 
         <div className="input-field animate-enter animate-enter-delay-2" style={{ position: 'relative' }}>
@@ -139,10 +154,21 @@ function Login({ onSwitch }) {
             type={showPassword ? "text" : "password"}
             name="password"
             placeholder="Password"
+=======
+        </label>
+
+        <label className="input-field">
+          <span className="input-field__label">Password</span>
+          <input
+            type="password"
+            name="password"
+            placeholder="Enter your password"
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             value={form.password}
             onChange={handleChange}
             autoComplete="current-password"
             required
+<<<<<<< HEAD
             style={{ paddingRight: '45px' }}
           />
           <button
@@ -221,6 +247,40 @@ function Login({ onSwitch }) {
       {feedback ? <p className="auth-feedback animate-enter">{feedback}</p> : null}
 
     </div>
+=======
+          />
+        </label>
+
+        <div className="auth-form__meta">
+          <button type="button" className="link-button" onClick={handleForgotPassword}>
+            Forgot password?
+          </button>
+        </div>
+
+        <button type="submit" className="cta-button cta-button--primary" disabled={submitting} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          {submitting ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'Log in'}
+        </button>
+
+        <button
+          type="button"
+          className="cta-button cta-button--secondary"
+          onClick={handleGoogle}
+          disabled={submitting}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+        >
+          {submitting ? <LoadingSpinner size="20" stroke="2.5" color="currentColor" /> : 'Continue with Google'}
+        </button>
+      </form>
+
+      {feedback ? <p className="auth-feedback">{feedback}</p> : null}
+
+      <p className="auth-footnote">
+        New here?{' '}
+        <button type="button" className="link-button" onClick={onSwitch}>
+          Create an account
+        </button>
+      </p>
+>>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
     </div>
   );
 }
