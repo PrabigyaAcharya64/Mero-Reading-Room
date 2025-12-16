@@ -34,7 +34,6 @@ export function NavigationRoot() {
         return () => clearTimeout(timer);
     }, []);
 
-<<<<<<< HEAD
     // Handle browser back button
     useEffect(() => {
         // Push initial state to history
@@ -59,8 +58,6 @@ export function NavigationRoot() {
         };
     }, []);
 
-=======
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
     useEffect(() => {
         if (user && !loading) {
             checkUserStatus();

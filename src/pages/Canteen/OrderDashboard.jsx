@@ -13,11 +13,6 @@ function OrderDashboard({ onBack }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'pending', 'completed', 'cancelled'
-<<<<<<< HEAD
-  const [currentPage, setCurrentPage] = useState(1);
-  const [ordersPerPage] = useState(10); // Show 10 orders per page
-=======
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 
   useEffect(() => {
     const ordersRef = collection(db, 'orders');
@@ -116,20 +111,6 @@ function OrderDashboard({ onBack }) {
     ? orders
     : orders.filter(order => order.status === filterStatus);
 
-<<<<<<< HEAD
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
-  const indexOfLastOrder = currentPage * ordersPerPage;
-  const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
-  const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
-
-  // Reset to page 1 when filter changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filterStatus]);
-
-=======
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
@@ -162,39 +143,6 @@ function OrderDashboard({ onBack }) {
           <button
             type="button"
             onClick={onBack}
-<<<<<<< HEAD
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 16px',
-              border: '1px solid #e0e0e0',
-              borderRadius: '8px',
-              background: '#fff',
-              fontSize: '15px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              color: '#000',
-              fontFamily: 'var(--brand-font-body)',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f5f5f5';
-              e.currentTarget.style.borderColor = '#d0d0d0';
-              e.currentTarget.style.transform = 'translateX(-2px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#fff';
-              e.currentTarget.style.borderColor = '#e0e0e0';
-              e.currentTarget.style.transform = 'translateX(0)';
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Back
-=======
             className="landing-signout"
             style={{
               border: '1px solid var(--color-text-primary)',
@@ -202,7 +150,6 @@ function OrderDashboard({ onBack }) {
             }}
           >
             ← Back
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
           </button>
         )}
         <p className="landing-greeting" style={{ flex: 1, textAlign: onBack ? 'center' : 'left' }}>
@@ -279,14 +226,8 @@ function OrderDashboard({ onBack }) {
               No orders found.
             </div>
           ) : (
-<<<<<<< HEAD
-            <>
-              <div style={{ display: 'grid', gap: '20px' }}>
-                {currentOrders.map((order) => (
-=======
             <div style={{ display: 'grid', gap: '20px' }}>
               {filteredOrders.map((order) => (
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
                 <div
                   key={order.id}
                   style={{
@@ -442,59 +383,6 @@ function OrderDashboard({ onBack }) {
                 </div>
               ))}
             </div>
-<<<<<<< HEAD
-
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: '10px',
-                marginTop: '30px',
-                paddingTop: '20px',
-                borderTop: '1px solid #ddd'
-              }}>
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  style={{
-                    padding: '10px 20px',
-                    backgroundColor: currentPage === 1 ? '#ccc' : '#666',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                    fontSize: '14px'
-                  }}
-                >
-                  ← Previous
-                </button>
-                
-                <span style={{ fontSize: '14px', color: '#666' }}>
-                  Page {currentPage} of {totalPages}
-                </span>
-                
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  style={{
-                    padding: '10px 20px',
-                    backgroundColor: currentPage === totalPages ? '#ccc' : '#666',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                    fontSize: '14px'
-                  }}
-                >
-                  Next →
-                </button>
-              </div>
-            )}
-          </>
-=======
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
           )}
         </section>
       </main>

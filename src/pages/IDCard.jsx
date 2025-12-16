@@ -6,11 +6,7 @@ import { doc, getDoc } from 'firebase/firestore';
 const logoUrl = new URL('../assets/logo.png', import.meta.url).href;
 
 function IDCard({ onBack }) {
-<<<<<<< HEAD
-  const { user, signOutUser } = useAuth();
-=======
   const { user } = useAuth();
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
@@ -19,17 +15,6 @@ function IDCard({ onBack }) {
     fetchUserData();
   }, [user]);
 
-<<<<<<< HEAD
-  const handleSignOut = async () => {
-    try {
-      await signOutUser();
-    } catch (error) {
-      console.error('Sign out error:', error);
-    }
-  };
-
-=======
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
   const fetchUserData = async () => {
     if (!user) {
       setLoading(false);
@@ -165,50 +150,6 @@ function IDCard({ onBack }) {
   return (
     <div className="landing-screen">
       <header className="landing-header">
-<<<<<<< HEAD
-        {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 16px',
-              border: '1px solid #e0e0e0',
-              borderRadius: '8px',
-              background: '#fff',
-              fontSize: '15px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              color: '#000',
-              fontFamily: 'var(--brand-font-body)',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f5f5f5';
-              e.currentTarget.style.borderColor = '#d0d0d0';
-              e.currentTarget.style.transform = 'translateX(-2px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#fff';
-              e.currentTarget.style.borderColor = '#e0e0e0';
-              e.currentTarget.style.transform = 'translateX(0)';
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Back
-          </button>
-        )}
-        <p className="landing-greeting">My ID Card</p>
-        <div className="landing-status">
-          <button type="button" className="landing-signout" onClick={handleSignOut}>
-            Sign out
-          </button>
-=======
         <p className="landing-greeting">My ID Card</p>
         <div className="landing-status">
           {onBack && (
@@ -229,7 +170,6 @@ function IDCard({ onBack }) {
               ← Back
             </button>
           )}
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
         </div>
       </header>
 
@@ -242,45 +182,6 @@ function IDCard({ onBack }) {
         <div
           id="id-card"
           style={{
-<<<<<<< HEAD
-            width: '350px',
-            backgroundColor: '#ffffff',
-            borderRadius: '16px',
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
-            padding: '25px 20px',
-            border: '2px solid #ddd',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            fontFamily: 'Arial, sans-serif',
-            boxSizing: 'border-box',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Left Accent Bar */}
-          <div style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: '12px',
-            backgroundColor: '#003B73',
-          }} />
-
-          {/* Right Accent Bar */}
-          <div style={{
-            position: 'absolute',
-            right: 0,
-            top: 0,
-            bottom: 0,
-            width: '12px',
-            backgroundColor: '#003B73',
-          }} />
-
-          {/* Logo */}
-          <div style={{ marginBottom: '5px' }}>
-=======
             width: '400px',
             height: '260px',
             backgroundColor: '#ffffff',
@@ -329,189 +230,18 @@ function IDCard({ onBack }) {
                 986-7666655
               </p>
             </div>
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             <img
               src={logoUrl}
               alt="MRR Logo"
               style={{
-<<<<<<< HEAD
-                width: '90px',
-                height: '60px',
-                objectFit: 'contain',
-=======
                 width: '48px',
                 height: '48px',
                 objectFit: 'contain',
                 flexShrink: 0,
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
               }}
             />
           </div>
 
-<<<<<<< HEAD
-          {/* Location */}
-          <p style={{
-            margin: 0,
-            fontSize: '13px',
-            color: '#888',
-            marginTop: '5px',
-            marginBottom: '20px',
-            fontStyle: 'italic',
-            textAlign: 'center',
-          }}>
-            Mid Baneshwor, Kathmandu
-          </p>
-
-          {/* Photo */}
-          <div style={{ marginBottom: '15px' }}>
-            {userData.photoUrl ? (
-              <img
-                src={userData.photoUrl}
-                alt={userData.name || 'User'}
-                style={{
-                  width: '180px',
-                  height: '180px',
-                  objectFit: 'cover',
-                  borderRadius: '12px',
-                  border: '3px solid #003B73',
-                  display: 'block',
-                }}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextElementSibling.style.display = 'flex';
-                }}
-              />
-            ) : null}
-            <div
-              style={{
-                width: '180px',
-                height: '180px',
-                backgroundColor: '#f5f5f5',
-                borderRadius: '12px',
-                border: '3px solid #003B73',
-                display: userData.photoUrl ? 'none' : 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#999',
-                fontSize: '30px',
-                position: userData.photoUrl ? 'absolute' : 'static',
-              }}
-            >
-              👤
-            </div>
-          </div>
-
-          {/* Name */}
-          <h2 style={{
-            margin: 0,
-            fontSize: '22px',
-            fontWeight: '700',
-            color: '#003B73',
-            marginTop: '12px',
-            marginBottom: '8px',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            textAlign: 'center',
-          }}>
-            {userData.name || 'N/A'}
-          </h2>
-
-          {/* Info Rows */}
-          <div style={{
-            width: '85%',
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            marginTop: '6px',
-            marginBottom: '6px',
-            padding: '8px 12px',
-            borderRadius: '8px',
-          }}>
-            <span style={{
-              fontSize: '14px',
-              fontWeight: '700',
-              color: '#555',
-              textTransform: 'uppercase',
-              letterSpacing: '0.3px',
-            }}>MRR ID:</span>
-            <span style={{
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#222',
-            }}>{userData.mrrNumber || 'N/A'}</span>
-          </div>
-
-          <div style={{
-            width: '85%',
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            marginTop: '6px',
-            marginBottom: '6px',
-            padding: '8px 12px',
-            borderRadius: '8px',
-          }}>
-            <span style={{
-              fontSize: '14px',
-              fontWeight: '700',
-              color: '#555',
-              textTransform: 'uppercase',
-              letterSpacing: '0.3px',
-            }}>Blood:</span>
-            <span style={{
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#222',
-            }}>{userData.bloodGroup || 'N/A'}</span>
-          </div>
-
-          <div style={{
-            width: '85%',
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            marginTop: '6px',
-            marginBottom: '6px',
-            padding: '8px 12px',
-            borderRadius: '8px',
-          }}>
-            <span style={{
-              fontSize: '14px',
-              fontWeight: '700',
-              color: '#555',
-              textTransform: 'uppercase',
-              letterSpacing: '0.3px',
-            }}>Phone:</span>
-            <span style={{
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#222',
-            }}>{userData.phoneNumber || 'N/A'}</span>
-          </div>
-
-          <div style={{
-            width: '85%',
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            marginTop: '6px',
-            marginBottom: '6px',
-            padding: '8px 12px',
-            borderRadius: '8px',
-          }}>
-            <span style={{
-              fontSize: '14px',
-              fontWeight: '700',
-              color: '#555',
-              textTransform: 'uppercase',
-              letterSpacing: '0.3px',
-            }}>Email:</span>
-            <span style={{
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#222',
-            }}>{userData.email || 'N/A'}</span>
-=======
           {/* Main Content */}
           <div style={{ 
             display: 'flex', 
@@ -686,7 +416,6 @@ function IDCard({ onBack }) {
             }}>
               This is an official identification card
             </p>
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
           </div>
         </div>
 
@@ -696,24 +425,6 @@ function IDCard({ onBack }) {
           disabled={downloading}
           style={{
             marginTop: '30px',
-<<<<<<< HEAD
-            padding: '16px 32px',
-            backgroundColor: downloading ? '#999' : '#000',
-            color: 'white',
-            border: 'none',
-            borderRadius: '10px',
-            cursor: downloading ? 'not-allowed' : 'pointer',
-            fontSize: '18px',
-            fontWeight: '700',
-            letterSpacing: '0.5px',
-            transition: 'all 0.3s ease',
-            width: '100%',
-            maxWidth: '350px',
-          }}
-          onMouseOver={(e) => {
-            if (!downloading) {
-              e.target.style.backgroundColor = '#1a1a1a';
-=======
             padding: '12px 32px',
             backgroundColor: downloading ? '#999' : '#0066cc',
             color: 'white',
@@ -729,25 +440,16 @@ function IDCard({ onBack }) {
             if (!downloading) {
               e.target.style.backgroundColor = '#0052a3';
               e.target.style.transform = 'translateY(-2px)';
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             }
           }}
           onMouseOut={(e) => {
             if (!downloading) {
-<<<<<<< HEAD
-              e.target.style.backgroundColor = '#000';
-            }
-          }}
-        >
-          {downloading ? 'Generating...' : 'Share'}
-=======
               e.target.style.backgroundColor = '#0066cc';
               e.target.style.transform = 'translateY(0)';
             }
           }}
         >
           {downloading ? 'Generating...' : 'Download ID Card'}
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
         </button>
 
         <p style={{ 

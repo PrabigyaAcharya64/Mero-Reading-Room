@@ -1,19 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
-<<<<<<< HEAD
-=======
 import UserManagement from './UserManagement';
 import HostelManagement from './HostelManagement';
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 import NewUsers from './NewUsers';
 import CanteenLanding from '../Canteen/CanteenLanding';
 import AdminMessages from './AdminMessages';
 import CreateAnnouncement from './CreateAnnouncement';
-<<<<<<< HEAD
-import ReadingRoomManagement from './ReadingRoomManagement';
-=======
 import ReadingRoomManagement from '../readingroom/ReadingRoomManagement';
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 import { collection, query, where, onSnapshot, deleteDoc, doc, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
@@ -22,11 +15,7 @@ const profileIcon =
 const foodIcon = new URL('../assets/food.svg', import.meta.url).href;
 const contactIcon = new URL('../../assets/contact.svg', import.meta.url).href;
 const userManagementIcon = new URL('../../assets/usermanagement.svg', import.meta.url).href;
-<<<<<<< HEAD
-const newUserIcon = new URL('../../assets/newuser.svg', import.meta.url).href;
-=======
 const hostelIcon = new URL('../../assets/hostel.svg', import.meta.url).href;
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 const reportsIcon = new URL('../../assets/reports.svg', import.meta.url).href;
 const canteenIcon = new URL('../../assets/canteen.svg', import.meta.url).href;
 const readingRoomIcon = new URL('../../assets/readingroom.svg', import.meta.url).href;
@@ -76,10 +65,6 @@ function AdminLanding() {
     }
   };
 
-<<<<<<< HEAD
-  if (currentView === 'new-users') {
-    return <NewUsers onBack={() => setCurrentView('dashboard')} />;
-=======
   if (currentView === 'user-management') {
     return <UserManagement onBack={() => setCurrentView('dashboard')} onNavigate={setCurrentView} />;
   }
@@ -90,7 +75,6 @@ function AdminLanding() {
 
   if (currentView === 'new-users') {
     return <NewUsers onBack={() => setCurrentView('user-management')} />;
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
   }
 
   if (currentView === 'canteen') {
@@ -129,15 +113,11 @@ function AdminLanding() {
         <section className="landing-services">
           <h2>Admin Panel</h2>
           <div className="landing-services__grid">
-<<<<<<< HEAD
-            <button type="button" className="landing-service-card">
-=======
             <button
               type="button"
               className="landing-service-card"
               onClick={() => setCurrentView('user-management')}
             >
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
               <span className="landing-service-card__icon">
                 <img src={userManagementIcon} alt="" aria-hidden="true" />
               </span>
@@ -146,21 +126,12 @@ function AdminLanding() {
             <button
               type="button"
               className="landing-service-card"
-<<<<<<< HEAD
-              onClick={() => setCurrentView('new-users')}
-            >
-              <span className="landing-service-card__icon">
-                <img src={newUserIcon} alt="" aria-hidden="true" />
-              </span>
-              <span className="landing-service-card__label">New Users</span>
-=======
               onClick={() => setCurrentView('hostel')}
             >
               <span className="landing-service-card__icon">
                 <img src={hostelIcon} alt="" aria-hidden="true" />
               </span>
               <span className="landing-service-card__label">Hostel</span>
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             </button>
             <button
               type="button"
@@ -301,4 +272,3 @@ function AdminLanding() {
 }
 
 export default AdminLanding;
-

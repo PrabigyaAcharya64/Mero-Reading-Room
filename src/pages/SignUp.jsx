@@ -16,11 +16,8 @@ function SignUp({ onSwitch, onComplete }) {
   const [feedback, setFeedback] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(null);
-<<<<<<< HEAD
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-=======
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -105,18 +102,6 @@ function SignUp({ onSwitch, onComplete }) {
   };
 
   return (
-<<<<<<< HEAD
-    <div className="center-screen">
-       <div className="auth-card">
-      <h1 className="auth-header__eyebrow auth-title">SIGN UP</h1>
-      
-      <form className="auth-form" onSubmit={handleSubmit}>
-        <div className="input-field animate-enter animate-enter-delay-1">
-          <input
-            type="text"
-            name="name"
-            placeholder="Full Name"
-=======
     <div className="auth-card">
       <form className="auth-form" onSubmit={handleSubmit}>
         <label className="input-field">
@@ -125,21 +110,11 @@ function SignUp({ onSwitch, onComplete }) {
             type="text"
             name="name"
             placeholder="Reader Name"
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             value={form.name}
             onChange={handleChange}
             autoComplete="name"
             required
           />
-<<<<<<< HEAD
-        </div>
-
-        <div className="input-field animate-enter animate-enter-delay-1">
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-=======
         </label>
 
         <label className="input-field">
@@ -148,21 +123,11 @@ function SignUp({ onSwitch, onComplete }) {
             type="email"
             name="email"
             placeholder="reader@example.com"
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             value={form.email}
             onChange={handleChange}
             autoComplete="email"
             required
           />
-<<<<<<< HEAD
-        </div>
-
-        <div className="input-field animate-enter animate-enter-delay-2" style={{ position: 'relative' }}>
-          <input
-            type={showPassword ? "text" : "password"}
-            name="password"
-            placeholder="Password (min. 8 chars, uppercase, lowercase, number...)"
-=======
         </label>
 
         <label className="input-field">
@@ -171,73 +136,18 @@ function SignUp({ onSwitch, onComplete }) {
             type="password"
             name="password"
             placeholder="Create a password (min. 8 chars, uppercase, lowercase, number, special)"
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             value={form.password}
             onChange={handleChange}
             autoComplete="new-password"
             required
             minLength={8}
-<<<<<<< HEAD
-            style={{ paddingRight: '45px' }}
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            style={{
-              position: 'absolute',
-              right: '12px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--text-secondary, #888)',
-              transition: 'color 0.2s ease'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary, #333)'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary, #888)'}
-            aria-label={showPassword ? "Hide password" : "Show password"}
-          >
-            {showPassword ? (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                <line x1="1" y1="1" x2="23" y2="23"/>
-              </svg>
-            ) : (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-            )}
-          </button>
-          {passwordStrength && !passwordStrength.valid && form.password && (
-            <p style={{ fontSize: '12px', color: '#f44', marginTop: '5px', paddingLeft: '4px' }}>
-=======
           />
           {passwordStrength && !passwordStrength.valid && form.password && (
             <p style={{ fontSize: '12px', color: '#f44', marginTop: '5px' }}>
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
               {passwordStrength.error}
             </p>
           )}
           {passwordStrength && passwordStrength.valid && (
-<<<<<<< HEAD
-            <p style={{ fontSize: '12px', color: '#4a4', marginTop: '5px', paddingLeft: '4px' }}>
-              ✓ Password strength: Good
-            </p>
-          )}
-        </div>
-
-        <div className="input-field animate-enter animate-enter-delay-2" style={{ position: 'relative' }}>
-          <input
-            type={showConfirmPassword ? "text" : "password"}
-            name="confirmPassword"
-            placeholder="Confirm Password"
-=======
             <p style={{ fontSize: '12px', color: '#4a4', marginTop: '5px' }}>
               ✓ Password strength: Good
             </p>
@@ -250,103 +160,18 @@ function SignUp({ onSwitch, onComplete }) {
             type="password"
             name="confirmPassword"
             placeholder="Re-enter your password"
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             value={form.confirmPassword}
             onChange={handleChange}
             autoComplete="new-password"
             required
             minLength={8}
-<<<<<<< HEAD
-            style={{ paddingRight: '45px' }}
-          />
-          <button
-            type="button"
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            style={{
-              position: 'absolute',
-              right: '12px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--text-secondary, #888)',
-              transition: 'color 0.2s ease'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary, #333)'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary, #888)'}
-            aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-          >
-            {showConfirmPassword ? (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                <line x1="1" y1="1" x2="23" y2="23"/>
-              </svg>
-            ) : (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-            )}
-          </button>
-          {form.confirmPassword && form.password !== form.confirmPassword && (
-            <p style={{ fontSize: '12px', color: '#f44', marginTop: '5px', paddingLeft: '4px' }}>
-=======
           />
           {form.confirmPassword && form.password !== form.confirmPassword && (
             <p style={{ fontSize: '12px', color: '#f44', marginTop: '5px' }}>
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
               Passwords do not match.
             </p>
           )}
           {form.confirmPassword && form.password === form.confirmPassword && form.password && (
-<<<<<<< HEAD
-            <p style={{ fontSize: '12px', color: '#4a4', marginTop: '5px', paddingLeft: '4px' }}>
-              ✓ Passwords match
-            </p>
-          )}
-        </div>
-
-        <div className="animate-enter animate-enter-delay-3">
-            <button type="submit" className="cta-button cta-button--primary" disabled={submitting} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-            {submitting ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'SIGN UP'}
-            </button>
-        </div>
-
-        <div className="animate-enter animate-enter-delay-3">
-             <button
-                type="button"
-                className="cta-button cta-button--secondary"
-                onClick={handleGoogle}
-                disabled={submitting}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '12px' }}
-                >
-                {submitting ? <LoadingSpinner size="20" stroke="2.5" color="currentColor" /> : 'Sign up with Google'}
-            </button>
-        </div>
-
-        <div className="animate-enter animate-enter-delay-3">
-             <button
-                type="button"
-                className="cta-button cta-button--secondary"
-                onClick={onSwitch}
-                disabled={submitting}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '0px' }}
-                >
-                LOGIN
-            </button>
-        </div>
-      </form>
-
-      {feedback ? <p className="auth-feedback animate-enter">{feedback}</p> : null}
-
-    </div>
-   </div>
-=======
             <p style={{ fontSize: '12px', color: '#4a4', marginTop: '5px' }}>
               ✓ Passwords match
             </p>
@@ -377,7 +202,6 @@ function SignUp({ onSwitch, onComplete }) {
         </button>
       </p>
     </div>
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
   );
 }
 

@@ -68,44 +68,8 @@ function Contact({ onBack }) {
     return (
         <div className="landing-screen">
             <header className="landing-header">
-<<<<<<< HEAD
-                <button 
-                    onClick={onBack} 
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '10px 16px',
-                        border: '1px solid #e0e0e0',
-                        borderRadius: '8px',
-                        background: '#fff',
-                        fontSize: '15px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        color: '#000',
-                        fontFamily: 'var(--brand-font-body)',
-                        transition: 'all 0.2s ease',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                    }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f5f5f5';
-                        e.currentTarget.style.borderColor = '#d0d0d0';
-                        e.currentTarget.style.transform = 'translateX(-2px)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#fff';
-                        e.currentTarget.style.borderColor = '#e0e0e0';
-                        e.currentTarget.style.transform = 'translateX(0)';
-                    }}
-                >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    Back
-=======
                 <button onClick={onBack} className="landing-signout" style={{ border: 'none', paddingLeft: 0 }}>
                     ← Back
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
                 </button>
                 <h1 style={{ margin: 0, fontFamily: 'var(--brand-font-serif)', fontSize: '1.5rem' }}>Contact Us</h1>
                 <div style={{ width: '40px' }}></div> {/* Spacer for alignment */}

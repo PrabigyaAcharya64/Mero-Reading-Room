@@ -34,11 +34,7 @@ function AdditionalDetails({ onComplete }) {
       setFormData(prev => ({ ...prev, name: nameFromEmail }));
     }
 
-<<<<<<< HEAD
     // Generate MRR number
-=======
-    // Generate MRR ID
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
     generateMrrNumber();
   }, [user]);
 
@@ -64,13 +60,8 @@ function AdditionalDetails({ onComplete }) {
       setMrrNumber(nextMrrNumber);
       setGeneratingMrr(false);
     } catch (error) {
-<<<<<<< HEAD
       console.error('Error generating MRR number:', error);
       // Fallback: use timestamp-based MRR number
-=======
-      console.error('Error generating MRR ID:', error);
-      // Fallback: use timestamp-based MRR ID
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
       const timestamp = Date.now().toString().slice(-6);
       setMrrNumber(`MRR${timestamp}`);
       setGeneratingMrr(false);
@@ -225,11 +216,7 @@ function AdditionalDetails({ onComplete }) {
   };
 
   if (generatingMrr) {
-<<<<<<< HEAD
     return <FullScreenLoader text="Generating your MRR number..." />;
-=======
-    return <FullScreenLoader text="Generating your MRR ID..." />;
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
   }
 
   return (
@@ -254,11 +241,7 @@ function AdditionalDetails({ onComplete }) {
           </label>
 
           <label className="input-field">
-<<<<<<< HEAD
             <span className="input-field__label">MRR Number</span>
-=======
-            <span className="input-field__label">MRR ID</span>
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             <input
               type="text"
               value={mrrNumber}

@@ -3,27 +3,16 @@ import { useAuth } from '../auth/AuthProvider';
 import CanteenClientLanding from './Canteen/CanteenClientLanding';
 import IDCard from './IDCard';
 import Contact from './Contact';
-<<<<<<< HEAD
-import ReadingRoomEnrollment from './ReadingRoomEnrollment';
-import ReadingRoomOptions from './ReadingRoomOptions';
-import ReadingRoomBuy from './ReadingRoomBuy';
-import ReadingRoomDashboard from './ReadingRoomDashboard';
-=======
 import ReadingRoomEnrollment from './readingroom/ReadingRoomEnrollment';
 import ReadingRoomOptions from './readingroom/ReadingRoomOptions';
 import ReadingRoomBuy from './readingroom/ReadingRoomBuy';
 import ReadingRoomDashboard from './readingroom/ReadingRoomDashboard';
 import Discussion from './discussion/Discussion';
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 import { collection, query, where, onSnapshot, Timestamp, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 const profileIcon =
-<<<<<<< HEAD
-  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSIxNiIgY3k9IjExIiByPSI1IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMS44IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNMjQgMjVDMjQgMjEuNjg2MyAyMC40MTgzIDE5IDE2IDE5QzExLjU4MTcgMTkgOCAyMS42ODYzIDggMjUiIHN0cm9rZT0iIzExMSIgc3Ryb2tlLXdpZHRoPSIxLjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K';
-=======
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0MyAyOCB0M3M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 const readingRoomIcon = new URL('../assets/readingroom.svg', import.meta.url).href;
 const hostelIcon = new URL('../assets/hostel.svg', import.meta.url).href;
 const foodIcon = new URL('../assets/food.svg', import.meta.url).href;
@@ -51,31 +40,19 @@ function LandingPage() {
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
         // Check if user has completed registration and has an active membership
         if (userData.registrationCompleted && userData.currentSeat) {
           // Check if membership is still valid
           const isExpired = userData.nextPaymentDue && new Date(userData.nextPaymentDue) < new Date();
-<<<<<<< HEAD
-          
-=======
 
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
           if (!isExpired) {
             setCurrentView('readingroom-dashboard');
             return;
           }
         }
       }
-<<<<<<< HEAD
-      
-=======
 
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
       // If no valid membership or registration not completed, go to options
       setCurrentView('readingroom-options');
     } catch (error) {
@@ -172,10 +149,6 @@ function LandingPage() {
     return <ReadingRoomDashboard onBack={() => setCurrentView('landing')} />;
   }
 
-<<<<<<< HEAD
-  return (
-    <div className="landing-screen landing-screen--fixed">
-=======
   // Show Discussion
   if (currentView === 'discussion') {
     return <Discussion onBack={() => setCurrentView('landing')} />;
@@ -183,7 +156,6 @@ function LandingPage() {
 
   return (
     <div className="landing-screen">
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
       <header className="landing-header">
         <p className="landing-greeting">
           Hey <span>{displayName}</span>!
@@ -231,8 +203,6 @@ function LandingPage() {
               </span>
               <span className="landing-service-card__label">Hostel</span>
             </button>
-<<<<<<< HEAD
-=======
             <button type="button" className="landing-service-card" onClick={() => setCurrentView('discussion')}>
               <span className="landing-service-card__icon">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -242,7 +212,6 @@ function LandingPage() {
               </span>
               <span className="landing-service-card__label">Discussion</span>
             </button>
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             <button type="button" className="landing-service-card" onClick={() => setCurrentView('canteen')}>
               <span className="landing-service-card__icon">
                 <img src={foodIcon} alt="" aria-hidden="true" />
@@ -265,11 +234,7 @@ function LandingPage() {
               No notices at this time.
             </div>
           ) : (
-<<<<<<< HEAD
-            <div className="landing-announcements__list">
-=======
             <div style={{ display: 'grid', gap: '1rem' }}>
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
               {announcements.map(announcement => (
                 <div
                   key={announcement.id}
@@ -301,4 +266,3 @@ function LandingPage() {
 }
 
 export default LandingPage;
-

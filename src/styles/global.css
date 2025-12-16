@@ -2,20 +2,6 @@
 
 :root {
   color-scheme: light;
-<<<<<<< HEAD
-  --brand-font-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --brand-font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --brand-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --color-background: #ffffff;
-  --color-surface: #ffffff;
-  --color-border: #e1e1e1;
-  --color-text-primary: #000000;
-  --color-text-secondary: #666666;
-  --color-accent: #000000;
-  --color-accent-dark: #111111;
-  --color-muted: #999999;
-  --color-input-bg: #F1F1F1;
-=======
   --brand-font-serif: 'Playfair Display', 'Times New Roman', serif;
   --brand-font-body: 'Source Serif 4', 'Georgia', serif;
   --brand-font-sans: 'Source Sans 3', 'Arial', sans-serif;
@@ -27,17 +13,12 @@
   --color-accent: #000000;
   --color-accent-dark: #111111;
   --color-muted: #4d4d4d;
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
   --layout-max-width: 1120px;
   --stack-spacing-sm: 0.75rem;
   --stack-spacing-md: 1.5rem;
   --stack-spacing-lg: 2.5rem;
-<<<<<<< HEAD
-  --transition-default: 200ms ease-in-out;
-  --radius-default: 6px;
-=======
   --transition-default: 180ms ease-in-out;
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
+  --radius-default: 6px;
 }
 
 *,
