@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
-import { collection, query, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import EnhancedBackButton from '../../components/EnhancedBackButton';
 
 const profileIcon =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
@@ -128,23 +129,10 @@ function ClientOrderHistory({ onBack }) {
 
       <main className="landing-body" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
         {onBack && (
-          <div style={{ marginBottom: '20px' }}>
-            <button
-              onClick={onBack}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#666',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              ← Back to Canteen
-            </button>
-          </div>
-        )}
+          <div className="history-header" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
+        <EnhancedBackButton onBack={onBack} />
+        <h2 style={{ margin: '0 0 0 20px', fontSize: '24px' }}>My Orders</h2>
+      </div>  )}
 
         <section>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>

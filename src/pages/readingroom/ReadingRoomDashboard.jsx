@@ -3,6 +3,7 @@ import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { doc, getDoc, collection, getDocs, onSnapshot, query, where } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import EnhancedBackButton from '../../components/EnhancedBackButton';
 
 // SVG Icon Components (Reused from ReadingRoomManagement)
 const SeatIcon = ({ occupied, isMySeat, size = 40 }) => (
@@ -141,9 +142,7 @@ function ReadingRoomDashboard({ onBack }) {
                         ? 'Your reading room membership has expired. Please renew to continue accessing the reading room.'
                         : 'You don\'t have an active reading room membership.'}
                 </p>
-                <button onClick={onBack} style={{ marginTop: '20px', padding: '10px 20px', cursor: 'pointer' }}>
-                    Go Back
-                </button>
+                <EnhancedBackButton onBack={onBack} />
             </div>
         );
     }
@@ -158,166 +157,155 @@ function ReadingRoomDashboard({ onBack }) {
 
     return (
         <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5', padding: '20px' }}>
-            {/* Back Button */}
-            {onBack && (
-                <button
-                    onClick={onBack}
-                    style={{
-                        marginBottom: '20px',
-                        padding: '8px 16px',
-                        backgroundColor: '#333',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        display: 'block',
-                        maxWidth: '1200px',
-                        margin: '0 auto 20px auto'
-                    }}
-                >
-                    ← Back to Home
-                </button>
-            )}
+            {/* Standard Header */}
+            <header className="landing-header" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+                    {onBack && <EnhancedBackButton onBack={onBack} />}
+                </div>
+                
+                <p className="landing-greeting" style={{ flex: 1, textAlign: 'center', margin: 0 }}>Reading Room</p>
+                
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+                     {/* Placeholder for SignOut if needed, or empty to balance */}
+                </div>
+            </header>
 
-            <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: '300px 1fr', gap: '20px' }}>
-                {/* Sidebar Info */}
-                <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '8px', height: 'fit-content', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                    <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
-                        My Membership
-                    </h2>
-
-                    <div style={{ marginBottom: '20px' }}>
-                        <div style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>Assigned Seat</div>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1976d2' }}>
-                            {userData.currentSeat.seatLabel}
-                        </div>
-                        <div style={{ fontSize: '14px', color: '#333' }}>
-                            {userData.currentSeat.roomName}
-                        </div>
+            <div style={{ maxWidth: '600px', margin: '0 auto', backgroundColor: 'white', borderRadius: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', overflow: 'hidden', padding: '24px' }}>
+                
+                {/* Top Info Section */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid #f5f5f5' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ fontSize: '12px', color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: 'var(--brand-font-body)' }}>Assigned Seat</span>
+                        <span style={{ fontSize: '18px', color: '#000', fontFamily: 'var(--brand-font-serif)', fontWeight: 'bold' }}>{userData.currentSeat.seatLabel}</span>
                     </div>
-
-                    <div style={{ marginBottom: '20px' }}>
-                        <div style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>Membership Status</div>
-                        <div style={{
-                            display: 'inline-block',
-                            padding: '4px 12px',
-                            backgroundColor: '#e8f5e9',
-                            color: '#2e7d32',
-                            borderRadius: '12px',
-                            fontSize: '14px',
-                            fontWeight: '600'
-                        }}>
-                            Active
-                        </div>
-                    </div>
-
-                    <div style={{ marginBottom: '20px' }}>
-                        <div style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>Expires On</div>
-                        <div style={{ fontSize: '16px', fontWeight: '600' }}>
-                            {expiryDate}
-                        </div>
-                        <div style={{ fontSize: '13px', color: daysLeft < 5 ? '#c62828' : '#666', marginTop: '5px' }}>
-                            ({daysLeft} days remaining)
-                        </div>
-                    </div>
-
-                    <div style={{ marginTop: '30px', paddingTop: '20px', borderTop: '1px solid #eee' }}>
-                        <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>Rules</h3>
-                        <ul style={{ fontSize: '13px', color: '#666', paddingLeft: '20px', lineHeight: '1.6' }}>
-                            <li>Keep mobile on silent</li>
-                            <li>No food at study table</li>
-                            <li>Maintain silence</li>
-                        </ul>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
+                         <span style={{ fontSize: '12px', color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: 'var(--brand-font-body)' }}>Room Name</span>
+                         <span style={{ fontSize: '18px', color: '#000', fontFamily: 'var(--brand-font-serif)', fontWeight: 'bold' }}>{userData.currentSeat.roomName}</span>
                     </div>
                 </div>
 
-                {/* Room Layout */}
-                <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-                    <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '20px' }}>
-                        Room Layout
-                    </h2>
+                {/* Room Layout Title */}
+                <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                    <span style={{ fontSize: '14px', color: '#444', fontFamily: 'var(--brand-font-body)', textTransform: 'uppercase', letterSpacing: '1px' }}>Room Layout</span>
+                </div>
 
+                {/* Room Map Container */}
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     {roomData ? (
                         <div style={{
                             position: 'relative',
                             width: '100%',
-                            height: '600px',
+                            height: 'auto',
+                            aspectRatio: `${roomData.width} / ${roomData.height}`,
                             backgroundColor: '#fafafa',
+                            borderRadius: '12px',
                             border: '1px solid #eee',
-                            borderRadius: '4px',
-                            overflow: 'auto'
+                            overflow: 'hidden',
+                            marginBottom: '20px'
                         }}>
-                            <div style={{
-                                position: 'relative',
+                             {/* Scaling Container: We use CSS transform to scale the map to fit the container width */}
+                             <div style={{
                                 width: roomData.width,
                                 height: roomData.height,
-                                margin: '0 auto'
+                                transform: `scale(${Math.min(1, 550 / roomData.width)})`, // Basic fallback scaling, ideally we'd use useResizeObserver
+                                transformOrigin: 'top left',
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
                             }}>
-                                {(roomData.elements || roomData.seats || []).map(element => {
-                                    const isSeat = !element.type || element.type === 'seat';
-                                    const isMySeat = isSeat && element.id === userData.currentSeat.seatId;
-                                    const isOccupied = isSeat && assignments.some(a => a.seatId === element.id);
+                                <div style={{ position: 'relative', width: roomData.width, height: roomData.height }}>
+                                    {(roomData.elements || roomData.seats || []).map(element => {
+                                        const isSeat = !element.type || element.type === 'seat';
+                                        const isMySeat = isSeat && element.id === userData.currentSeat.seatId;
+                                        const isOccupied = isSeat && assignments.some(a => a.seatId === element.id);
 
-                                    return (
-                                        <div
-                                            key={element.id}
-                                            style={{
-                                                position: 'absolute',
-                                                left: element.x,
-                                                top: element.y,
-                                                width: element.width,
-                                                height: element.height,
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                pointerEvents: 'none' // Read-only
-                                            }}
-                                        >
-                                            {(!element.type || element.type === 'seat') && (
-                                                <>
-                                                    <SeatIcon
-                                                        size={Math.min(element.width, element.height)}
-                                                        occupied={isOccupied}
-                                                        isMySeat={isMySeat}
-                                                    />
-                                                    <span style={{
-                                                        fontSize: '12px',
-                                                        marginTop: '2px',
-                                                        fontWeight: isMySeat ? 'bold' : 'normal',
-                                                        color: isMySeat ? '#1976d2' : '#666'
-                                                    }}>
-                                                        {element.label}
-                                                    </span>
-                                                    {isMySeat && (
-                                                        <div style={{
-                                                            position: 'absolute',
-                                                            top: -25,
-                                                            backgroundColor: '#1976d2',
-                                                            color: 'white',
-                                                            padding: '2px 8px',
-                                                            borderRadius: '4px',
+                                        // Calculate scale factor for responsive web:
+                                        // On web, we might just let it be absolute pixels if user has space, or scale it. 
+                                        // For simplicity in this text-replace, we assume the map fits or scrolls if huge, 
+                                        // but the styles above try to contain it. 
+                                        // Actually, for a robust "like mobile" view, let's use percentage inputs if possible or SVG viewBox.
+                                        // Since data is in pixels, we'll map directly but ensure container handles overflow or scaling.
+                                        
+                                        return (
+                                            <div
+                                                key={element.id}
+                                                style={{
+                                                    position: 'absolute',
+                                                    left: element.x,
+                                                    top: element.y,
+                                                    width: element.width,
+                                                    height: element.height,
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    pointerEvents: 'none'
+                                                }}
+                                            >
+                                                {(!element.type || element.type === 'seat') && (
+                                                    <>
+                                                        <SeatIcon
+                                                            size={Math.min(element.width, element.height)}
+                                                            occupied={isOccupied}
+                                                            isMySeat={isMySeat}
+                                                        />
+                                                        <span style={{
                                                             fontSize: '10px',
+                                                            marginTop: '2px',
+                                                            fontWeight: isMySeat ? 'bold' : 'normal',
+                                                            color: isMySeat ? '#1976d2' : '#666',
                                                             whiteSpace: 'nowrap'
                                                         }}>
-                                                            You are here
-                                                        </div>
-                                                    )}
-                                                </>
-                                            )}
-                                            {element.type === 'door' && <DoorIcon size={element.width} />}
-                                            {element.type === 'window' && <WindowIcon size={element.width} />}
-                                        </div>
-                                    );
-                                })}
+                                                            {element.label}
+                                                        </span>
+                                                    </>
+                                                )}
+                                                {element.type === 'door' && <DoorIcon size={element.width} />}
+                                                {element.type === 'window' && <WindowIcon size={element.width} />}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
                     ) : (
-                        <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
+                        <div style={{ padding: '40px', textAlign: 'center', color: '#666', backgroundColor: '#f9f9f9', borderRadius: '12px', width: '100%', marginBottom: '20px' }}>
                             Room layout not available
                         </div>
                     )}
+
+                    {/* Legend */}
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginBottom: '24px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                             <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#2196f3', border: '1px solid #1565c0' }}></div>
+                             <span style={{ fontSize: '12px', color: '#666', fontFamily: 'var(--brand-font-body)' }}>Your Seat</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                             <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#eeeeee', border: '1px solid #ccc' }}></div>
+                             <span style={{ fontSize: '12px', color: '#666', fontFamily: 'var(--brand-font-body)' }}>Occupied</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                             <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#fff', border: '1px solid #ccc' }}></div>
+                             <span style={{ fontSize: '12px', color: '#666', fontFamily: 'var(--brand-font-body)' }}>Available</span>
+                        </div>
+                    </div>
                 </div>
+
+                {/* Bottom Info Section */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingTop: '20px', borderTop: '1px solid #f5f5f5' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                         <span style={{ fontSize: '12px', color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: 'var(--brand-font-body)' }}>Status</span>
+                         <div style={{ padding: '6px 12px', backgroundColor: '#e6f4ea', borderRadius: '20px', width: 'fit-content' }}>
+                             <span style={{ color: '#1e8e3e', fontSize: '13px', fontWeight: '600', letterSpacing: '0.3px' }}>Active</span>
+                         </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end' }}>
+                         <span style={{ fontSize: '12px', color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: 'var(--brand-font-body)' }}>Expires on</span>
+                         <span style={{ fontSize: '16px', color: '#000', fontFamily: 'var(--brand-font-serif)', fontWeight: 'bold' }}>{expiryDate}</span>
+                         <span style={{ fontSize: '13px', color: daysLeft < 5 ? '#d32f2f' : '#666' }}>({daysLeft} days remaining)</span>
+                    </div>
+                </div>
+
             </div>
         </div>
     );

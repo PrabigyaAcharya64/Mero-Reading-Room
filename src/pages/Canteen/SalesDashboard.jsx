@@ -3,6 +3,7 @@ import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, query, getDocs, orderBy, onSnapshot, limit } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import EnhancedBackButton from '../../components/EnhancedBackButton';
 
 const profileIcon =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
@@ -126,17 +127,7 @@ function SalesDashboard({ onBack }) {
     <div className="landing-screen">
       <header className="landing-header">
         {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            className="landing-signout"
-            style={{
-              border: '1px solid var(--color-text-primary)',
-              padding: '0.5rem 0.85rem'
-            }}
-          >
-            ← Back
-          </button>
+          <EnhancedBackButton onBack={onBack} />
         )}
         <p className="landing-greeting" style={{ flex: 1, textAlign: onBack ? 'center' : 'left' }}>
           Hey <span>{displayName}</span>!

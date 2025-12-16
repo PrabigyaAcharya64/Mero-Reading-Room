@@ -1,89 +1,52 @@
-import { useState } from 'react';
-import { useAuth } from '../../auth/AuthProvider';
-import MenuManagement from './MenuManagement';
-import OrderDashboard from './OrderDashboard';
-import SalesDashboard from './SalesDashboard';
+import React from 'react';
+import EnhancedBackButton from '../../components/EnhancedBackButton';
+import './CanteenLanding.css';
 
-const profileIcon =
-  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
-const foodIcon = new URL('../assets/food.svg', import.meta.url).href;
+const foodIcon = new URL('../../assets/food.svg', import.meta.url).href;
+const orderIcon = new URL('../../assets/order.svg', import.meta.url).href;
 
-function CanteenLanding({ onBack }) {
-  const { user, signOutUser } = useAuth();
-  const displayName = user?.displayName || user?.email?.split('@')[0] || 'Canteen Staff';
-  const [currentView, setCurrentView] = useState('dashboard');
-
-  const handleSignOut = async () => {
-    try {
-      await signOutUser();
-    } catch (error) {
-      console.error('Sign out error:', error);
-    }
-  };
-
-  if (currentView === 'menu-management') {
-    return <MenuManagement onBack={() => setCurrentView('dashboard')} />;
-  }
-
-  if (currentView === 'orders') {
-    return <OrderDashboard onBack={() => setCurrentView('dashboard')} />;
-  }
-
-  if (currentView === 'sales') {
-    return <SalesDashboard onBack={() => setCurrentView('dashboard')} />;
-  }
+const CanteenLanding = ({ onBack, onNavigate, user, signOutUser, userBalance }) => {
+  const displayName = user?.displayName || user?.email?.split('@')[0] || 'Reader';
 
   return (
-    <div className="landing-screen">
-      <header className="landing-header">
-        {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            className="landing-signout"
-            style={{
-              border: '1px solid var(--color-text-primary)',
-              padding: '0.5rem 0.85rem'
-            }}
+    <div className="canteen-landing">
+      <div className="canteen-header">
+        <EnhancedBackButton onBack={onBack} />
+        <h1 className="header-title">Canteen</h1>
+        
+        <div className="landing-balance" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginLeft: 'auto' }}>
+            <div style={{ fontSize: '10px', textTransform: 'uppercase', color: '#888', letterSpacing: '0.5px' }}>Balance</div>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#333' }}>
+                Rs. {(userBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+        </div>
+      </div>
+
+      <div className="canteen-content">
+        <div className="canteen-buttons-wrapper">
+          <button 
+            className="canteen-main-button"
+            onClick={() => onNavigate('menu')}
           >
-            ← Back
+            <div className="button-icon-wrapper">
+                <img src={foodIcon} alt="Menu" style={{width: 48, height: 48, objectFit: 'contain'}} />
+            </div>
+            <span className="button-text">Menu</span>
           </button>
-        )}
-        <p className="landing-greeting" style={{ flex: 1, textAlign: onBack ? 'center' : 'left' }}>
-          Hey <span>{displayName}</span>!
-        </p>
-        <div className="landing-status">
-          <button type="button" className="landing-profile" aria-label="Profile">
-            <img src={profileIcon} alt="" />
-          </button>
-          <button type="button" className="landing-signout" onClick={handleSignOut}>
-            Sign out
+
+          <button 
+            className="canteen-main-button"
+            onClick={() => onNavigate('orders')} 
+          >
+            <div className="button-icon-wrapper">
+                <img src={orderIcon} alt="Orders" style={{width: 48, height: 48, objectFit: 'contain'}} />
+            </div>
+            <span className="button-text">Orders</span>
           </button>
         </div>
-      </header>
-
-      <main className="landing-body">
-        <section className="landing-services">
-          <h2>Canteen Management</h2>
-          <div className="landing-services__grid">
-            <button type="button" className="landing-service-card" onClick={() => setCurrentView('menu-management')}>
-              <span className="landing-service-card__label">Menu Management</span>
-            </button>
-            <button type="button" className="landing-service-card" onClick={() => setCurrentView('orders')}>
-              <span className="landing-service-card__label">Orders</span>
-            </button>
-            <button type="button" className="landing-service-card">
-              <span className="landing-service-card__label">Inventory</span>
-            </button>
-            <button type="button" className="landing-service-card" onClick={() => setCurrentView('sales')}>
-              <span className="landing-service-card__label">Sales Report</span>
-            </button>
-          </div>
-        </section>
-      </main>
+      </div>
     </div>
   );
-}
+};
 
 export default CanteenLanding;
-

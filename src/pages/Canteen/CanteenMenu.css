@@ -1,0 +1,206 @@
+.canteen-menu-page {
+  min-height: 100vh;
+  background-color: var(--color-background-light);
+  padding-bottom: 40px;
+}
+
+.menu-header {
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.cart-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  position: relative;
+}
+
+.cart-badge {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  background-color: var(--color-badge);
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-balance-container {
+  margin: 10px 24px;
+  padding: 15px 20px;
+  background-color: #f0f0f0;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.balance-label {
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: #333;
+}
+
+.balance-value {
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: #000;
+  font-size: 18px;
+}
+
+.menu-scroll-container {
+  padding: 10px 0;
+}
+
+.menu-category-section {
+  margin-bottom: 25px;
+  padding-left: 24px;
+}
+
+.category-title {
+  font-family: var(--font-body);
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.horizontal-scroll-snap {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding: 0 24px 15px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding: 0 24px;
+}
+
+/* Specific carousel layouts based on item count */
+.horizontal-scroll-snap.carousel-single {
+  justify-content: center;
+  overflow-x: hidden;
+}
+
+.horizontal-scroll-snap.carousel-double {
+  justify-content: center;
+  gap: 40px;
+  overflow-x: hidden;
+}
+
+.horizontal-scroll-snap.carousel-multiple {
+  justify-content: flex-start;
+}
+
+/* Hide scrollbar for cleaner look */
+.horizontal-scroll-snap::-webkit-scrollbar {
+  display: none;
+}
+.horizontal-scroll-snap {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.menu-item-card {
+  min-width: 280px;
+  max-width: 320px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 15px;
+  scroll-snap-align: center;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.menu-item-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.card-image-container {
+  width: 100%;
+  height: 140px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 15px;
+  background-color: #eee;
+}
+
+.card-food-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-food-name {
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 5px 0;
+}
+
+.card-food-desc {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-icon-light);
+  margin: 0 0 15px 0;
+  line-height: 1.4;
+  height: 40px; /* limit height */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+}
+
+.card-price {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.card-add-btn {
+  background-color: #000;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.card-add-btn:active {
+  opacity: 0.8;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+}

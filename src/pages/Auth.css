@@ -1,0 +1,255 @@
+/* Auth.css - Shared styles for Login and Signup */
+
+.auth-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 40px 24px;
+  background-color: var(--color-background-light, #fff);
+  max-width: 480px;
+  margin: 0 auto;
+  font-family: var(--font-body, 'Inter', sans-serif);
+}
+
+/* Animations */
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.anim-title { animation: fadeInDown 0.8s ease-out forwards; }
+.anim-delay-1 { animation: fadeInUp 0.8s ease-out 0.2s forwards; opacity: 0; }
+.anim-delay-2 { animation: fadeInUp 0.8s ease-out 0.3s forwards; opacity: 0; }
+.anim-delay-3 { animation: fadeInUp 0.8s ease-out 0.4s forwards; opacity: 0; }
+.anim-delay-4 { animation: fadeIn 0.8s ease-out 0.5s forwards; opacity: 0; }
+.anim-delay-5 { animation: fadeIn 0.8s ease-out 0.6s forwards; opacity: 0; }
+.anim-delay-6 { animation: fadeIn 0.8s ease-out 0.7s forwards; opacity: 0; }
+
+.auth-title {
+  font-family: var(--font-body); /* Using Inter as per RN app usually, or Playfair if specified */
+  font-size: 24px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  text-align: center;
+  margin-bottom: 40px;
+  color: #000;
+}
+
+.input-group {
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.auth-input {
+  width: 100%;
+  height: 56px;
+  background-color: #F1F1F1;
+  border: none;
+  border-radius: 6px;
+  padding: 0 20px;
+  font-size: 16px;
+  color: #000;
+  outline: none;
+  transition: background-color 0.2s;
+}
+
+.auth-input:focus {
+  background-color: #e5e5e5;
+}
+
+.password-wrapper {
+  position: relative;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 8px;
+  color: #666;
+}
+
+.forgot-password {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.forgot-password-btn {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.forgot-password-btn:hover {
+  text-decoration: underline;
+}
+
+.primary-btn {
+  width: 100%;
+  height: 56px;
+  background-color: #000;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  margin-top: 10px;
+  transition: opacity 0.2s;
+}
+
+.primary-btn:disabled {
+  background-color: #666;
+  cursor: not-allowed;
+}
+
+.primary-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.secondary-btn {
+  width: 100%;
+  height: 56px;
+  background-color: transparent;
+  color: #000;
+  border: 1px solid #000;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  transition: background-color 0.2s;
+}
+
+.secondary-btn:hover {
+  background-color: #f9f9f9;
+}
+
+.google-btn-container {
+  margin-bottom: 16px;
+}
+
+.auth-feedback {
+  text-align: center;
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.auth-feedback.error {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.auth-feedback.success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.validation-text {
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+}
+
+.validation-text.error { color: #f44336; }
+.validation-text.success { color: #4caf50; }
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal-content {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  animation: compileUp 0.3s ease-out;
+}
+
+@keyframes compileUp {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.modal-desc {
+    color: #666;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.modal-btn {
+    flex: 1;
+    height: 48px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.modal-btn-cancel {
+    background: #fff;
+    border: 1px solid #ddd;
+    color: #333;
+}
+
+.modal-btn-confirm {
+    background: #000;
+    border: 1px solid #000;
+    color: #fff;
+}

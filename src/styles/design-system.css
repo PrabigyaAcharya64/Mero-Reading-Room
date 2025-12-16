@@ -1,0 +1,33 @@
+:root {
+  /* Colors from RN theme.ts */
+  --color-text-light: #11181C;
+  --color-background-light: #fff;
+  --color-tint-light: #0a7ea4;
+  --color-icon-light: #687076;
+  
+  --color-text-dark: #ECEDEE;
+  --color-background-dark: #151718;
+  --color-tint-dark: #fff;
+  --color-icon-dark: #9BA1A6;
+
+  /* Global Colors */
+  --color-primary: #000000;
+  --color-secondary: #f4f4f4;
+  --color-border: #ddd;
+  --color-badge: #ff4444;
+
+  /* Fonts */
+  --font-heading: 'Playfair Display', serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* Shadows */
+  --shadow-card: 0 2px 4px rgba(0,0,0,0.1);
+  --shadow-floating: 0 2px 8px rgba(0,0,0,0.15);
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+}

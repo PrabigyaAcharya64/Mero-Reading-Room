@@ -3,7 +3,7 @@ import { useAuth } from '../../auth/AuthProvider';
 import UserManagement from './UserManagement';
 import HostelManagement from './HostelManagement';
 import NewUsers from './NewUsers';
-import CanteenLanding from '../Canteen/CanteenLanding';
+import CanteenAdminLanding from '../Canteen/CanteenAdminLanding';
 import AdminMessages from './AdminMessages';
 import CreateAnnouncement from './CreateAnnouncement';
 import ReadingRoomManagement from '../readingroom/ReadingRoomManagement';
@@ -78,7 +78,7 @@ function AdminLanding() {
   }
 
   if (currentView === 'canteen') {
-    return <CanteenLanding onBack={() => setCurrentView('dashboard')} />;
+    return <CanteenAdminLanding onBack={() => setCurrentView('dashboard')} />;
   }
 
   if (currentView === 'messages') {

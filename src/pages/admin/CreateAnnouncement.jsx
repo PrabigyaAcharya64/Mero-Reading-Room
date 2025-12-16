@@ -3,6 +3,7 @@ import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firesto
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../auth/AuthProvider';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import EnhancedBackButton from '../../components/EnhancedBackButton';
 
 function CreateAnnouncement({ onBack }) {
     const { user } = useAuth();
@@ -49,16 +50,7 @@ function CreateAnnouncement({ onBack }) {
     return (
         <div className="landing-screen">
             <header className="landing-header">
-                <button
-                    onClick={onBack}
-                    className="landing-signout"
-                    style={{
-                        border: '1px solid var(--color-text-primary)',
-                        padding: '0.5rem 0.85rem'
-                    }}
-                >
-                    ← Back
-                </button>
+                <EnhancedBackButton onBack={onBack} />
                 <h1 style={{
                     margin: 0,
                     fontFamily: 'var(--brand-font-serif)',

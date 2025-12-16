@@ -3,10 +3,12 @@ import { useAuth } from '../../auth/AuthProvider';
 import CanteenClient from './CanteenClient';
 import ClientOrderHistory from './ClientOrderHistory';
 import IDCard from '../IDCard';
+import EnhancedBackButton from '../../components/EnhancedBackButton';
 
 const profileIcon =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
 const foodIcon = new URL('../assets/food.svg', import.meta.url).href;
+const orderIcon = new URL('../assets/order.svg', import.meta.url).href;
 
 function CanteenClientLanding({ onBack }) {
   const { user, signOutUser, userBalance } = useAuth();
@@ -64,22 +66,10 @@ function CanteenClientLanding({ onBack }) {
       <main className="landing-body">
         {onBack && (
           <div style={{ marginBottom: '20px' }}>
-            <button
-              onClick={onBack}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#666',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              ← Back to Home
-            </button>
+            <EnhancedBackButton onBack={onBack} />
           </div>
         )}
+
         <section className="landing-services">
           <h2>Canteen Services</h2>
           <div className="landing-services__grid">
@@ -98,6 +88,9 @@ function CanteenClientLanding({ onBack }) {
               className="landing-service-card" 
               onClick={() => setCurrentView('orders')}
             >
+              <span className="landing-service-card__icon">
+                <img src={orderIcon} alt="" aria-hidden="true" />
+              </span>
               <span className="landing-service-card__label">My Orders</span>
             </button>
           </div>

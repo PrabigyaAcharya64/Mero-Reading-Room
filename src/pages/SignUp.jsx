@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { updateProfile } from 'firebase/auth';
 import { useAuth } from '../auth/AuthProvider';
 import { auth } from '../lib/firebase';
 import { validatePassword, validateEmail, validateName } from '../utils/validation';
 import LoadingSpinner from '../components/LoadingSpinner';
+import './Auth.css';
 
 function SignUp({ onSwitch, onComplete }) {
   const { signUpEmail, signInWithGoogle } = useAuth();
@@ -13,7 +14,7 @@ function SignUp({ onSwitch, onComplete }) {
     password: '',
     confirmPassword: '',
   });
-  const [feedback, setFeedback] = useState('');
+  const [feedback, setFeedback] = useState({ type: '', message: '' });
   const [submitting, setSubmitting] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -28,8 +29,8 @@ function SignUp({ onSwitch, onComplete }) {
       const validation = validatePassword(value);
       setPasswordStrength(validation);
     } else if (name === 'confirmPassword' && form.password) {
-      // Clear password strength when confirming
-      setPasswordStrength(null);
+      // Clear password strength when confirming (optional)
+      // or verify match here if desired
     }
   };
 
@@ -39,32 +40,32 @@ function SignUp({ onSwitch, onComplete }) {
     // Validate name
     const nameValidation = validateName(form.name, 'Full name');
     if (!nameValidation.valid) {
-      setFeedback(nameValidation.error);
+      setFeedback({ type: 'error', message: nameValidation.error });
       return;
     }
 
     // Validate email
     const emailValidation = validateEmail(form.email);
     if (!emailValidation.valid) {
-      setFeedback(emailValidation.error);
+      setFeedback({ type: 'error', message: emailValidation.error });
       return;
     }
 
     // Validate password
     const passwordValidation = validatePassword(form.password);
     if (!passwordValidation.valid) {
-      setFeedback(passwordValidation.error);
+      setFeedback({ type: 'error', message: passwordValidation.error });
       return;
     }
 
     // Check password match
     if (form.password !== form.confirmPassword) {
-      setFeedback('Passwords must match.');
+      setFeedback({ type: 'error', message: 'Passwords must match.' });
       return;
     }
 
     setSubmitting(true);
-    setFeedback('');
+    setFeedback({ type: '', message: '' });
 
     try {
       await signUpEmail(emailValidation.sanitized, form.password);
@@ -78,7 +79,7 @@ function SignUp({ onSwitch, onComplete }) {
         onComplete();
       }
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : 'Unable to create your account.');
+      setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'Unable to create your account.' });
     } finally {
       setSubmitting(false);
     }
@@ -86,121 +87,142 @@ function SignUp({ onSwitch, onComplete }) {
 
   const handleGoogle = async () => {
     setSubmitting(true);
-    setFeedback('');
+    setFeedback({ type: '', message: '' });
     try {
       await signInWithGoogle();
-      // For Google sign-in, also redirect to additional details if needed
-      // The navigation will handle this based on user status
       if (onComplete) {
         onComplete();
       }
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : 'Google sign-up is unavailable.');
+      setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'Google sign-up is unavailable.' });
     } finally {
       setSubmitting(false);
     }
   };
 
+  const passwordsMatch = form.confirmPassword && form.password === form.confirmPassword;
+
   return (
-    <div className="auth-card">
-      <form className="auth-form" onSubmit={handleSubmit}>
-        <label className="input-field">
-          <span className="input-field__label">Full name</span>
+    <div className="auth-container">
+      <h1 className="auth-title anim-title">SIGN UP</h1>
+
+      <form onSubmit={handleSubmit} className="anim-delay-1">
+        <div className="input-group">
           <input
+            className="auth-input"
             type="text"
             name="name"
-            placeholder="Reader Name"
+            placeholder="Full Name"
             value={form.name}
             onChange={handleChange}
-            autoComplete="name"
             required
+            autoComplete="name"
           />
-        </label>
+        </div>
 
-        <label className="input-field">
-          <span className="input-field__label">Email</span>
+        <div className="input-group anim-delay-2">
           <input
+            className="auth-input"
             type="email"
             name="email"
-            placeholder="reader@example.com"
+            placeholder="Email Address"
             value={form.email}
             onChange={handleChange}
+            required
             autoComplete="email"
-            required
           />
-        </label>
+        </div>
 
-        <label className="input-field">
-          <span className="input-field__label">Password</span>
-          <input
-            type="password"
-            name="password"
-            placeholder="Create a password (min. 8 chars, uppercase, lowercase, number, special)"
-            value={form.password}
-            onChange={handleChange}
-            autoComplete="new-password"
-            required
-            minLength={8}
-          />
-          {passwordStrength && !passwordStrength.valid && form.password && (
-            <p style={{ fontSize: '12px', color: '#f44', marginTop: '5px' }}>
-              {passwordStrength.error}
-            </p>
+        <div className="input-group anim-delay-3">
+          <div className="password-wrapper">
+            <input
+              className="auth-input"
+              type={showPassword ? "text" : "password"}
+              name="password"
+              placeholder="Password"
+              value={form.password}
+              onChange={handleChange}
+              required
+              autoComplete="new-password"
+            />
+            <button 
+                type="button" 
+                className="password-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+            >
+                {showPassword ? '👁️' : '👁️‍🗨️'}
+            </button>
+          </div>
+          {passwordStrength && !passwordStrength.valid && form.password.length > 0 && (
+            <span className="validation-text error">{passwordStrength.error}</span>
           )}
-          {passwordStrength && passwordStrength.valid && (
-            <p style={{ fontSize: '12px', color: '#4a4', marginTop: '5px' }}>
-              ✓ Password strength: Good
-            </p>
+          {passwordStrength && passwordStrength.valid && form.password.length > 0 && (
+            <span className="validation-text success">✓ Password strength: Good</span>
           )}
-        </label>
+        </div>
 
-        <label className="input-field">
-          <span className="input-field__label">Confirm password</span>
-          <input
-            type="password"
-            name="confirmPassword"
-            placeholder="Re-enter your password"
-            value={form.confirmPassword}
-            onChange={handleChange}
-            autoComplete="new-password"
-            required
-            minLength={8}
-          />
-          {form.confirmPassword && form.password !== form.confirmPassword && (
-            <p style={{ fontSize: '12px', color: '#f44', marginTop: '5px' }}>
-              Passwords do not match.
-            </p>
+        <div className="input-group anim-delay-4">
+          <div className="password-wrapper">
+            <input
+              className="auth-input"
+              type={showConfirmPassword ? "text" : "password"}
+              name="confirmPassword"
+              placeholder="Confirm Password"
+              value={form.confirmPassword}
+              onChange={handleChange}
+              required
+              autoComplete="new-password"
+            />
+            <button 
+                type="button" 
+                className="password-toggle"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+                {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
+            </button>
+          </div>
+          {form.confirmPassword && !passwordsMatch && (
+            <span className="validation-text error">Passwords do not match.</span>
           )}
-          {form.confirmPassword && form.password === form.confirmPassword && form.password && (
-            <p style={{ fontSize: '12px', color: '#4a4', marginTop: '5px' }}>
-              ✓ Passwords match
-            </p>
+          {form.confirmPassword && passwordsMatch && (
+             <span className="validation-text success">✓ Passwords match</span>
           )}
-        </label>
+        </div>
 
-        <button type="submit" className="cta-button cta-button--primary" disabled={submitting} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-          {submitting ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'Create account'}
-        </button>
+        <div className="anim-delay-5">
+            <button type="submit" className="primary-btn" disabled={submitting}>
+            {submitting ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'CREATE ACCOUNT'}
+            </button>
+        </div>
 
-        <button
-          type="button"
-          className="cta-button cta-button--secondary"
-          onClick={handleGoogle}
-          disabled={submitting}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-        >
-          {submitting ? <LoadingSpinner size="20" stroke="2.5" color="currentColor" /> : 'Sign up with Google'}
-        </button>
+        <div className="google-btn-container anim-delay-6">
+            <button
+            type="button"
+            className="secondary-btn"
+            onClick={handleGoogle}
+            disabled={submitting}
+            style={{borderColor: '#ddd', color: '#555'}}
+            >
+             Sign up with Google
+            </button>
+        </div>
+
+        <div className="anim-delay-6">
+            <button
+            type="button"
+            className="secondary-btn"
+            onClick={onSwitch}
+            >
+            BACK TO LOGIN
+            </button>
+        </div>
       </form>
 
-      {feedback ? <p className="auth-feedback">{feedback}</p> : null}
-
-      <p className="auth-footnote">
-        Already have an account?{' '}
-        <button type="button" className="link-button" onClick={onSwitch}>
-          Log in instead
-        </button>
-      </p>
+      {feedback.message && (
+        <div className={`auth-feedback ${feedback.type}`}>
+          {feedback.message}
+        </div>
+      )}
     </div>
   );
 }

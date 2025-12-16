@@ -4,6 +4,7 @@ import { db } from '../../lib/firebase';
 import { collection, addDoc, getDocs, doc, setDoc, getDoc, query, where, deleteDoc } from 'firebase/firestore';
 import { validateMenuItemName, validatePrice, validateDescription, validateCategory } from '../../utils/validation';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import EnhancedBackButton from '../../components/EnhancedBackButton';
 
 const IMGBB_API_KEY = 'f3836c3667cc5c73c64e1aa4f0849566';
 
@@ -433,17 +434,7 @@ function MenuManagement({ onBack }) {
     <div className="landing-screen">
       <header className="landing-header">
         {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            className="landing-signout"
-            style={{
-              border: '1px solid var(--color-text-primary)',
-              padding: '0.5rem 0.85rem'
-            }}
-          >
-            ← Back
-          </button>
+          <EnhancedBackButton onBack={onBack} />
         )}
         <p className="landing-greeting" style={{ flex: 1, textAlign: onBack ? 'center' : 'left' }}>
           Hey <span>{displayName}</span>!

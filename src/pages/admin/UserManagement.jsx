@@ -1,4 +1,5 @@
 import React from 'react';
+import EnhancedBackButton from '../../components/EnhancedBackButton';
 
 const newUserIcon = new URL('../../assets/newuser.svg', import.meta.url).href;
 
@@ -7,18 +8,7 @@ function UserManagement({ onBack, onNavigate }) {
         <div className="landing-screen">
             <header className="landing-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <button
-                        onClick={onBack}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            fontSize: '1.5rem',
-                            cursor: 'pointer',
-                            color: 'var(--color-text-primary)'
-                        }}
-                    >
-                        ←
-                    </button>
+                    <EnhancedBackButton onBack={onBack} />
                     <h2 style={{ margin: 0 }}>User Management</h2>
                 </div>
             </header>

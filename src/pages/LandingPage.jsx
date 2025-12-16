@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthProvider';
-import CanteenClientLanding from './Canteen/CanteenClientLanding';
+import CanteenClient from './Canteen/CanteenClient';
+import CanteenAdminLanding from './Canteen/CanteenAdminLanding';
 import IDCard from './IDCard';
 import Contact from './Contact';
 import ReadingRoomEnrollment from './readingroom/ReadingRoomEnrollment';
@@ -12,7 +13,12 @@ import { collection, query, where, onSnapshot, Timestamp, orderBy, doc, getDoc }
 import { db } from '../lib/firebase';
 
 const profileIcon =
-  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0MyAyOCB0M3M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
+  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
+
+const adminIcon =
+  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDE1QzEzLjY1NjkgMTUgMTUgMTMuNjU2OSAxNSAxMkMxNSAxMC4zNDMxIDEzLjY1NjkgOSAxMiA5QzEwLjM0MzEgOSA5IDEwLjM0MzEgOSAxMkM5IDEzLjY1NjkgMTAuMzQzMSAxNSAxMiAxNVoiIHN0cm9rZT0iIzExMSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHBhdGggZD0iTTE5LjQgMTVBMi41IDIuNSAwIDAgMCAyMC4wMiAxMmEyLjUgMi41IDAgMCAwIDQuNzYgMTIgMi41IDIuNSAwIDAgMCA1LjM4IDE1TDIgMTdMNCAxOUw3Ljk0IDE4QTIuNSAyLjUgMCAwIDAgMTIgMTguOTggMi41IDIuNSAwIDAgMCAxNi4wNiAxOEwyMCAxOUwyMiAxN0wxOS40IDE1WiIgc3Ryb2tlPSIjMTExIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K';
+
+
 const readingRoomIcon = new URL('../assets/readingroom.svg', import.meta.url).href;
 const hostelIcon = new URL('../assets/hostel.svg', import.meta.url).href;
 const foodIcon = new URL('../assets/food.svg', import.meta.url).href;
@@ -25,10 +31,26 @@ function LandingPage() {
   const [displayName, setDisplayName] = useState('');
   const [selectedRoomOption, setSelectedRoomOption] = useState(null);
   const [checkingMembership, setCheckingMembership] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (user) {
       setDisplayName(user.displayName || user.email?.split('@')[0] || 'User');
+      
+      const checkAdmin = async () => {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+              const userData = userDoc.data();
+              if (userData.role === 'admin') {
+                  setIsAdmin(true);
+              }
+          }
+        } catch (error) {
+          console.error('Error checking admin role:', error);
+        }
+      };
+      checkAdmin();
     }
   }, [user]);
 
@@ -97,9 +119,14 @@ function LandingPage() {
     return <IDCard onBack={() => setCurrentView('landing')} />;
   }
 
-  // Show CanteenClientLanding when canteen is clicked
+  // Show CanteenClient when canteen is clicked
   if (currentView === 'canteen') {
-    return <CanteenClientLanding onBack={() => setCurrentView('landing')} />;
+    return <CanteenClient onBack={() => setCurrentView('landing')} />;
+  }
+
+  // Show CanteenAdminLanding when canteen admin is clicked
+  if (currentView === 'canteen-admin') {
+    return <CanteenAdminLanding onBack={() => setCurrentView('landing')} />;
   }
 
   // Show Contact page when contact is clicked
@@ -212,6 +239,16 @@ function LandingPage() {
               </span>
               <span className="landing-service-card__label">Discussion</span>
             </button>
+            
+            {isAdmin && (
+              <button type="button" className="landing-service-card" onClick={() => setCurrentView('canteen-admin')}>
+                <span className="landing-service-card__icon">
+                  <img src={adminIcon} alt="" aria-hidden="true" />
+                </span>
+                <span className="landing-service-card__label">Canteen Admin</span>
+              </button>
+            )}
+
             <button type="button" className="landing-service-card" onClick={() => setCurrentView('canteen')}>
               <span className="landing-service-card__icon">
                 <img src={foodIcon} alt="" aria-hidden="true" />
@@ -226,7 +263,7 @@ function LandingPage() {
             </button>
           </div>
         </section>
-
+        
         <section className="landing-announcements">
           <h2>Notices</h2>
           {announcements.length === 0 ? (

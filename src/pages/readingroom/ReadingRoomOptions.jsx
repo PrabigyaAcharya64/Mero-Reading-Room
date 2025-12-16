@@ -3,9 +3,10 @@ import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import EnhancedBackButton from '../../components/EnhancedBackButton';
 
 function ReadingRoomOptions({ onBack, onSelectOption }) {
-    const { user } = useAuth();
+    const { user, signOutUser } = useAuth();
     const [loading, setLoading] = useState(true);
     const [hasExistingMembership, setHasExistingMembership] = useState(false);
     const [membershipType, setMembershipType] = useState(null);
@@ -50,26 +51,25 @@ function ReadingRoomOptions({ onBack, onSelectOption }) {
 
     return (
         <div style={{ minHeight: '100vh', backgroundColor: '#fff', padding: '20px' }}>
-            {/* Back Button */}
-            {onBack && (
-                <button
-                    onClick={onBack}
-                    style={{
-                        marginBottom: '20px',
-                        padding: '8px 16px',
-                        backgroundColor: '#333',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        display: 'block',
-                        maxWidth: '900px',
-                        margin: '0 auto 20px auto'
-                    }}
-                >
-                    ← Back
-                </button>
-            )}
+            <header className="landing-header" style={{ marginBottom: '20px' }}>
+                <div className="landing-status" style={{ justifyContent: 'flex-start', flex: 1 }}>
+                    {onBack && (
+                        <EnhancedBackButton onBack={onBack} />
+                    )}
+                </div>
+                <p className="landing-greeting" style={{ flex: 1, textAlign: 'center', margin: 0 }}>Reading Room</p>
+                <div className="landing-status" style={{ justifyContent: 'flex-end', flex: 1 }}>
+                    <button type="button" className="landing-signout" onClick={async () => {
+                        try {
+                            await signOutUser();
+                        } catch (error) {
+                            console.error('Sign out error:', error);
+                        }
+                    }}>
+                        Sign out
+                    </button>
+                </div>
+            </header>
 
             <div style={{ maxWidth: '900px', margin: '0 auto', border: '1px solid #333', padding: '40px' }}>
                 <div style={{ textAlign: 'center', marginBottom: '40px', borderBottom: '1px solid #eee', paddingBottom: '20px' }}>

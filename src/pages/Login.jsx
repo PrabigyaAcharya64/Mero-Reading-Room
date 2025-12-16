@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../auth/AuthProvider';
 import LoadingSpinner from '../components/LoadingSpinner';
+import './Auth.css';
 
 function Login({ onSwitch }) {
   const { signInEmail, signInWithGoogle, resetPassword } = useAuth();
   const [form, setForm] = useState({ email: '', password: '' });
-  const [feedback, setFeedback] = useState('');
+  const [feedback, setFeedback] = useState({ type: '', message: '' });
   const [submitting, setSubmitting] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
@@ -20,163 +21,184 @@ function Login({ onSwitch }) {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!form.email || !form.password) {
-      setFeedback('Please enter both email and password.');
+      setFeedback({ type: 'error', message: 'Please enter both email and password.' });
       return;
     }
 
     setSubmitting(true);
-    setFeedback('');
+    setFeedback({ type: '', message: '' });
     try {
       await signInEmail(form.email, form.password);
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : 'Unable to sign in right now.');
+      setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'Unable to sign in right now.' });
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleForgotPassword = () => {
-    setShowResetPassword(true);
-    setFeedback('');
   };
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
     if (!resetEmail || !resetEmail.trim()) {
-      setFeedback('Please enter your email address.');
+      setFeedback({ type: 'error', message: 'Please enter your email address.' });
       return;
     }
 
     setResetting(true);
-    setFeedback('');
+    setFeedback({ type: '', message: '' });
     try {
       await resetPassword(resetEmail);
-      setFeedback('Password reset email sent! Please check your inbox and follow the instructions.');
-      setShowResetPassword(false);
-      setResetEmail('');
+      setFeedback({ type: 'success', message: 'Password reset link sent! Check your inbox.' });
+      setTimeout(() => {
+          setShowResetPassword(false);
+          setResetEmail('');
+          setFeedback({ type: '', message: '' });
+      }, 3000);
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : 'Unable to send password reset email.');
+      setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'Unable to send reset email.' });
     } finally {
       setResetting(false);
     }
   };
 
-  const handleCancelReset = () => {
-    setShowResetPassword(false);
-    setResetEmail('');
-    setFeedback('');
-  };
-
   const handleGoogle = async () => {
     setSubmitting(true);
-    setFeedback('');
+    setFeedback({ type: '', message: '' });
     try {
       await signInWithGoogle();
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : 'Unable to sign in with Google.');
+      setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'Unable to sign in with Google.' });
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (showResetPassword) {
-    return (
-      <div className="auth-card">
-        <h2 style={{ marginBottom: '20px', textAlign: 'center' }}>Reset Password</h2>
-        <form className="auth-form" onSubmit={handleResetPassword}>
-          <label className="input-field">
-            <span className="input-field__label">Email</span>
-            <input
-              type="email"
-              name="resetEmail"
-              placeholder="reader@example.com"
-              value={resetEmail}
-              onChange={(e) => setResetEmail(e.target.value)}
-              autoComplete="email"
-              required
-            />
-          </label>
-
-          <button type="submit" className="cta-button cta-button--primary" disabled={resetting} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-            {resetting ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'Send Reset Link'}
-          </button>
-
-          <button
-            type="button"
-            className="cta-button cta-button--secondary"
-            onClick={handleCancelReset}
-            disabled={resetting}
-          >
-            Cancel
-          </button>
-        </form>
-
-        {feedback ? <p className="auth-feedback">{feedback}</p> : null}
-      </div>
-    );
-  }
-
   return (
-    <div className="auth-card">
-      <form className="auth-form" onSubmit={handleSubmit}>
-        <label className="input-field">
-          <span className="input-field__label">Email</span>
+    <div className="auth-container">
+      <h1 className="auth-title anim-title">LOGIN</h1>
+
+      <form onSubmit={handleSubmit} className="anim-delay-1">
+        <div className="input-group">
           <input
+            className="auth-input"
             type="email"
             name="email"
-            placeholder="reader@example.com"
+            placeholder="Email"
             value={form.email}
             onChange={handleChange}
+            required
             autoComplete="email"
-            required
           />
-        </label>
+        </div>
 
-        <label className="input-field">
-          <span className="input-field__label">Password</span>
-          <input
-            type="password"
-            name="password"
-            placeholder="Enter your password"
-            value={form.password}
-            onChange={handleChange}
-            autoComplete="current-password"
-            required
-          />
-        </label>
+        <div className="input-group anim-delay-2">
+            <div className="password-wrapper">
+                <input
+                    className="auth-input"
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    placeholder="Password"
+                    value={form.password}
+                    onChange={handleChange}
+                    required
+                    autoComplete="current-password"
+                />
+                <button 
+                    type="button" 
+                    className="password-toggle"
+                    onClick={() => setShowPassword(!showPassword)}
+                >
+                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                </button>
+            </div>
+        </div>
 
-        <div className="auth-form__meta">
-          <button type="button" className="link-button" onClick={handleForgotPassword}>
-            Forgot password?
+        <div className="forgot-password anim-delay-3">
+          <button type="button" className="forgot-password-btn" onClick={() => setShowResetPassword(true)}>
+            Forgot Password?
           </button>
         </div>
 
-        <button type="submit" className="cta-button cta-button--primary" disabled={submitting} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-          {submitting ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'Log in'}
-        </button>
+        <div className="anim-delay-4">
+            <button type="submit" className="primary-btn" disabled={submitting}>
+            {submitting ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'LOGIN'}
+            </button>
+        </div>
 
-        <button
-          type="button"
-          className="cta-button cta-button--secondary"
-          onClick={handleGoogle}
-          disabled={submitting}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-        >
-          {submitting ? <LoadingSpinner size="20" stroke="2.5" color="currentColor" /> : 'Continue with Google'}
-        </button>
+        <div className="google-btn-container anim-delay-5">
+            <button
+            type="button"
+            className="secondary-btn" /* Using secondary style for Google as per RN usually, or custom if needed to act as generic container */
+            onClick={handleGoogle}
+            disabled={submitting}
+            style={{borderColor: '#ddd', color: '#555'}}
+            >
+             Continue with Google
+            </button>
+        </div>
+
+        <div className="anim-delay-6">
+            <button
+            type="button"
+            className="secondary-btn"
+            onClick={onSwitch}
+            >
+            SIGN UP
+            </button>
+        </div>
       </form>
 
-      {feedback ? <p className="auth-feedback">{feedback}</p> : null}
+      {/* Feedback Message */}
+      {feedback.message && (
+        <div className={`auth-feedback ${feedback.type}`}>
+          {feedback.message}
+        </div>
+      )}
 
-      <p className="auth-footnote">
-        New here?{' '}
-        <button type="button" className="link-button" onClick={onSwitch}>
-          Create an account
-        </button>
-      </p>
+      {/* Password Reset Modal */}
+      {showResetPassword && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3 className="modal-title">Reset Password</h3>
+            <p className="modal-desc">Enter your email to receive a reset link.</p>
+            
+            <input
+              className="auth-input"
+              type="email"
+              placeholder="Email"
+              value={resetEmail}
+              onChange={(e) => setResetEmail(e.target.value)}
+              autoFocus
+            />
+
+            {feedback.message && feedback.type === 'error' && (
+                <p className="validation-text error" style={{marginTop: 10}}>{feedback.message}</p>
+            )}
+
+            <div className="modal-actions">
+                <button 
+                    className="modal-btn modal-btn-cancel" 
+                    onClick={() => {
+                        setShowResetPassword(false);
+                        setFeedback({type:'', message:''});
+                    }}
+                >
+                    Cancel
+                </button>
+                <button 
+                    className="modal-btn modal-btn-confirm" 
+                    onClick={handleResetPassword}
+                    disabled={resetting}
+                >
+                    {resetting ? 'Sending...' : 'Send Link'}
+                </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default Login;
+
 

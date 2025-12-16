@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { addDoc, collection, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../auth/AuthProvider';
+import EnhancedBackButton from '../components/EnhancedBackButton';
 
 function Contact({ onBack }) {
     const { user } = useAuth();
@@ -68,9 +69,7 @@ function Contact({ onBack }) {
     return (
         <div className="landing-screen">
             <header className="landing-header">
-                <button onClick={onBack} className="landing-signout" style={{ border: 'none', paddingLeft: 0 }}>
-                    ← Back
-                </button>
+                <EnhancedBackButton onBack={onBack} />
                 <h1 style={{ margin: 0, fontFamily: 'var(--brand-font-serif)', fontSize: '1.5rem' }}>Contact Us</h1>
                 <div style={{ width: '40px' }}></div> {/* Spacer for alignment */}
             </header>

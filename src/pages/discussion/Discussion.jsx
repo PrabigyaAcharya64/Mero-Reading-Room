@@ -3,6 +3,7 @@ import { db } from '../../lib/firebase';
 import { doc, runTransaction, onSnapshot, collection, query, where, getDocs, getDoc, updateDoc, arrayUnion, deleteDoc, setDoc } from 'firebase/firestore';
 import { useAuth } from '../../auth/AuthProvider';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import EnhancedBackButton from '../../components/EnhancedBackButton';
 
 const SLOTS = [
     { id: '06', label: '6:00 AM - 9:00 AM', startHour: 6 },
@@ -307,24 +308,7 @@ const Discussion = ({ onBack }) => {
     if (viewMode === 'list') {
         return (
             <div style={{ minHeight: '100vh', backgroundColor: '#fff', padding: '20px' }}>
-                <button
-                    onClick={onBack}
-                    style={{
-                        marginBottom: '20px',
-                        padding: '8px 16px',
-                        backgroundColor: '#000',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        display: 'block',
-                        maxWidth: '800px',
-                        margin: '0 auto 20px auto',
-                        fontWeight: '500'
-                    }}
-                >
-                    ← Back to Home
-                </button>
+                <EnhancedBackButton onBack={onBack} />
 
                 <div style={{ maxWidth: '800px', margin: '0 auto' }}>
                     <div style={{
@@ -403,6 +387,8 @@ const Discussion = ({ onBack }) => {
         );
     }
 
+
+
     // Render Booking Form or Details
     const booking = bookings[selectedSlot?.id];
     const isBooked = !!booking;
@@ -410,24 +396,7 @@ const Discussion = ({ onBack }) => {
 
     return (
         <div style={{ minHeight: '100vh', backgroundColor: '#fff', padding: '20px' }}>
-            <button
-                onClick={() => setViewMode('list')}
-                style={{
-                    marginBottom: '20px',
-                    padding: '8px 16px',
-                    backgroundColor: '#000',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    display: 'block',
-                    maxWidth: '800px',
-                    margin: '0 auto 20px auto',
-                    fontWeight: '500'
-                }}
-            >
-                ← Back to Slots
-            </button>
+            <EnhancedBackButton onBack={() => setViewMode('list')} />
 
             <div style={{ maxWidth: '800px', margin: '0 auto' }}>
                 <div style={{

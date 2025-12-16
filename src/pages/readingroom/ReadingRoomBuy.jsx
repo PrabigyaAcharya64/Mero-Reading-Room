@@ -3,6 +3,7 @@ import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { doc, getDoc, setDoc, collection, getDocs, addDoc, query, where } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import EnhancedBackButton from '../../components/EnhancedBackButton';
 
 function ReadingRoomBuy({ onBack, selectedOption, onComplete }) {
     const { user, userBalance, deductBalance } = useAuth();
@@ -140,23 +141,7 @@ function ReadingRoomBuy({ onBack, selectedOption, onComplete }) {
         <div style={{ minHeight: '100vh', backgroundColor: '#fff', padding: '20px' }}>
             {/* Back Button */}
             {onBack && (
-                <button
-                    onClick={onBack}
-                    style={{
-                        marginBottom: '20px',
-                        padding: '8px 16px',
-                        backgroundColor: '#333',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        display: 'block',
-                        maxWidth: '900px',
-                        margin: '0 auto 20px auto'
-                    }}
-                >
-                    ← Back
-                </button>
+                <EnhancedBackButton onBack={onBack} />
             )}
 
             <div style={{ maxWidth: '900px', margin: '0 auto', border: '1px solid #333', padding: '40px' }}>
