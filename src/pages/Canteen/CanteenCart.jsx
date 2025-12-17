@@ -29,8 +29,8 @@ const CanteenCart = ({
     <div className="canteen-cart-page">
       <div className="cart-header">
         <EnhancedBackButton onBack={onBack} />
-        <h1 className="header-title">Your Cart</h1>
-        <div style={{width: 48}}></div>
+        <h1 className="header-title" style={{ flex: 1, textAlign: 'center', margin: 0 }}>Your Cart</h1>
+        <div style={{ width: '40px' }}></div> {/* Spacer to balance the layout */}
       </div>
 
       <div className="cart-balance-container">

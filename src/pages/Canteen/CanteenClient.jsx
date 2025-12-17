@@ -188,7 +188,7 @@ function CanteenClient({ onBack }) {
     <div className="canteen-landing">
       <div className="canteen-header">
         <EnhancedBackButton onBack={onBack} />
-        <h1 className="header-title">Canteen</h1>
+        <h1 className="header-title" style={{ flex: 1, textAlign: 'center' }}>Canteen</h1>
         
         <div className="landing-balance" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginLeft: 'auto' }}>
             <div style={{ fontSize: '10px', textTransform: 'uppercase', color: '#888', letterSpacing: '0.5px' }}>Balance</div>

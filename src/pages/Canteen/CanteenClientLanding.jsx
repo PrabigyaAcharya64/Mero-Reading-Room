@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
-import CanteenClient from './CanteenClient';
+import CanteenClient from '../CanteenClient';
 import ClientOrderHistory from './ClientOrderHistory';
 import IDCard from '../IDCard';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 
-const profileIcon =
-  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
+const profileIcon = new URL('../../assets/profile.svg', import.meta.url).href;
 const foodIcon = new URL('../assets/food.svg', import.meta.url).href;
 const orderIcon = new URL('../assets/order.svg', import.meta.url).href;
 
@@ -38,7 +37,7 @@ function CanteenClientLanding({ onBack }) {
   return (
     <div className="landing-screen">
       <header className="landing-header">
-        <p className="landing-greeting">
+        <p className="landing-greeting" style={{ flex: 1, textAlign: 'center' }}>
           Hey <span>{displayName}</span>!
         </p>
         <div className="landing-status">
@@ -71,7 +70,7 @@ function CanteenClientLanding({ onBack }) {
         )}
 
         <section className="landing-services">
-          <h2>Canteen Services</h2>
+          <h2 style={{ textAlign: 'center' }}>Canteen Services</h2>
           <div className="landing-services__grid">
             <button 
               type="button" 

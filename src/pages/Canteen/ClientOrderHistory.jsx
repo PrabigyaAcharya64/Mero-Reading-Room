@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
-import { db } from '../../lib/firebase';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 
-const profileIcon =
-  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
+const profileIcon = new URL('../../assets/profile.svg', import.meta.url).href;
 
 function ClientOrderHistory({ onBack }) {
   const { user, signOutUser, userBalance } = useAuth();
@@ -106,34 +105,21 @@ function ClientOrderHistory({ onBack }) {
 
   return (
     <div className="landing-screen">
-      <header className="landing-header">
-        <p className="landing-greeting">
-          Hey <span>{displayName}</span>!
+      <header className="landing-header" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+          {onBack && <EnhancedBackButton onBack={onBack} />}
+        </div>
+        
+        <p className="landing-greeting" style={{ flex: 1, textAlign: 'center', margin: 0 }}>
+          My Orders
         </p>
-        <div className="landing-status">
-          <div className="landing-balance" aria-label="Current balance">
-            <div className="landing-balance__label">Balance</div>
-            <div className="landing-balance__value">रु {userBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-            <button type="button" className="landing-balance__add" aria-label="Add to balance">
-              +
-            </button>
-          </div>
-          <button type="button" className="landing-profile" aria-label="Profile">
-            <img src={profileIcon} alt="" />
-          </button>
-          <button type="button" className="landing-signout" onClick={handleSignOut}>
-            Sign out
-          </button>
+        
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+          {/* Placeholder for SignOut if needed, or empty to balance */}
         </div>
       </header>
 
       <main className="landing-body" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-        {onBack && (
-          <div className="history-header" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
-        <EnhancedBackButton onBack={onBack} />
-        <h2 style={{ margin: '0 0 0 20px', fontSize: '24px' }}>My Orders</h2>
-      </div>  )}
-
         <section>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
             <h2>My Orders ({filteredOrders.length})</h2>

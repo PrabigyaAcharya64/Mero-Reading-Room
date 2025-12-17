@@ -1,50 +1,40 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthProvider';
-import CanteenClient from './Canteen/CanteenClient';
-import CanteenAdminLanding from './Canteen/CanteenAdminLanding';
+import { db } from '../lib/firebase';
+import { doc, getDoc, collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 import IDCard from './IDCard';
+import CanteenClient from './canteen/CanteenClient';
+import CanteenAdminLanding from './canteen/CanteenAdminLanding';
 import Contact from './Contact';
-import ReadingRoomEnrollment from './readingroom/ReadingRoomEnrollment';
 import ReadingRoomOptions from './readingroom/ReadingRoomOptions';
 import ReadingRoomBuy from './readingroom/ReadingRoomBuy';
+import ReadingRoomEnrollment from './readingroom/ReadingRoomEnrollment';
 import ReadingRoomDashboard from './readingroom/ReadingRoomDashboard';
 import Discussion from './discussion/Discussion';
-import { collection, query, where, onSnapshot, Timestamp, orderBy, doc, getDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import profileIcon from '../assets/profile.svg';
+import readingRoomIcon from '../assets/readingroom.svg';
+import hostelIcon from '../assets/hostel.svg';
+import foodIcon from '../assets/food.svg';
+import contactIcon from '../assets/contact.svg';
+import adminIcon from '../assets/usermanagement.svg';
 
-const profileIcon =
-  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
-
-const adminIcon =
-  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDE1QzEzLjY1NjkgMTUgMTUgMTMuNjU2OSAxNSAxMkMxNSAxMC4zNDMxIDEzLjY1NjkgOSAxMiA5QzEwLjM0MzEgOSA5IDEwLjM0MzEgOSAxMkM5IDEzLjY1NjkgMTAuMzQzMSAxNSAxMiAxNVoiIHN0cm9rZT0iIzExMSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHBhdGggZD0iTTE5LjQgMTVBMi41IDIuNSAwIDAgMCAyMC4wMiAxMmEyLjUgMi41IDAgMCAwIDQuNzYgMTIgMi41IDIuNSAwIDAgMCA1LjM4IDE1TDIgMTdMNCAxOUw3Ljk0IDE4QTIuNSAyLjUgMCAwIDAgMTIgMTguOTggMi41IDIuNSAwIDAgMCAxNi4wNiAxOEwyMCAxOUwyMiAxN0wxOS40IDE1WiIgc3Ryb2tlPSIjMTExIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K';
-
-
-const readingRoomIcon = new URL('../assets/readingroom.svg', import.meta.url).href;
-const hostelIcon = new URL('../assets/hostel.svg', import.meta.url).href;
-const foodIcon = new URL('../assets/food.svg', import.meta.url).href;
-const contactIcon = new URL('../assets/contact.svg', import.meta.url).href;
-
-function LandingPage() {
+function LandingPage({ onBack }) {
   const { user, signOutUser, userBalance } = useAuth();
+  const displayName = user?.displayName || user?.email?.split('@')[0] || 'Reader';
   const [currentView, setCurrentView] = useState('landing');
-  const [announcements, setAnnouncements] = useState([]);
-  const [displayName, setDisplayName] = useState('');
   const [selectedRoomOption, setSelectedRoomOption] = useState(null);
   const [checkingMembership, setCheckingMembership] = useState(false);
+  const [announcements, setAnnouncements] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (user) {
-      setDisplayName(user.displayName || user.email?.split('@')[0] || 'User');
-      
       const checkAdmin = async () => {
         try {
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           if (userDoc.exists()) {
-              const userData = userDoc.data();
-              if (userData.role === 'admin') {
-                  setIsAdmin(true);
-              }
+            const userData = userDoc.data();
+            setIsAdmin(userData.role === 'admin');
           }
         } catch (error) {
           console.error('Error checking admin role:', error);
@@ -184,7 +174,7 @@ function LandingPage() {
   return (
     <div className="landing-screen">
       <header className="landing-header">
-        <p className="landing-greeting">
+        <p className="landing-greeting" style={{ flex: 1, textAlign: 'center' }}>
           Hey <span>{displayName}</span>!
         </p>
         <div className="landing-status">
@@ -212,7 +202,7 @@ function LandingPage() {
 
       <main className="landing-body">
         <section className="landing-services">
-          <h2>Quick Services</h2>
+          <h2 style={{ textAlign: 'center' }}>Quick Services</h2>
           <div className="landing-services__grid">
             <button type="button" className="landing-service-card" onClick={handleReadingRoomClick} disabled={checkingMembership}>
               <span className="landing-service-card__icon">
@@ -265,7 +255,7 @@ function LandingPage() {
         </section>
         
         <section className="landing-announcements">
-          <h2>Notices</h2>
+          <h2 style={{ textAlign: 'center' }}>Notices</h2>
           {announcements.length === 0 ? (
             <div className="landing-announcements__empty">
               No notices at this time.
