@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
-import './CanteenCart.css';
+import '../../styles/CanteenCart.css';
 
 const CanteenCart = ({ 
   onBack, 

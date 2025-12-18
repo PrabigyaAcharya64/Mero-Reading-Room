@@ -8,7 +8,7 @@ import EnhancedBackButton from '../../components/EnhancedBackButton';
 import CanteenMenu from './CanteenMenu';
 import CanteenCart from './CanteenCart';
 import ClientOrderHistory from './ClientOrderHistory'; 
-import './CanteenLanding.css';
+import '../../styles/CanteenLanding.css';
 
 const foodIcon = new URL('../../assets/food.svg', import.meta.url).href;
 const orderIcon = new URL('../../assets/order.svg', import.meta.url).href;

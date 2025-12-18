@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../auth/AuthProvider';
 import LoadingSpinner from '../components/LoadingSpinner';
-import './Auth.css';
+import '../styles/Auth.css';
 
 function Login({ onSwitch }) {
   const { signInEmail, signInWithGoogle, resetPassword } = useAuth();

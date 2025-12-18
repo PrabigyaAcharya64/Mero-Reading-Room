@@ -4,7 +4,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { auth } from '../lib/firebase';
 import { validatePassword, validateEmail, validateName } from '../utils/validation';
 import LoadingSpinner from '../components/LoadingSpinner';
-import './Auth.css';
+import '../styles/Auth.css';
 
 function SignUp({ onSwitch, onComplete }) {
   const { signUpEmail, signInWithGoogle } = useAuth();

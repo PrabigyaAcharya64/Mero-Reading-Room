@@ -1,6 +1,6 @@
 import React from 'react';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
-import './CanteenLanding.css';
+import '../../styles/CanteenLanding.css';
 
 const foodIcon = new URL('../../assets/food.svg', import.meta.url).href;
 const orderIcon = new URL('../../assets/order.svg', import.meta.url).href;

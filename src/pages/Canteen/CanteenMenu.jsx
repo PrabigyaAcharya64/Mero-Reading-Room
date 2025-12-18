@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import cartIcon from '../../assets/cart.svg';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
-import './CanteenMenu.css';
+import '../../styles/CanteenMenu.css';
 
 const CanteenMenu = ({ 
   onBack, 

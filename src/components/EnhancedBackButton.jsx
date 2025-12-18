@@ -1,5 +1,5 @@
 import React from 'react';
-import './EnhancedBackButton.css';
+import '../styles/EnhancedBackButton.css';
 
 const EnhancedBackButton = ({ onBack, style }) => {
   return (
