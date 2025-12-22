@@ -3,8 +3,8 @@ import { useAuth } from '../auth/AuthProvider';
 import { db } from '../lib/firebase';
 import { doc, getDoc, collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 import IDCard from './IDCard';
-import CanteenClient from './canteen/CanteenClient';
-import CanteenAdminLanding from './canteen/CanteenAdminLanding';
+import CanteenClient from './Canteen/CanteenClient';
+import CanteenAdminLanding from './Canteen/CanteenAdminLanding';
 import Contact from './Contact';
 import ReadingRoomOptions from './readingroom/ReadingRoomOptions';
 import ReadingRoomBuy from './readingroom/ReadingRoomBuy';
@@ -180,7 +180,7 @@ function LandingPage({ onBack }) {
         <div className="landing-status">
           <div className="landing-balance" aria-label="Current balance">
             <div className="landing-balance__label">Balance</div>
-            <div className="landing-balance__value">रु {userBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <div className="landing-balance__value">रु {(userBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             <button type="button" className="landing-balance__add" aria-label="Add to balance">
               +
             </button>

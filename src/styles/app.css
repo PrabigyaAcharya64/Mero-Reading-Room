@@ -264,9 +264,7 @@
   padding: clamp(1.25rem, 4vw, 2rem);
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  max-width: 1200px; /* Prevent over-stretching on large screens */
-  margin: 0 auto;
+  gap: 2.5rem;
 }
 
 .landing-header {
@@ -328,7 +326,6 @@
   border: 1px solid var(--color-border);
   padding: 0.55rem 0.85rem;
   background-color: #fff;
-  border-radius: 8px; /* Modern rounded corners */
 }
 
 .landing-balance__label {
@@ -377,11 +374,6 @@
   justify-content: center;
   padding: 0;
   cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.landing-profile:hover {
-  background-color: rgba(0,0,0,0.05);
 }
 
 .landing-profile img {
@@ -450,7 +442,6 @@
   border: 1px solid var(--color-border);
   background-color: #fff;
   cursor: pointer;
-  border-radius: 12px; /* More modern look */
   transition: transform var(--transition-default), border-color var(--transition-default),
     box-shadow var(--transition-default);
 }
@@ -487,14 +478,10 @@
 .landing-announcements {
   border: 1px solid var(--color-border);
   background-color: #fff;
-  padding: clamp(1.25rem, 3vw, 1.75rem);
+  padding: clamp(1.5rem, 4vw, 2rem);
   display: grid;
   gap: 1.2rem;
   text-align: center;
-  /* Ensure it fits on screen by allowing scroll if too long */
-  max-height: 400px;
-  overflow-y: auto;
-  border-radius: 8px; /* Softer edges */
 }
 
 .landing-announcements h2 {
@@ -503,12 +490,6 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-size: 1.1rem;
-  position: sticky;
-  top: 0;
-  background: #fff;
-  z-index: 10;
-  padding-bottom: 10px;
-  border-bottom: 2px solid transparent; /* Placeholder for scroll state if needed */
 }
 
 .landing-announcements__empty {
@@ -516,7 +497,6 @@
   gap: 0.5rem;
   justify-items: center;
   color: var(--color-text-secondary);
-  padding: 2rem 0;
 }
 
 .landing-announcements__icon {
@@ -570,14 +550,13 @@
   }
 
   .landing-screen {
-    /* Reduced padding to fit more content */
-    padding: 1rem;
-    gap: 1.5rem; 
+    padding: 1.5rem;
+    gap: 2rem;
   }
 
   .landing-header {
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 1rem;
     align-items: stretch;
   }
 
@@ -592,23 +571,8 @@
     align-items: stretch;
   }
 
-  .landing-services {
-      padding: 1.25rem;
-      gap: 1rem;
-  }
-
   .landing-services__grid {
-    /* Changed from 1 column to 2 columns for better density */
-    grid-template-columns: repeat(2, 1fr); 
-    gap: 0.75rem;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
   }
-
-  .landing-service-card {
-      padding: 1rem;
-  }
-  
-  .landing-service-card__icon {
-      width: 40px;
-      height: 40px;
-  }
+}
 }

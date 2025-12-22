@@ -6,7 +6,7 @@ import AdditionalDetails from '../pages/AdditionalDetails';
 import PendingVerification from '../pages/PendingVerification';
 import LandingPage from '../pages/LandingPage';
 import AdminLanding from '../pages/admin/AdminLanding';
-import CanteenLanding from '../pages/Canteen/CanteenLanding';
+import CanteenLanding from '../pages/Canteen/CanteenClientLanding';
 import { useAuth } from '../auth/AuthProvider';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';

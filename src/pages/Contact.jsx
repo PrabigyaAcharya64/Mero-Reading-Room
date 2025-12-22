@@ -68,10 +68,16 @@ function Contact({ onBack }) {
 
     return (
         <div className="landing-screen">
-            <header className="landing-header">
-                <EnhancedBackButton onBack={onBack} />
-                <h1 style={{ margin: 0, fontFamily: 'var(--brand-font-serif)', fontSize: '1.5rem' }}>Contact Us</h1>
-                <div style={{ width: '40px' }}></div> {/* Spacer for alignment */}
+            <header className="landing-header" style={{ marginBottom: '20px' }}>
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+                    {onBack && (
+                        <EnhancedBackButton onBack={onBack} />
+                    )}
+                </div>
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                    <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)', margin: 0 }}>Contact Us</p>
+                </div>
+                <div style={{ flex: 1 }}></div>
             </header>
 
             <main className="landing-body">

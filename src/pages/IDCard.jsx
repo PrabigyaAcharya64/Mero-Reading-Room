@@ -2,12 +2,11 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthProvider';
 import { db } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import EnhancedBackButton from '../components/EnhancedBackButton';
 
 const logoUrl = new URL('../assets/logo.png', import.meta.url).href;
 
 function IDCard({ onBack }) {
-  const { user, signOutUser } = useAuth();
+  const { user } = useAuth();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
@@ -15,14 +14,6 @@ function IDCard({ onBack }) {
   useEffect(() => {
     fetchUserData();
   }, [user]);
-
-  const handleSignOut = async () => {
-    try {
-      await signOutUser();
-    } catch (error) {
-      console.error('Sign out error:', error);
-    }
-  };
 
   const fetchUserData = async () => {
     if (!user) {
@@ -158,18 +149,16 @@ function IDCard({ onBack }) {
 
   return (
     <div className="landing-screen">
-      <header className="landing-header" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <header className="landing-header" style={{ marginBottom: '20px' }}>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
-          {onBack && <EnhancedBackButton onBack={onBack} />}
+          {onBack && (
+            <EnhancedBackButton onBack={onBack} />
+          )}
         </div>
-        
-        <p className="landing-greeting" style={{ flex: 1, textAlign: 'center', margin: 0 }}>My ID Card</p>
-        
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-          <button type="button" className="landing-signout" onClick={handleSignOut}>
-            Sign out
-          </button>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)', margin: 0 }}>My ID Card</p>
         </div>
+        <div style={{ flex: 1 }}></div>
       </header>
 
       <main style={{ 
@@ -181,143 +170,240 @@ function IDCard({ onBack }) {
         <div
           id="id-card"
           style={{
-            width: '350px',
+            width: '400px',
+            height: '260px',
             backgroundColor: '#ffffff',
             borderRadius: '16px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-            position: 'relative',
-            overflow: 'hidden',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+            padding: '20px',
+            border: '2px solid #e0e0e0',
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
-            padding: '25px 35px', // Padding to account for side bars + whitespace
+            fontFamily: 'Arial, sans-serif',
             boxSizing: 'border-box',
-            border: '1px solid #ddd',
-            fontFamily: 'var(--brand-font-body)',
+            position: 'relative',
           }}
         >
-          {/* Left Blue Bar */}
-          <div style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: '12px',
-            backgroundColor: '#003B73',
-          }} />
-
-          {/* Right Blue Bar */}
-          <div style={{
-            position: 'absolute',
-            right: 0,
-            top: 0,
-            bottom: 0,
-            width: '12px',
-            backgroundColor: '#003B73',
-          }} />
-
-          {/* Logo Section */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '20px' }}>
+          {/* Header with Logo and Title */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'flex-start', 
+            marginBottom: '16px',
+            gap: '12px',
+            height: '50px',
+          }}>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <h2 style={{ 
+                margin: 0, 
+                fontSize: '17px', 
+                fontWeight: 'bold', 
+                color: '#1a1a1a', 
+                letterSpacing: '0.5px',
+                lineHeight: '1.2',
+                marginBottom: '4px',
+              }}>
+                Mero Reading Room
+              </h2>
+              <p style={{ 
+                margin: 0, 
+                fontSize: '9px', 
+                color: '#666', 
+                lineHeight: '1.3',
+                marginBottom: '2px',
+              }}>
+                Mid Baneshwor, Kathmandu, Nepal
+              </p>
+              <p style={{ margin: 0, fontSize: '9px', color: '#666', lineHeight: '1.3' }}>
+                986-7666655
+              </p>
+            </div>
             <img
               src={logoUrl}
               alt="MRR Logo"
               style={{
-                width: '90px',
-                height: '60px',
+                width: '48px',
+                height: '48px',
                 objectFit: 'contain',
-                marginBottom: '5px',
+                flexShrink: 0,
               }}
             />
-            <p style={{
-              margin: 0,
-              fontSize: '13px',
-              color: '#888',
-              fontStyle: 'italic',
-              textAlign: 'center',
-            }}>
-              Mid Baneshwor, Kathmandu
-            </p>
           </div>
 
-          {/* Photo Section */}
-          <div style={{ marginBottom: '15px' }}>
-            {userData.photoUrl ? (
-              <img
-                src={userData.photoUrl}
-                alt={userData.name || 'User'}
-                style={{
-                  width: '180px',
-                  height: '180px',
-                  borderRadius: '12px',
-                  border: '3px solid #003B73',
-                  objectFit: 'cover',
-                  display: 'block',
-                }}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextElementSibling.style.display = 'flex';
-                }}
-              />
-            ) : null}
-            <div
-              style={{
-                width: '180px',
-                height: '180px',
-                backgroundColor: '#f5f5f5',
-                borderRadius: '12px',
-                border: '3px solid #003B73',
-                display: userData.photoUrl ? 'none' : 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#999',
-                fontSize: '10px',
-                textAlign: 'center',
-                flexDirection: 'column',
-              }}
-            >
-              <div style={{ fontSize: '40px', marginBottom: '5px' }}>👤</div>
-            </div>
-          </div>
-
-          {/* Name */}
-          <h2 style={{
-            fontSize: '22px',
-            fontWeight: '700',
-            color: '#003B73',
-            margin: '12px 0 20px 0',
-            textTransform: 'uppercase',
-            textAlign: 'center',
-            letterSpacing: '0.5px',
-            wordBreak: 'break-word',
+          {/* Main Content */}
+          <div style={{ 
+            display: 'flex', 
+            gap: '16px', 
+            height: '120px',
+            marginBottom: '12px',
           }}>
-            {userData.name || "N/A"}
-          </h2>
-
-          {/* Info Fields */}
-          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {/* MRR ID */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0' }}>
-              <span style={{ fontSize: '14px', fontWeight: '700', color: '#555', textTransform: 'uppercase', letterSpacing: '0.3px' }}>MRR ID:</span>
-              <span style={{ fontSize: '14px', fontWeight: '600', color: '#222' }}>{userData.mrrNumber || "N/A"}</span>
+            {/* Left Side - Photo */}
+            <div style={{ flexShrink: 0, width: '85px', height: '120px', position: 'relative' }}>
+              {userData.photoUrl ? (
+                <img
+                  src={userData.photoUrl}
+                  alt={userData.name || 'User'}
+                  style={{
+                    width: '85px',
+                    height: '120px',
+                    objectFit: 'cover',
+                    borderRadius: '8px',
+                    border: '2px solid #ddd',
+                    display: 'block',
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextElementSibling.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <div
+                style={{
+                  width: '85px',
+                  height: '120px',
+                  backgroundColor: '#f5f5f5',
+                  borderRadius: '8px',
+                  border: '2px solid #ddd',
+                  display: userData.photoUrl ? 'none' : 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#999',
+                  fontSize: '10px',
+                  textAlign: 'center',
+                  flexDirection: 'column',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                }}
+              >
+                <div style={{ fontSize: '22px', marginBottom: '3px' }}>👤</div>
+                <div>No Photo</div>
+              </div>
             </div>
 
-            {/* Blood Group */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0' }}>
-              <span style={{ fontSize: '14px', fontWeight: '700', color: '#555', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Blood:</span>
-              <span style={{ fontSize: '14px', fontWeight: '600', color: '#222' }}>{userData.bloodGroup || "N/A"}</span>
-            </div>
+            {/* Right Side - User Info */}
+            <div style={{ 
+              flex: 1, 
+              display: 'flex', 
+              flexDirection: 'column',
+              minWidth: 0,
+              justifyContent: 'space-between',
+            }}>
+              <div>
+                <p style={{ 
+                  margin: 0, 
+                  fontSize: '9px', 
+                  color: '#666', 
+                  fontWeight: '600', 
+                  textTransform: 'uppercase', 
+                  letterSpacing: '0.5px',
+                  lineHeight: '1.2',
+                  marginBottom: '3px',
+                }}>
+                  Name
+                </p>
+                <p style={{ 
+                  margin: 0, 
+                  fontSize: '14px', 
+                  fontWeight: 'bold', 
+                  color: '#1a1a1a',
+                  lineHeight: '1.3',
+                  wordBreak: 'break-word',
+                }}>
+                  {userData.name || 'N/A'}
+                </p>
+              </div>
 
-            {/* Phone */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0' }}>
-              <span style={{ fontSize: '14px', fontWeight: '700', color: '#555', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Phone:</span>
-              <span style={{ fontSize: '14px', fontWeight: '600', color: '#222' }}>{userData.phoneNumber || "N/A"}</span>
-            </div>
+              <div>
+                <p style={{ 
+                  margin: 0, 
+                  fontSize: '9px', 
+                  color: '#666', 
+                  fontWeight: '600', 
+                  textTransform: 'uppercase', 
+                  letterSpacing: '0.5px',
+                  lineHeight: '1.2',
+                  marginBottom: '3px',
+                }}>
+                  MRR ID
+                </p>
+                <p style={{ 
+                  margin: 0, 
+                  fontSize: '12px', 
+                  fontWeight: '600', 
+                  color: '#0066cc',
+                  lineHeight: '1.3',
+                  wordBreak: 'break-word',
+                }}>
+                  {userData.mrrNumber || 'N/A'}
+                </p>
+              </div>
 
-            {/* Email */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0' }}>
-              <span style={{ fontSize: '14px', fontWeight: '700', color: '#555', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Email:</span>
-              <span style={{ fontSize: '14px', fontWeight: '600', color: '#222', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={userData.email}>{userData.email || "N/A"}</span>
+              <div>
+                <p style={{ 
+                  margin: 0, 
+                  fontSize: '9px', 
+                  color: '#666', 
+                  fontWeight: '600', 
+                  textTransform: 'uppercase', 
+                  letterSpacing: '0.5px',
+                  lineHeight: '1.2',
+                  marginBottom: '3px',
+                }}>
+                  Date of Birth
+                </p>
+                <p style={{ 
+                  margin: 0, 
+                  fontSize: '10px', 
+                  color: '#333',
+                  lineHeight: '1.3',
+                  wordBreak: 'break-word',
+                }}>
+                  {formatDate(userData.dateOfBirth)}
+                </p>
+              </div>
+
+              <div>
+                <p style={{ 
+                  margin: 0, 
+                  fontSize: '9px', 
+                  color: '#666', 
+                  fontWeight: '600', 
+                  textTransform: 'uppercase', 
+                  letterSpacing: '0.5px',
+                  lineHeight: '1.2',
+                  marginBottom: '3px',
+                }}>
+                  Phone
+                </p>
+                <p style={{ 
+                  margin: 0, 
+                  fontSize: '10px', 
+                  color: '#333',
+                  lineHeight: '1.3',
+                  wordBreak: 'break-word',
+                }}>
+                  {userData.phoneNumber || 'N/A'}
+                </p>
+              </div>
             </div>
+          </div>
+
+          {/* Footer */}
+          <div style={{ 
+            paddingTop: '10px', 
+            borderTop: '1px solid #e0e0e0',
+            marginTop: 'auto',
+          }}>
+            <p style={{ 
+              margin: 0, 
+              fontSize: '7px', 
+              color: '#999', 
+              textAlign: 'center',
+              lineHeight: '1.2',
+            }}>
+              This is an official identification card
+            </p>
           </div>
         </div>
 
@@ -327,30 +413,27 @@ function IDCard({ onBack }) {
           disabled={downloading}
           style={{
             marginTop: '30px',
-            padding: '16px 32px',
-            backgroundColor: downloading ? '#666' : '#000',
+            padding: '12px 32px',
+            backgroundColor: downloading ? '#999' : '#0066cc',
             color: 'white',
             border: 'none',
-            borderRadius: '10px',
+            borderRadius: '8px',
             cursor: downloading ? 'not-allowed' : 'pointer',
-            fontSize: '18px',
-            fontWeight: '700',
-            letterSpacing: '0.5px',
-            width: '100%',
-            maxWidth: '350px',
-            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-            transition: 'all 0.2s ease',
+            fontSize: '16px',
+            fontWeight: '600',
+            boxShadow: '0 4px 12px rgba(0, 102, 204, 0.3)',
+            transition: 'all 0.3s ease',
           }}
-          onMouseEnter={(e) => {
+          onMouseOver={(e) => {
             if (!downloading) {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 6px 8px rgba(0,0,0,0.15)';
+              e.target.style.backgroundColor = '#0052a3';
+              e.target.style.transform = 'translateY(-2px)';
             }
           }}
-          onMouseLeave={(e) => {
+          onMouseOut={(e) => {
             if (!downloading) {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+              e.target.style.backgroundColor = '#0066cc';
+              e.target.style.transform = 'translateY(0)';
             }
           }}
         >
@@ -362,9 +445,9 @@ function IDCard({ onBack }) {
           fontSize: '12px', 
           color: '#666', 
           textAlign: 'center', 
-          maxWidth: '350px' 
+          maxWidth: '400px' 
         }}>
-          Click the button above to download your ID card.
+          Click the button above to download your ID card as a PNG image. The card can be used for identification purposes.
         </p>
       </main>
     </div>

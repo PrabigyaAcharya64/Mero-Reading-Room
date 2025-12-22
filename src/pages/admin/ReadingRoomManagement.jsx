@@ -1,15 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
-<<<<<<< HEAD
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
-=======
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, setDoc, getDoc } from 'firebase/firestore';
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 import LoadingSpinner from '../../components/LoadingSpinner';
 
-const profileIcon =
-    'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
+
 
 
 const SeatIcon = ({ occupied, size = 50 }) => (
@@ -72,8 +67,7 @@ const ELEMENT_CONFIG = {
 };
 
 function ReadingRoomManagement({ onBack }) {
-    const { user, signOutUser } = useAuth();
-    const displayName = user?.displayName || user?.email?.split('@')[0] || 'Admin';
+    const { user } = useAuth();
 
     const [rooms, setRooms] = useState([]);
     const [selectedRoom, setSelectedRoom] = useState(null);
@@ -216,32 +210,19 @@ function ReadingRoomManagement({ onBack }) {
         try {
             const room = rooms.find(r => r.id === selectedRoom);
             const student = verifiedUsers.find(u => u.id === userId);
-<<<<<<< HEAD
-            const elements = room.elements || room.seats || [];
-=======
             const elements = room.elements || [];
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             const seat = elements.find(e => e.id === seatId);
 
             if (!student || !seat) return;
 
             const existingAssignment = seatAssignments.find(a => a.userId === userId);
-<<<<<<< HEAD
-=======
             let preservedPaymentDue = null;
             let preservedLastPayment = null;
 
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             if (existingAssignment) {
                 if (!confirm(`${student.name} is already assigned to ${existingAssignment.seatLabel} in ${existingAssignment.roomName}. Move them here?`)) {
                     return;
                 }
-<<<<<<< HEAD
-                await deleteDoc(doc(db, 'seatAssignments', existingAssignment.id));
-            }
-
-=======
-
                 // Fetch current user data to preserve payment dates
                 const userDocRef = doc(db, 'users', userId);
                 const userDocSnap = await getDoc(userDocRef);
@@ -257,7 +238,6 @@ function ReadingRoomManagement({ onBack }) {
             }
 
             // Create new seat assignment
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             await addDoc(collection(db, 'seatAssignments'), {
                 userId: userId,
                 userName: student.name,
@@ -270,13 +250,6 @@ function ReadingRoomManagement({ onBack }) {
                 assignedBy: user?.uid || 'admin'
             });
 
-<<<<<<< HEAD
-            setMessage(`Assigned ${student.name} to ${seat.label}`);
-            loadSeatAssignments();
-            setAssignmentMode(false);
-            setSelectedStudent(null);
-            setSearchQuery(''); // Add this line to reset search
-=======
             // Determine payment dates: preserve if reassigning, create new if first assignment
             const nextPaymentDue = preservedPaymentDue || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
             const lastPaymentDate = preservedLastPayment || new Date().toISOString();
@@ -318,7 +291,6 @@ function ReadingRoomManagement({ onBack }) {
             setAssignmentMode(false);
             setSelectedStudent(null);
             setSearchQuery('');
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
         } catch (error) {
             console.error('Error assigning student:', error);
             setMessage('Error assigning student');
@@ -331,9 +303,6 @@ function ReadingRoomManagement({ onBack }) {
         }
 
         try {
-<<<<<<< HEAD
-            await deleteDoc(doc(db, 'seatAssignments', assignmentId));
-=======
             // First, get the assignment to find the userId
             const assignment = seatAssignments.find(a => a.id === assignmentId);
 
@@ -357,7 +326,6 @@ function ReadingRoomManagement({ onBack }) {
 
             console.log('User unassigned and registration cleared for userId:', assignment.userId);
 
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             setMessage('Student unassigned successfully');
             loadSeatAssignments();
             setShowStudentModal(false);
@@ -397,12 +365,8 @@ function ReadingRoomManagement({ onBack }) {
                 scale: elementForm.scale,
                 ...(elementForm.type === 'seat' && { occupied: false })
             };
-
-<<<<<<< HEAD
-            const currentElements = room.elements || room.seats || [];
-=======
+ 
             const currentElements = room.elements || [];
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             const updatedElements = [...currentElements, newElement];
             const roomRef = doc(db, 'readingRooms', selectedRoom);
             await updateDoc(roomRef, { elements: updatedElements });
@@ -442,11 +406,7 @@ function ReadingRoomManagement({ onBack }) {
 
         try {
             const room = rooms.find(r => r.id === selectedRoom);
-<<<<<<< HEAD
-            const currentElements = room.elements || room.seats || [];
-=======
             const currentElements = room.elements || [];
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             const updatedElements = currentElements.filter(e => e.id !== elementId);
             const roomRef = doc(db, 'readingRooms', selectedRoom);
             await updateDoc(roomRef, { elements: updatedElements });
@@ -491,11 +451,7 @@ function ReadingRoomManagement({ onBack }) {
 
         setRooms(prevRooms => prevRooms.map(r => {
             if (r.id === selectedRoom) {
-<<<<<<< HEAD
-                const updatedElements = (r.elements || r.seats || []).map(el =>
-=======
                 const updatedElements = (r.elements || []).map(el =>
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
                     el.id === isDragging ? { ...el, x: newX, y: newY } : el
                 );
                 return { ...r, elements: updatedElements };
@@ -509,11 +465,7 @@ function ReadingRoomManagement({ onBack }) {
 
         try {
             const room = rooms.find(r => r.id === selectedRoom);
-<<<<<<< HEAD
-            const currentElements = room.elements || room.seats || [];
-=======
             const currentElements = room.elements || [];
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
             const roomRef = doc(db, 'readingRooms', selectedRoom);
             await updateDoc(roomRef, { elements: currentElements });
         } catch (error) {
@@ -524,13 +476,6 @@ function ReadingRoomManagement({ onBack }) {
         setIsDragging(null);
     };
 
-    const handleSignOut = async () => {
-        try {
-            await signOutUser();
-        } catch (error) {
-            console.error('Sign out error:', error);
-        }
-    };
 
     const openRoomModal = (roomId) => {
         setSelectedRoom(roomId);
@@ -559,45 +504,16 @@ function ReadingRoomManagement({ onBack }) {
         <div className="landing-screen">
             <header className="landing-header">
                 {onBack && (
-                    <button
-                        type="button"
-                        onClick={onBack}
-                        className="landing-signout"
-<<<<<<< HEAD
-                        style={{
-                            border: '1px solid var(--color-text-primary)',
-                            padding: '0.5rem 0.85rem'
-                        }}
-=======
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
-                    >
-                        ← Back
-                    </button>
+                    <EnhancedBackButton onBack={onBack} />
                 )}
-<<<<<<< HEAD
-                <p className="landing-greeting" style={{ flex: 1, textAlign: onBack ? 'center' : 'left' }}>
-=======
-                <p className="landing-greeting">
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
-                    Hey <span>{displayName}</span>!
-                </p>
-                <div className="landing-status">
-                    <button type="button" className="landing-profile" aria-label="Profile">
-                        <img src={profileIcon} alt="" />
-                    </button>
-                    <button type="button" className="landing-signout" onClick={handleSignOut}>
-                        Sign out
-                    </button>
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                    <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)' }}>Admin Management</p>
                 </div>
+                <div style={{ flex: 1 }}></div>
             </header>
 
-<<<<<<< HEAD
             <main className="landing-body" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
                 <h1 style={{ marginBottom: '30px', fontSize: '2rem' }}>Reading Room Management</h1>
-=======
-            <main className="landing-body">
-                <h1>Reading Room Management</h1>
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
 
                 {message && (
                     <p style={{
@@ -648,11 +564,7 @@ function ReadingRoomManagement({ onBack }) {
                     <h2 style={{ marginBottom: '30px', fontSize: '1.5rem' }}>All Rooms ({rooms.length})</h2>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '25px' }}>
                         {rooms.map(room => {
-<<<<<<< HEAD
-                            const elements = room.elements || room.seats || [];
-=======
                             const elements = room.elements || [];
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
                             const seats = elements.filter(e => !e.type || e.type === 'seat');
                             const roomAssignments = seatAssignments.filter(a => a.roomId === room.id);
                             const assignedCount = roomAssignments.length;
@@ -776,12 +688,8 @@ function ReadingRoomManagement({ onBack }) {
                                         transform: 'translateX(-50%)',
                                         zIndex: 1200,
                                         minWidth: '400px',
-<<<<<<< HEAD
                                         maxWidth: '600px',
                                         animation: 'slideDown 0.3s ease-out'
-=======
-                                        maxWidth: '600px'
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
                                     }}>
                                         <div style={{
                                             padding: '15px 20px',
@@ -922,11 +830,7 @@ function ReadingRoomManagement({ onBack }) {
                                             </button>
                                         </div>
                                         {(() => {
-<<<<<<< HEAD
-                                            const elements = selectedRoomData.elements || selectedRoomData.seats || [];
-=======
                                             const elements = selectedRoomData.elements || [];
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
                                             const normalizedElements = elements.map(el => ({
                                                 ...el,
                                                 type: el.type || 'seat',
@@ -1094,11 +998,7 @@ function ReadingRoomManagement({ onBack }) {
                                     <div style={{ marginBottom: '15px' }}>
                                         <input
                                             type="text"
-<<<<<<< HEAD
                                             placeholder="Search by MRR number..."
-=======
-                                            placeholder="Search by MRR ID..."
->>>>>>> e4917c87706b066e979d3ed8011ba6e0c6738754
                                             value={searchQuery || ''}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             style={{

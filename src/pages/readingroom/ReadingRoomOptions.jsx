@@ -6,7 +6,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 
 function ReadingRoomOptions({ onBack, onSelectOption }) {
-    const { user, signOutUser } = useAuth();
+    const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [hasExistingMembership, setHasExistingMembership] = useState(false);
     const [membershipType, setMembershipType] = useState(null);
@@ -52,23 +52,15 @@ function ReadingRoomOptions({ onBack, onSelectOption }) {
     return (
         <div style={{ minHeight: '100vh', backgroundColor: '#fff', padding: '20px' }}>
             <header className="landing-header" style={{ marginBottom: '20px' }}>
-                <div className="landing-status" style={{ justifyContent: 'flex-start', flex: 1 }}>
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
                     {onBack && (
                         <EnhancedBackButton onBack={onBack} />
                     )}
                 </div>
-                <p className="landing-greeting" style={{ flex: 1, textAlign: 'center', margin: 0 }}>Reading Room</p>
-                <div className="landing-status" style={{ justifyContent: 'flex-end', flex: 1 }}>
-                    <button type="button" className="landing-signout" onClick={async () => {
-                        try {
-                            await signOutUser();
-                        } catch (error) {
-                            console.error('Sign out error:', error);
-                        }
-                    }}>
-                        Sign out
-                    </button>
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                    <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)', margin: 0 }}>Reading Room</p>
                 </div>
+                <div style={{ flex: 1 }}></div>
             </header>
 
             <div style={{ maxWidth: '900px', margin: '0 auto', border: '1px solid #333', padding: '40px' }}>

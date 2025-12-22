@@ -1,26 +1,18 @@
 import { useState } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
-import CanteenClient from '../CanteenClient';
+import CanteenClient from './CanteenClient';
 import ClientOrderHistory from './ClientOrderHistory';
 import IDCard from '../IDCard';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 
 const profileIcon = new URL('../../assets/profile.svg', import.meta.url).href;
-const foodIcon = new URL('../assets/food.svg', import.meta.url).href;
-const orderIcon = new URL('../assets/order.svg', import.meta.url).href;
+const foodIcon = new URL('../../assets/food.svg', import.meta.url).href;
+const orderIcon = new URL('../../assets/order.svg', import.meta.url).href;
 
 function CanteenClientLanding({ onBack }) {
-  const { user, signOutUser, userBalance } = useAuth();
-  const displayName = user?.displayName || user?.email?.split('@')[0] || 'Reader';
+  const { user, userBalance } = useAuth();
   const [currentView, setCurrentView] = useState('landing');
 
-  const handleSignOut = async () => {
-    try {
-      await signOutUser();
-    } catch (error) {
-      console.error('Sign out error:', error);
-    }
-  };
 
   if (currentView === 'idcard') {
     return <IDCard onBack={() => setCurrentView('landing')} />;
@@ -37,17 +29,22 @@ function CanteenClientLanding({ onBack }) {
   return (
     <div className="landing-screen">
       <header className="landing-header">
-        <p className="landing-greeting" style={{ flex: 1, textAlign: 'center' }}>
-          Hey <span>{displayName}</span>!
-        </p>
-        <div className="landing-status">
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '12px' }}>
+          {onBack && <EnhancedBackButton onBack={onBack} />}
           <div className="landing-balance" aria-label="Current balance">
             <div className="landing-balance__label">Balance</div>
-            <div className="landing-balance__value">रु {userBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <div className="landing-balance__value">रु {(userBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             <button type="button" className="landing-balance__add" aria-label="Add to balance">
               +
             </button>
           </div>
+        </div>
+        
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)' }}>Canteen</p>
+        </div>
+
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
           <button 
             type="button" 
             className="landing-profile" 
@@ -56,18 +53,10 @@ function CanteenClientLanding({ onBack }) {
           >
             <img src={profileIcon} alt="" />
           </button>
-          <button type="button" className="landing-signout" onClick={handleSignOut}>
-            Sign out
-          </button>
         </div>
       </header>
 
       <main className="landing-body">
-        {onBack && (
-          <div style={{ marginBottom: '20px' }}>
-            <EnhancedBackButton onBack={onBack} />
-          </div>
-        )}
 
         <section className="landing-services">
           <h2 style={{ textAlign: 'center' }}>Canteen Services</h2>

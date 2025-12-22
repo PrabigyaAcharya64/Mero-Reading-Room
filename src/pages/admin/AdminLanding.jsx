@@ -3,7 +3,7 @@ import { useAuth } from '../../auth/AuthProvider';
 import UserManagement from './UserManagement';
 import HostelManagement from './HostelManagement';
 import NewUsers from './NewUsers';
-import CanteenAdminLanding from '../canteen/CanteenAdminLanding';
+import CanteenAdminLanding from '../Canteen/CanteenAdminLanding';
 import AdminMessages from './AdminMessages';
 import CreateAnnouncement from './CreateAnnouncement';
 import ReadingRoomManagement from '../readingroom/ReadingRoomManagement';
@@ -12,7 +12,7 @@ import { db } from '../../lib/firebase';
 
 const profileIcon =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
-const foodIcon = new URL('../assets/food.svg', import.meta.url).href;
+
 const contactIcon = new URL('../../assets/contact.svg', import.meta.url).href;
 const userManagementIcon = new URL('../../assets/usermanagement.svg', import.meta.url).href;
 const hostelIcon = new URL('../../assets/hostel.svg', import.meta.url).href;
@@ -21,8 +21,7 @@ const canteenIcon = new URL('../../assets/canteen.svg', import.meta.url).href;
 const readingRoomIcon = new URL('../../assets/readingroom.svg', import.meta.url).href;
 
 function AdminLanding() {
-  const { user, signOutUser } = useAuth();
-  const displayName = user?.displayName || user?.email?.split('@')[0] || 'Admin';
+  const { user } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
   const [unreadCount, setUnreadCount] = useState(0);
   const [announcements, setAnnouncements] = useState([]);
@@ -57,13 +56,6 @@ function AdminLanding() {
     }
   };
 
-  const handleSignOut = async () => {
-    try {
-      await signOutUser();
-    } catch (error) {
-      console.error('Sign out error:', error);
-    }
-  };
 
   if (currentView === 'user-management') {
     return <UserManagement onBack={() => setCurrentView('dashboard')} onNavigate={setCurrentView} />;
@@ -96,15 +88,13 @@ function AdminLanding() {
   return (
     <div className="landing-screen">
       <header className="landing-header">
-        <p className="landing-greeting">
-          Hey <span>{displayName}</span>!
-        </p>
-        <div className="landing-status">
+        <div style={{ flex: 1 }}></div>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)' }}>Admin Panel</p>
+        </div>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
           <button type="button" className="landing-profile" aria-label="Profile">
             <img src={profileIcon} alt="" />
-          </button>
-          <button type="button" className="landing-signout" onClick={handleSignOut}>
-            Sign out
           </button>
         </div>
       </header>

@@ -5,8 +5,7 @@ import '../../styles/CanteenLanding.css';
 const foodIcon = new URL('../../assets/food.svg', import.meta.url).href;
 const orderIcon = new URL('../../assets/order.svg', import.meta.url).href;
 
-const CanteenLanding = ({ onBack, onNavigate, user, signOutUser, userBalance }) => {
-  const displayName = user?.displayName || user?.email?.split('@')[0] || 'Reader';
+const CanteenLanding = ({ onBack, onNavigate, userBalance }) => {
 
   return (
     <div className="canteen-landing">

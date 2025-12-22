@@ -13,17 +13,9 @@ const reportIcon = new URL('../../assets/reports.svg', import.meta.url).href;
 const inventoryIcon = new URL('../../assets/inventory.svg', import.meta.url).href;
 
 function CanteenAdminLanding({ onBack }) {
-  const { user, signOutUser } = useAuth();
-  const displayName = user?.displayName || user?.email?.split('@')[0] || 'Admin';
+  const { user } = useAuth();
   const [currentView, setCurrentView] = useState('landing');
 
-  const handleSignOut = async () => {
-    try {
-      await signOutUser();
-    } catch (error) {
-      console.error('Sign out error:', error);
-    }
-  };
 
   if (currentView === 'menu-management') {
     return <MenuManagement onBack={() => setCurrentView('landing')} />;
@@ -40,22 +32,14 @@ function CanteenAdminLanding({ onBack }) {
   return (
     <div className="landing-screen">
       <header className="landing-header">
-        <p className="landing-greeting">
-          Admin <span>{displayName}</span>
-        </p>
-        <div className="landing-status">
-          <button type="button" className="landing-signout" onClick={handleSignOut}>
-            Sign out
-          </button>
+        {onBack && <EnhancedBackButton onBack={onBack} />}
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)' }}>Canteen Admin</p>
         </div>
+        <div style={{ flex: 1 }}></div>
       </header>
 
       <main className="landing-body">
-         {onBack && (
-           <div style={{ marginBottom: '20px' }}>
-             <EnhancedBackButton onBack={onBack} />
-           </div>
-         )}
         <section className="landing-services">
           <h2>Canteen Administration</h2>
           <div className="landing-services__grid">

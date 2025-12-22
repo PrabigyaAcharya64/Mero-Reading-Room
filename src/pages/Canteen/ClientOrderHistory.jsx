@@ -4,11 +4,10 @@ import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestor
 import { db } from '../../lib/firebase';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 
-const profileIcon = new URL('../../assets/profile.svg', import.meta.url).href;
+
 
 function ClientOrderHistory({ onBack }) {
-  const { user, signOutUser, userBalance } = useAuth();
-  const displayName = user?.displayName || user?.email?.split('@')[0] || 'Reader';
+  const { user, userBalance } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'pending', 'completed', 'cancelled'
@@ -53,13 +52,6 @@ function ClientOrderHistory({ onBack }) {
     };
   }, [user]);
 
-  const handleSignOut = async () => {
-    try {
-      await signOutUser();
-    } catch (error) {
-      console.error('Sign out error:', error);
-    }
-  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -114,9 +106,7 @@ function ClientOrderHistory({ onBack }) {
           My Orders
         </p>
         
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-          {/* Placeholder for SignOut if needed, or empty to balance */}
-        </div>
+        <div style={{ flex: 1 }}></div>
       </header>
 
       <main className="landing-body" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>

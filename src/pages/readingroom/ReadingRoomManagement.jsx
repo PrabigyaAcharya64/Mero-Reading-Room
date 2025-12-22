@@ -480,17 +480,10 @@ function ReadingRoomManagement({ onBack }) {
                 {onBack && (
                     <EnhancedBackButton onBack={onBack} />
                 )}
-                <p className="landing-greeting">
-                    Hey <span>{displayName}</span>!
-                </p>
-                <div className="landing-status">
-                    <button type="button" className="landing-profile" aria-label="Profile">
-                        <img src={profileIcon} alt="" />
-                    </button>
-                    <button type="button" className="landing-signout" onClick={handleSignOut}>
-                        Sign out
-                    </button>
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                    <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)' }}>Management</p>
                 </div>
+                <div style={{ flex: 1 }}></div>
             </header>
 
             <main className="landing-body">

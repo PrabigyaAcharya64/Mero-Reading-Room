@@ -5,12 +5,10 @@ import { collection, query, getDocs, orderBy, onSnapshot, limit } from 'firebase
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 
-const profileIcon =
-  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
+
 
 function SalesDashboard({ onBack }) {
-  const { user, signOutUser } = useAuth();
-  const displayName = user?.displayName || user?.email?.split('@')[0] || 'Canteen Staff';
+  const { user } = useAuth();
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -74,13 +72,6 @@ function SalesDashboard({ onBack }) {
   };
 
 
-  const handleSignOut = async () => {
-    try {
-      await signOutUser();
-    } catch (error) {
-      console.error('Sign out error:', error);
-    }
-  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -126,20 +117,13 @@ function SalesDashboard({ onBack }) {
   return (
     <div className="landing-screen">
       <header className="landing-header">
-        {onBack && (
-          <EnhancedBackButton onBack={onBack} />
-        )}
-        <p className="landing-greeting" style={{ flex: 1, textAlign: onBack ? 'center' : 'left' }}>
-          Hey <span>{displayName}</span>!
-        </p>
-        <div className="landing-status">
-          <button type="button" className="landing-profile" aria-label="Profile">
-            <img src={profileIcon} alt="" />
-          </button>
-          <button type="button" className="landing-signout" onClick={handleSignOut}>
-            Sign out
-          </button>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+          {onBack && <EnhancedBackButton onBack={onBack} />}
         </div>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)' }}>Sales Dashboard</p>
+        </div>
+        <div style={{ flex: 1 }}></div>
       </header>
 
       <main className="landing-body" style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto' }}>

@@ -308,7 +308,15 @@ const Discussion = ({ onBack }) => {
     if (viewMode === 'list') {
         return (
             <div style={{ minHeight: '100vh', backgroundColor: '#fff', padding: '20px' }}>
-                <EnhancedBackButton onBack={onBack} />
+                <header className="landing-header" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
+                    <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+                        {onBack && <EnhancedBackButton onBack={onBack} />}
+                    </div>
+                    <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                        <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)', margin: 0 }}>Discussion Room</p>
+                    </div>
+                    <div style={{ flex: 1 }}></div>
+                </header>
 
                 <div style={{ maxWidth: '800px', margin: '0 auto' }}>
                     <div style={{
@@ -396,7 +404,15 @@ const Discussion = ({ onBack }) => {
 
     return (
         <div style={{ minHeight: '100vh', backgroundColor: '#fff', padding: '20px' }}>
-            <EnhancedBackButton onBack={() => setViewMode('list')} />
+            <header className="landing-header" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+                    <EnhancedBackButton onBack={() => setViewMode('list')} />
+                </div>
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                    <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)', margin: 0 }}>Discussion Room</p>
+                </div>
+                <div style={{ flex: 1 }}></div>
+            </header>
 
             <div style={{ maxWidth: '800px', margin: '0 auto' }}>
                 <div style={{
