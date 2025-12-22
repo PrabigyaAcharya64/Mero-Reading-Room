@@ -174,7 +174,7 @@ function LandingPage({ onBack }) {
   return (
     <div className="landing-screen">
       <header className="landing-header">
-        <p className="landing-greeting" style={{ flex: 1, textAlign: 'center' }}>
+        <p className="landing-greeting">
           Hey <span>{displayName}</span>!
         </p>
         <div className="landing-status">
@@ -192,9 +192,6 @@ function LandingPage({ onBack }) {
             onClick={() => setCurrentView('idcard')}
           >
             <img src={profileIcon} alt="" />
-          </button>
-          <button type="button" className="landing-signout" onClick={handleSignOut}>
-            Sign out
           </button>
         </div>
       </header>

@@ -97,16 +97,12 @@ function ClientOrderHistory({ onBack }) {
 
   return (
     <div className="landing-screen">
-      <header className="landing-header" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+      <header className="subpage-header">
+        <div className="subpage-header__left">
           {onBack && <EnhancedBackButton onBack={onBack} />}
         </div>
-        
-        <p className="landing-greeting" style={{ flex: 1, textAlign: 'center', margin: 0 }}>
-          My Orders
-        </p>
-        
-        <div style={{ flex: 1 }}></div>
+        <h1 className="subpage-header__title">My Orders</h1>
+        <div className="subpage-header__spacer"></div>
       </header>
 
       <main className="landing-body" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>

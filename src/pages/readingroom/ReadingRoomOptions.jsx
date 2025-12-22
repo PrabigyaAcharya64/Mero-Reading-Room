@@ -51,16 +51,12 @@ function ReadingRoomOptions({ onBack, onSelectOption }) {
 
     return (
         <div style={{ minHeight: '100vh', backgroundColor: '#fff', padding: '20px' }}>
-            <header className="landing-header" style={{ marginBottom: '20px' }}>
-                <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
-                    {onBack && (
-                        <EnhancedBackButton onBack={onBack} />
-                    )}
+            <header className="subpage-header">
+                <div className="subpage-header__left">
+                    {onBack && <EnhancedBackButton onBack={onBack} />}
                 </div>
-                <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-                    <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)', margin: 0 }}>Reading Room</p>
-                </div>
-                <div style={{ flex: 1 }}></div>
+                <h1 className="subpage-header__title">Reading Room</h1>
+                <div className="subpage-header__spacer"></div>
             </header>
 
             <div style={{ maxWidth: '900px', margin: '0 auto', border: '1px solid #333', padding: '40px' }}>

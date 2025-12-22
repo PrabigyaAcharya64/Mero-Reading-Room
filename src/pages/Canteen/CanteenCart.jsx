@@ -27,11 +27,13 @@ const CanteenCart = ({
 
   return (
     <div className="canteen-cart-page">
-      <div className="cart-header">
-        <EnhancedBackButton onBack={onBack} />
-        <h1 className="header-title" style={{ flex: 1, textAlign: 'center', margin: 0 }}>Your Cart</h1>
-        <div style={{ width: '40px' }}></div> {/* Spacer to balance the layout */}
-      </div>
+      <header className="subpage-header" style={{ padding: '1rem 1.25rem' }}>
+        <div className="subpage-header__left">
+          <EnhancedBackButton onBack={onBack} />
+        </div>
+        <h1 className="subpage-header__title">Your Cart</h1>
+        <div className="subpage-header__spacer"></div>
+      </header>
 
       <div className="cart-balance-container">
         <span className="balance-label">Current Balance</span>

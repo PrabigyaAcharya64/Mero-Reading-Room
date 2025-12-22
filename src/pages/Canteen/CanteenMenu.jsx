@@ -117,19 +117,13 @@ const CanteenMenu = ({
   return (
     <div className="canteen-menu-page">
       {/* Header Section - Independent from container */}
-      <div style={{ maxWidth: '600px', margin: '0 auto', padding: '0 20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', position: 'relative' }}>
-          {onBack && (
-            <div style={{ position: 'absolute', left: '-150px' }}>
-              <EnhancedBackButton onBack={onBack} />
-            </div>
-          )}
-          <h1 style={{ flex: 1, textAlign: 'center', fontSize: '22px', fontWeight: '800', margin: 0, color: '#2c3e50' }}>
-            Today's Menu
-          </h1>
-          <div style={{ width: '40px' }}></div> {/* Spacer for balance */}
+      <header className="subpage-header" style={{ padding: '1rem 1.25rem' }}>
+        <div className="subpage-header__left">
+          {onBack && <EnhancedBackButton onBack={onBack} />}
         </div>
-      </div>
+        <h1 className="subpage-header__title">Today's Menu</h1>
+        <div className="subpage-header__spacer"></div>
+      </header>
 
       {/* Main Content Container */}
       <div style={{ maxWidth: '600px', margin: '0 auto', backgroundColor: 'white', borderRadius: '20px', overflow: 'hidden' }}>

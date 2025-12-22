@@ -1,0 +1,344 @@
+/* Discussion.css - Responsive styles for Discussion Room */
+
+:root {
+    --discussion-black: #000;
+    --discussion-white: #fff;
+    --discussion-gray: #666;
+    --discussion-light-gray: #f5f5f5;
+    --discussion-border: #000;
+    --discussion-error: #d32f2f;
+    --discussion-success: #2e7d32;
+    --discussion-input-border: #000;
+}
+
+.discussion-page {
+    min-height: 100vh;
+    background-color: var(--discussion-white);
+    padding: 1rem; /* Equivalent to 16px-20px */
+}
+
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.my-group-label {
+    margin-left: 0.5rem;
+    font-weight: bold;
+    color: inherit;
+}
+
+.discussion-container {
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.discussion-card {
+    background-color: var(--discussion-white);
+    padding: clamp(1.5rem, 5vw, 2.5rem); /* Responsive padding */
+    border: 1px solid var(--discussion-border);
+    text-align: center;
+}
+
+/* Header */
+.discussion-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+}
+
+.header-left, .header-right {
+    flex: 1;
+}
+
+.header-left {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.header-center {
+    flex: 2;
+    display: flex;
+    justify-content: center;
+}
+
+.header-title {
+    font-weight: bold;
+    font-size: 1.125rem; /* 18px */
+    font-family: var(--brand-font-serif);
+    margin: 0;
+}
+
+/* Title & Subtitle */
+.page-title {
+    font-size: clamp(1.5rem, 6vw, 1.75rem); /* Responsive font size */
+    font-weight: bold;
+    margin-bottom: 0.625rem;
+    color: var(--discussion-black);
+}
+
+.page-subtitle {
+    color: var(--discussion-gray);
+    margin-bottom: 2.5rem;
+}
+
+/* Slots List */
+.slots-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9375rem; /* 15px */
+}
+
+.slot-card {
+    padding: 1.25rem;
+    border: 1px solid var(--discussion-border);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column; /* Stack on mobile by default */
+    gap: 1rem;
+    text-align: left;
+    transition: all 0.2s;
+    background-color: var(--discussion-white);
+    color: var(--discussion-black);
+}
+
+.slot-card.booked.my-booking {
+    background-color: var(--discussion-black);
+    color: var(--discussion-white);
+}
+
+.slot-card:not(.my-booking):hover {
+    background-color: var(--discussion-light-gray);
+}
+
+.slot-info {
+    flex: 1;
+}
+
+.slot-label {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.slot-status {
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    margin-bottom: 0;
+}
+
+.slot-action {
+    display: flex;
+    align-items: center;
+}
+
+.action-badge {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid currentColor;
+    background-color: transparent;
+    text-transform: uppercase;
+}
+
+/* Responsive Slot Card (Horizontal on Tablet/Desktop) */
+@media (min-width: 600px) {
+    .slot-card {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.25rem 2rem;
+    }
+}
+
+/* Forms */
+.form-container {
+    max-width: 500px;
+    margin: 0 auto;
+    text-align: left;
+}
+
+.input-group {
+    margin-bottom: 1.25rem;
+}
+
+.input-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--discussion-black);
+}
+
+.text-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--discussion-input-border);
+    font-size: 1rem;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.member-add-row {
+    display: flex;
+    gap: 0.625rem;
+    margin-bottom: 0.625rem;
+}
+
+/* Buttons */
+.btn {
+    padding: 0.875rem 1.25rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.2s;
+    font-size: 1rem;
+}
+
+.btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.btn-black {
+    background-color: var(--discussion-black);
+    color: var(--discussion-white);
+}
+
+.btn-outline-red {
+    background-color: var(--discussion-white);
+    color: var(--discussion-error);
+    border: 1px solid var(--discussion-error);
+}
+
+.btn-block {
+    width: 100%;
+}
+
+.btn-small {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+}
+
+/* Pending Members Chips */
+.chips-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.chip {
+    background-color: var(--discussion-light-gray);
+    padding: 0.25rem 0.75rem;
+    border: 1px solid #ddd;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.chip-remove {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+    color: var(--discussion-gray);
+    font-size: 0.875rem;
+    line-height: 1;
+}
+
+/* Details View */
+.details-banner {
+    padding: 1.25rem;
+    background-color: var(--discussion-black);
+    color: var(--discussion-white);
+    margin-bottom: 1.875rem;
+    text-align: center;
+}
+
+.details-banner h3 {
+    font-size: 1.125rem;
+    margin: 0;
+}
+
+.section-title {
+    font-size: 1.125rem;
+    margin-bottom: 0.9375rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.625rem;
+}
+
+.members-list {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 1.875rem;
+}
+
+.member-item {
+    padding: 0.75rem;
+    background-color: var(--discussion-white);
+    border: 1px solid #eee;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.member-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.member-name {
+    font-weight: 500;
+    color: var(--discussion-black);
+}
+
+.member-mrr {
+    font-size: 0.75rem;
+    color: var(--discussion-gray);
+    margin-top: 0.125rem;
+}
+
+.add-member-section {
+    background-color: var(--discussion-white);
+    padding: 1.25rem;
+    border: 1px solid #eee;
+}
+
+.add-member-title {
+    font-size: 1rem;
+    margin-bottom: 0.9375rem;
+}
+
+/* Messages */
+.error-msg {
+    color: var(--discussion-error);
+    margin-bottom: 1.25rem;
+    font-size: 0.875rem;
+}
+
+.success-msg {
+    color: var(--discussion-success);
+    margin-bottom: 1.25rem;
+    font-size: 0.875rem;
+}
+
+.others-booking-view {
+    padding: clamp(1.5rem, 8vw, 2.5rem);
+    background-color: var(--discussion-light-gray);
+    border: 1px solid #ddd;
+    color: #333;
+}
+
+.others-booking-view h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.625rem;
+}
+
+.others-booking-view p {
+    font-size: 1.125rem;
+}

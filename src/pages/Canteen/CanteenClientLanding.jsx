@@ -28,23 +28,19 @@ function CanteenClientLanding({ onBack }) {
 
   return (
     <div className="landing-screen">
-      <header className="landing-header">
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '12px' }}>
+      <header className="subpage-header">
+        <div className="subpage-header__left" style={{ flex: '0 0 auto', gap: '12px' }}>
           {onBack && <EnhancedBackButton onBack={onBack} />}
           <div className="landing-balance" aria-label="Current balance">
             <div className="landing-balance__label">Balance</div>
             <div className="landing-balance__value">रु {(userBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-            <button type="button" className="landing-balance__add" aria-label="Add to balance">
-              +
-            </button>
+            <button type="button" className="landing-balance__add" aria-label="Add to balance">+</button>
           </div>
         </div>
         
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-          <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)' }}>Canteen</p>
-        </div>
+        <h1 className="subpage-header__title">Canteen</h1>
 
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+        <div className="subpage-header__spacer" style={{ flex: '0 0 40px', justifyContent: 'flex-end', display: 'flex' }}>
           <button 
             type="button" 
             className="landing-profile" 

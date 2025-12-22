@@ -476,14 +476,12 @@ function ReadingRoomManagement({ onBack }) {
 
     return (
         <div className="landing-screen">
-            <header className="landing-header">
-                {onBack && (
-                    <EnhancedBackButton onBack={onBack} />
-                )}
-                <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-                    <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)' }}>Management</p>
+            <header className="subpage-header">
+                <div className="subpage-header__left">
+                    {onBack && <EnhancedBackButton onBack={onBack} />}
                 </div>
-                <div style={{ flex: 1 }}></div>
+                <h1 className="subpage-header__title">Management</h1>
+                <div className="subpage-header__spacer"></div>
             </header>
 
             <main className="landing-body">

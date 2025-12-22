@@ -4,6 +4,7 @@ import { doc, runTransaction, onSnapshot, collection, query, where, getDocs, get
 import { useAuth } from '../../auth/AuthProvider';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
+import '../../styles/Discussion.css';
 
 const SLOTS = [
     { id: '06', label: '6:00 AM - 9:00 AM', startHour: 6 },
@@ -298,7 +299,7 @@ const Discussion = ({ onBack }) => {
 
     if (loading) {
         return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+            <div className="loading-container">
                 <LoadingSpinner size="40" stroke="3" color="#333" />
             </div>
         );
@@ -307,33 +308,25 @@ const Discussion = ({ onBack }) => {
     // Render List of Slots
     if (viewMode === 'list') {
         return (
-            <div style={{ minHeight: '100vh', backgroundColor: '#fff', padding: '20px' }}>
-                <header className="landing-header" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
-                    <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+            <div className="discussion-page">
+                <header className="subpage-header">
+                    <div className="subpage-header__left">
                         {onBack && <EnhancedBackButton onBack={onBack} />}
                     </div>
-                    <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-                        <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)', margin: 0 }}>Discussion Room</p>
-                    </div>
-                    <div style={{ flex: 1 }}></div>
+                    <h1 className="subpage-header__title">Discussion Room</h1>
+                    <div className="subpage-header__spacer"></div>
                 </header>
 
-                <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                    <div style={{
-                        backgroundColor: 'white',
-                        padding: '40px',
-                        borderRadius: '0',
-                        border: '1px solid #000',
-                        textAlign: 'center'
-                    }}>
-                        <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '10px', color: '#000' }}>
+                <div className="discussion-container">
+                    <div className="discussion-card">
+                        <h1 className="page-title">
                             Discussion Room Slots
                         </h1>
-                        <p style={{ color: '#666', marginBottom: '40px' }}>
+                        <p className="page-subtitle">
                             Select a time slot to book or view details.
                         </p>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <div className="slots-list">
                             {SLOTS.map(slot => {
                                 const booking = bookings[slot.id];
                                 const isBooked = !!booking;
@@ -343,45 +336,21 @@ const Discussion = ({ onBack }) => {
                                     <div
                                         key={slot.id}
                                         onClick={() => handleSlotClick(slot)}
-                                        style={{
-                                            padding: '20px',
-                                            borderRadius: '0',
-                                            border: '1px solid #000',
-                                            backgroundColor: isBooked ? (isMyBooking ? '#000' : '#fff') : '#fff',
-                                            color: isBooked && isMyBooking ? '#fff' : '#000',
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            transition: 'all 0.2s',
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            if (!isMyBooking) e.currentTarget.style.backgroundColor = '#f5f5f5';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            if (!isMyBooking) e.currentTarget.style.backgroundColor = '#fff';
-                                        }}
+                                        className={`slot-card ${isBooked ? 'booked' : ''} ${isMyBooking ? 'my-booking' : ''}`}
                                     >
-                                        <div style={{ textAlign: 'left' }}>
-                                            <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'inherit' }}>{slot.label}</h3>
+                                        <div className="slot-info">
+                                            <h3 className="slot-label">{slot.label}</h3>
                                             {isBooked ? (
-                                                <p style={{ fontSize: '14px', marginTop: '4px', color: 'inherit', opacity: isMyBooking ? 0.8 : 1 }}>
-                                                    Booked by: <strong style={{ color: 'inherit' }}>{booking.teamName}</strong>
-                                                    {isMyBooking && <span style={{ marginLeft: '8px', fontWeight: 'bold', color: 'inherit' }}>(Your Group)</span>}
+                                                <p className="slot-status">
+                                                    Booked by: <strong>{booking.teamName}</strong>
+                                                    {isMyBooking && <span className="my-group-label">(Your Group)</span>}
                                                 </p>
                                             ) : (
-                                                <p style={{ fontSize: '14px', marginTop: '4px', color: '#666' }}>Available</p>
+                                                <p className="slot-status" style={{ color: 'var(--discussion-gray)' }}>Available</p>
                                             )}
                                         </div>
-                                        <div>
-                                            <span style={{
-                                                padding: '6px 12px',
-                                                fontSize: '12px',
-                                                fontWeight: '600',
-                                                border: isMyBooking ? '1px solid #fff' : '1px solid #000',
-                                                backgroundColor: 'transparent',
-                                                color: 'inherit'
-                                            }}>
+                                        <div className="slot-action">
+                                            <span className="action-badge">
                                                 {isBooked ? (isMyBooking ? 'Manage' : 'View') : 'Book Now'}
                                             </span>
                                         </div>
@@ -403,75 +372,47 @@ const Discussion = ({ onBack }) => {
     const isMyTeam = isBooked && (booking.bookedBy === user.uid || (booking.members && booking.members.some(m => m.uid === user.uid)));
 
     return (
-        <div style={{ minHeight: '100vh', backgroundColor: '#fff', padding: '20px' }}>
-            <header className="landing-header" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
-                <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+        <div className="discussion-page">
+            <header className="subpage-header">
+                <div className="subpage-header__left">
                     <EnhancedBackButton onBack={() => setViewMode('list')} />
                 </div>
-                <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-                    <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)', margin: 0 }}>Discussion Room</p>
-                </div>
-                <div style={{ flex: 1 }}></div>
+                <h1 className="subpage-header__title">Discussion Room</h1>
+                <div className="subpage-header__spacer"></div>
             </header>
 
-            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                <div style={{
-                    backgroundColor: 'white',
-                    padding: '40px',
-                    borderRadius: '0',
-                    border: '1px solid #000',
-                    textAlign: 'center'
-                }}>
-                    <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '5px', color: '#000' }}>
-                        {selectedSlot?.label}
-                    </h2>
-                    <p style={{ color: '#666', marginBottom: '30px' }}>
+            <div className="discussion-container">
+                <div className="discussion-card">
+                    <h2 className="page-title">{selectedSlot?.label}</h2>
+                    <p className="page-subtitle">
                         {isBooked ? `Booked by ${booking.teamName}` : 'Slot Available'}
                     </p>
 
                     {/* BOOKING FORM */}
                     {!isBooked && (
-                        <div style={{ maxWidth: '400px', margin: '0 auto' }}>
+                        <div className="form-container">
                             <form onSubmit={handleBookRoom}>
-                                <div style={{ marginBottom: '20px', textAlign: 'left' }}>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#000' }}>
-                                        Group Name
-                                    </label>
+                                <div className="input-group">
+                                    <label className="input-label">Group Name</label>
                                     <input
                                         type="text"
+                                        className="text-input"
                                         value={groupName}
                                         onChange={(e) => setGroupName(e.target.value)}
                                         placeholder="Enter your group name"
-                                        style={{
-                                            width: '100%',
-                                            padding: '12px',
-                                            borderRadius: '0',
-                                            border: '1px solid #000',
-                                            fontSize: '16px',
-                                            outline: 'none'
-                                        }}
                                         required
                                     />
                                 </div>
 
-                                <div style={{ marginBottom: '20px', textAlign: 'left' }}>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#000' }}>
-                                        Group Members (Optional)
-                                    </label>
-                                    <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                                <div className="input-group">
+                                    <label className="input-label">Group Members (Optional)</label>
+                                    <div className="member-add-row">
                                         <input
                                             type="text"
+                                            className="text-input"
                                             value={newMemberMrr}
                                             onChange={(e) => setNewMemberMrr(e.target.value)}
                                             placeholder="Enter MRR ID"
-                                            style={{
-                                                flex: 1,
-                                                padding: '10px',
-                                                borderRadius: '0',
-                                                border: '1px solid #000',
-                                                fontSize: '14px',
-                                                outline: 'none'
-                                            }}
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter') {
                                                     e.preventDefault();
@@ -481,48 +422,23 @@ const Discussion = ({ onBack }) => {
                                         />
                                         <button
                                             type="button"
+                                            className="btn btn-black"
                                             onClick={handleAddPendingMember}
                                             disabled={isSubmitting}
-                                            style={{
-                                                padding: '10px 20px',
-                                                backgroundColor: '#000',
-                                                color: '#fff',
-                                                border: 'none',
-                                                borderRadius: '0',
-                                                cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                                                fontWeight: '600'
-                                            }}
                                         >
                                             Add
                                         </button>
                                     </div>
 
                                     {pendingMembers.length > 0 && (
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                        <div className="chips-container">
                                             {pendingMembers.map((member, index) => (
-                                                <div key={index} style={{
-                                                    backgroundColor: '#f5f5f5',
-                                                    padding: '4px 12px',
-                                                    borderRadius: '0',
-                                                    border: '1px solid #ddd',
-                                                    fontSize: '12px',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '6px'
-                                                }}>
+                                                <div key={index} className="chip">
                                                     {member.name}
                                                     <button
                                                         type="button"
+                                                        className="chip-remove"
                                                         onClick={() => handleRemovePendingMember(index)}
-                                                        style={{
-                                                            border: 'none',
-                                                            background: 'none',
-                                                            cursor: 'pointer',
-                                                            padding: 0,
-                                                            color: '#666',
-                                                            fontSize: '14px',
-                                                            lineHeight: 1
-                                                        }}
                                                     >
                                                         ×
                                                     </button>
@@ -532,23 +448,12 @@ const Discussion = ({ onBack }) => {
                                     )}
                                 </div>
 
-                                {error && <div style={{ color: '#d32f2f', marginBottom: '20px', fontSize: '14px' }}>{error}</div>}
+                                {error && <div className="error-msg">{error}</div>}
 
                                 <button
                                     type="submit"
+                                    className="btn btn-black btn-block"
                                     disabled={isSubmitting}
-                                    style={{
-                                        width: '100%',
-                                        padding: '14px',
-                                        backgroundColor: '#000',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '0',
-                                        fontSize: '16px',
-                                        fontWeight: '600',
-                                        cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                                        opacity: isSubmitting ? 0.7 : 1
-                                    }}
                                 >
                                     {isSubmitting ? 'Booking...' : 'Book Slot'}
                                 </button>
@@ -558,42 +463,24 @@ const Discussion = ({ onBack }) => {
 
                     {/* DETAILS VIEW - MY TEAM */}
                     {isBooked && isMyTeam && (
-                        <div style={{ textAlign: 'left', maxWidth: '500px', margin: '0 auto' }}>
-                            <div style={{
-                                padding: '20px',
-                                backgroundColor: '#000',
-                                borderRadius: '0',
-                                color: '#fff',
-                                marginBottom: '30px',
-                                textAlign: 'center'
-                            }}>
-                                <h3 style={{ fontSize: '18px', marginBottom: '5px', color: '#fff' }}>Your Group: <strong style={{ color: '#fff' }}>{booking.teamName}</strong></h3>
+                        <div className="form-container" style={{ maxWidth: 'unset' }}>
+                            <div className="details-banner">
+                                <h3>Your Group: <strong>{booking.teamName}</strong></h3>
                             </div>
 
-                            <h3 style={{ fontSize: '18px', marginBottom: '15px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
-                                Group Members
-                            </h3>
+                            <h3 className="section-title">Group Members</h3>
 
-                            <div style={{ marginBottom: '30px' }}>
+                            <div style={{ marginBottom: '1.875rem' }}>
                                 {booking.members && booking.members.length > 0 && (
-                                    <ul style={{ listStyle: 'none', padding: 0 }}>
+                                    <ul className="members-list">
                                         {booking.members.filter(m => m && (m.name || typeof m === 'string')).map((member, idx) => {
                                             const name = member.name || (typeof member === 'string' ? member : 'Unknown');
                                             const mrr = member.mrrNumber || '';
                                             return (
-                                                <li key={idx} style={{
-                                                    padding: '12px',
-                                                    backgroundColor: 'white',
-                                                    border: '1px solid #eee',
-                                                    marginBottom: '8px',
-                                                    borderRadius: '0',
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'center'
-                                                }}>
-                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                                                        <span style={{ fontWeight: '500', color: '#000' }}>{name}</span>
-                                                        {mrr && <span style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>MRR ID: {mrr}</span>}
+                                                <li key={idx} className="member-item">
+                                                    <div className="member-info">
+                                                        <span className="member-name">{name}</span>
+                                                        {mrr && <span className="member-mrr">MRR ID: {mrr}</span>}
                                                     </div>
                                                 </li>
                                             );
@@ -602,50 +489,33 @@ const Discussion = ({ onBack }) => {
                                 )}
                             </div>
 
-                            <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '0', border: '1px solid #eee' }}>
-                                <h4 style={{ fontSize: '16px', marginBottom: '15px' }}>Add Group Member</h4>
-                                <div style={{ display: 'flex', gap: '10px' }}>
+                            <div className="add-member-section">
+                                <h4 className="add-member-title">Add Group Member</h4>
+                                <div className="member-add-row">
                                     <input
                                         type="text"
+                                        className="text-input"
                                         value={newMemberMrr}
                                         onChange={(e) => setNewMemberMrr(e.target.value)}
                                         placeholder="Enter MRR ID"
-                                        style={{ flex: 1, padding: '10px', borderRadius: '0', border: '1px solid #000', outline: 'none' }}
                                     />
                                     <button
+                                        className="btn btn-black"
                                         onClick={handleAddMemberToExisting}
                                         disabled={isSubmitting}
-                                        style={{
-                                            padding: '10px 20px',
-                                            backgroundColor: '#000',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: '0',
-                                            cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                                            opacity: isSubmitting ? 0.7 : 1
-                                        }}
                                     >
                                         {isSubmitting ? '...' : 'Add'}
                                     </button>
                                 </div>
-                                {error && <p style={{ color: '#d32f2f', fontSize: '14px', marginTop: '10px' }}>{error}</p>}
-                                {successMsg && <p style={{ color: '#2e7d32', fontSize: '14px', marginTop: '10px' }}>{successMsg}</p>}
+                                {error && <p className="error-msg" style={{ marginTop: '0.625rem' }}>{error}</p>}
+                                {successMsg && <p className="success-msg" style={{ marginTop: '0.625rem' }}>{successMsg}</p>}
                             </div>
 
                             {booking.bookedBy === user.uid && (
-                                <div style={{ marginTop: '30px', textAlign: 'center' }}>
+                                <div style={{ marginTop: '1.875rem', textAlign: 'center' }}>
                                     <button
+                                        className="btn btn-outline-red btn-small"
                                         onClick={handleCancelBooking}
-                                        style={{
-                                            padding: '10px 20px',
-                                            backgroundColor: '#fff',
-                                            color: '#d32f2f',
-                                            border: '1px solid #d32f2f',
-                                            borderRadius: '0',
-                                            cursor: 'pointer',
-                                            fontWeight: '600',
-                                            fontSize: '14px'
-                                        }}
                                     >
                                         Cancel Booking
                                     </button>
@@ -656,9 +526,9 @@ const Discussion = ({ onBack }) => {
 
                     {/* DETAILS VIEW - OTHERS */}
                     {isBooked && !isMyTeam && (
-                        <div style={{ padding: '40px', backgroundColor: '#f5f5f5', borderRadius: '0', border: '1px solid #ddd', color: '#333' }}>
-                            <h2 style={{ fontSize: '24px', marginBottom: '10px' }}>Booked</h2>
-                            <p style={{ fontSize: '18px', marginBottom: '20px' }}>
+                        <div className="others-booking-view">
+                            <h2>Booked</h2>
+                            <p>
                                 This slot is attained by <strong>{booking.teamName}</strong>
                             </p>
                         </div>
