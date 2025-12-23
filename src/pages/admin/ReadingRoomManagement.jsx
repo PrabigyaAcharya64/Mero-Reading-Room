@@ -3,6 +3,8 @@ import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, setDoc, getDoc } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import EnhancedBackButton from '../../components/EnhancedBackButton';
+import '../../styles/ReadingRoomManagement.css';
 
 
 
@@ -89,6 +91,7 @@ function ReadingRoomManagement({ onBack }) {
     const [message, setMessage] = useState('');
     const [isDragging, setIsDragging] = useState(null);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+    const [canvasScale, setCanvasScale] = useState(1);
 
     // Student management states
     const [verifiedUsers, setVerifiedUsers] = useState([]);
@@ -493,6 +496,30 @@ function ReadingRoomManagement({ onBack }) {
         setSearchQuery(''); // Add this line to reset search
     };
 
+    // Calculate canvas scale for responsiveness
+    useEffect(() => {
+        if (!showRoomModal || !selectedRoom) return;
+
+        const calculateScale = () => {
+            const room = rooms.find(r => r.id === selectedRoom);
+            if (!room) return;
+
+            const wrapper = document.querySelector('.rrm-canvas-wrapper');
+            if (!wrapper) return;
+
+            const wrapperWidth = wrapper.clientWidth - 40; // Account for padding
+            const roomWidth = room.width;
+            
+            // Scale down if room is wider than container
+            const scale = roomWidth > wrapperWidth ? wrapperWidth / roomWidth : 1;
+            setCanvasScale(Math.min(scale, 1)); // Never scale up, only down
+        };
+
+        calculateScale();
+        window.addEventListener('resize', calculateScale);
+        return () => window.removeEventListener('resize', calculateScale);
+    }, [showRoomModal, selectedRoom, rooms]);
+
     const getSelectedRoomData = () => {
         if (!selectedRoom) return null;
         return rooms.find(r => r.id === selectedRoom);
@@ -501,35 +528,30 @@ function ReadingRoomManagement({ onBack }) {
     const selectedRoomData = getSelectedRoomData();
 
     return (
-        <div className="landing-screen">
-            <header className="landing-header">
+        <div className="rrm-container">
+            <header className="rrm-header">
                 {onBack && (
                     <EnhancedBackButton onBack={onBack} />
                 )}
                 <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-                    <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)' }}>Admin Management</p>
+                    <p className="rrm-title">Admin Management</p>
                 </div>
                 <div style={{ flex: 1 }}></div>
             </header>
 
-            <main className="landing-body" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-                <h1 style={{ marginBottom: '30px', fontSize: '2rem' }}>Reading Room Management</h1>
+            <main className="rrm-body">
+                <h1 className="rrm-page-title">Reading Room Management</h1>
 
                 {message && (
-                    <p style={{
-                        padding: '10px',
-                        backgroundColor: message.includes('Error') ? '#fee' : '#efe',
-                        borderRadius: '4px',
-                        marginBottom: '20px'
-                    }}>
+                    <p className={`rrm-message ${message.includes('Error') ? 'error' : 'success'}`}>
                         {message}
                     </p>
                 )}
 
                 {/* Create New Room Form */}
-                <section style={{ marginBottom: '30px', padding: '20px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fff' }}>
-                    <h2 style={{ marginBottom: '20px' }}>Create New Room</h2>
-                    <form onSubmit={handleCreateRoom} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '15px', alignItems: 'end' }}>
+                <section className="rrm-create-section">
+                    <h2 className="rrm-section-title">Create New Room</h2>
+                    <form onSubmit={handleCreateRoom} className="rrm-form-grid">
                         <label className="input-field">
                             <span className="input-field__label">Room Name</span>
                             <input
@@ -560,9 +582,9 @@ function ReadingRoomManagement({ onBack }) {
                 </section>
 
                 {/* All Rooms List */}
-                <section style={{ padding: '30px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fff' }}>
-                    <h2 style={{ marginBottom: '30px', fontSize: '1.5rem' }}>All Rooms ({rooms.length})</h2>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '25px' }}>
+                <section className="rrm-rooms-section">
+                    <h2 className="rrm-section-title">All Rooms ({rooms.length})</h2>
+                    <div className="rrm-rooms-grid">
                         {rooms.map(room => {
                             const elements = room.elements || [];
                             const seats = elements.filter(e => !e.type || e.type === 'seat');
@@ -573,35 +595,26 @@ function ReadingRoomManagement({ onBack }) {
                             return (
                                 <div
                                     key={room.id}
-                                    style={{
-                                        padding: '15px',
-                                        border: '1px solid #ddd',
-                                        borderRadius: '8px',
-                                        backgroundColor: '#fafafa',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s'
-                                    }}
+                                    className="rrm-room-card"
                                     onClick={() => openRoomModal(room.id)}
-                                    onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
                                 >
-                                    <div style={{ marginBottom: '10px' }}>
-                                        <h3 style={{ margin: '0 0 5px 0', fontSize: '18px' }}>{room.name}</h3>
-                                        <p style={{ margin: '0', fontSize: '13px', color: '#666', textTransform: 'uppercase' }}>
+                                    <div className="rrm-room-header">
+                                        <h3 className="rrm-room-name">{room.name}</h3>
+                                        <p className="rrm-room-type">
                                             {room.type === 'ac' ? 'AC' : 'Non-AC'} {room.isLocked && '• Locked'}
                                         </p>
                                     </div>
-                                    <div style={{ fontSize: '14px', display: 'grid', gap: '5px' }}>
+                                    <div className="rrm-room-stats">
                                         <div>Total Seats: {seats.length}</div>
-                                        <div style={{ color: '#4caf50' }}>Assigned: {assignedCount}</div>
-                                        <div style={{ color: '#90caf9' }}>Available: {unassignedCount}</div>
+                                        <div className="rrm-stat-assigned">Assigned: {assignedCount}</div>
+                                        <div className="rrm-stat-available">Available: {unassignedCount}</div>
                                     </div>
                                 </div>
                             );
                         })}
 
                         {rooms.length === 0 && (
-                            <p style={{ textAlign: 'center', color: '#666', padding: '20px', gridColumn: '1 / -1' }}>
+                            <p className="rrm-empty-state">
                                 No rooms yet. Create your first room above.
                             </p>
                         )}
@@ -611,96 +624,32 @@ function ReadingRoomManagement({ onBack }) {
 
             {/* Room Details Modal */}
             {showRoomModal && selectedRoomData && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 1000,
-                    padding: 0
-                }}>
-                    <div style={{
-                        backgroundColor: '#fff',
-                        borderRadius: 0,
-                        width: '100vw',
-                        height: '100vh',
-                        overflow: 'hidden',
-                        position: 'relative',
-                        display: 'flex',
-                        flexDirection: 'column'
-                    }}>
+                <div className="rrm-modal-overlay">
+                    <div className="rrm-modal-content">
                         {/* Modal Header */}
-                        <div style={{
-                            position: 'sticky',
-                            top: 0,
-                            backgroundColor: '#fff',
-                            borderBottom: '1px solid #ddd',
-                            padding: '20px',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            zIndex: 10
-                        }}>
+                        <div className="rrm-modal-header">
                             <div>
-                                <h2 style={{ margin: '0 0 5px 0' }}>{selectedRoomData.name}</h2>
-                                <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>
+                                <h2 className="rrm-modal-title">{selectedRoomData.name}</h2>
+                                <p className="rrm-modal-subtitle">
                                     {selectedRoomData.type === 'ac' ? 'AC Room' : 'Non-AC Room'}
                                     {selectedRoomData.isLocked ? ' • Layout Locked' : ' • Edit Mode'}
                                 </p>
                             </div>
                             <button
                                 onClick={closeRoomModal}
-                                style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    fontSize: '32px',
-                                    cursor: 'pointer',
-                                    lineHeight: '1',
-                                    padding: '0',
-                                    width: '40px',
-                                    height: '40px',
-                                    borderRadius: '50%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                className="rrm-close-btn"
                             >
                                 ×
                             </button>
                         </div>
 
                         {/* Modal Content */}
-                        <div style={{ padding: '20px', flex: 1, overflow: 'auto', display: 'flex', gap: '20px' }}>
+                        <div className="rrm-modal-body">
                             {/* Main Content Area - Left Side */}
-                            <div style={{ flex: 1, overflow: 'auto' }}>
+                            <div className="rrm-main-content">
                                 {message && (
-                                    <div style={{
-                                        position: 'fixed',
-                                        top: '80px',
-                                        left: '50%',
-                                        transform: 'translateX(-50%)',
-                                        zIndex: 1200,
-                                        minWidth: '400px',
-                                        maxWidth: '600px',
-                                        animation: 'slideDown 0.3s ease-out'
-                                    }}>
-                                        <div style={{
-                                            padding: '15px 20px',
-                                            backgroundColor: message.includes('Error') ? '#f44336' : '#4caf50',
-                                            color: 'white',
-                                            borderRadius: '8px',
-                                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                                            fontSize: '14px',
-                                            fontWeight: '500',
-                                            textAlign: 'center'
-                                        }}>
+                                    <div className="rrm-floating-message">
+                                        <div className={`rrm-floating-message-content ${message.includes('Error') ? 'error' : 'success'}`}>
                                             {message}
                                         </div>
                                     </div>
@@ -709,9 +658,9 @@ function ReadingRoomManagement({ onBack }) {
 
                                 {/* Add Element Form (only when unlocked) */}
                                 {!selectedRoomData.isLocked && (
-                                    <section style={{ marginBottom: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
-                                        <h3 style={{ marginTop: 0 }}>Add Element</h3>
-                                        <form onSubmit={handleAddElement} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '15px', alignItems: 'end' }}>
+                                    <section className="rrm-add-element-section">
+                                        <h3 className="rrm-add-element-title">Add Element</h3>
+                                        <form onSubmit={handleAddElement} className="rrm-element-form">
                                             <label className="input-field">
                                                 <span className="input-field__label">Type</span>
                                                 <select
@@ -743,87 +692,37 @@ function ReadingRoomManagement({ onBack }) {
                                 )}
 
                                 {/* Room Canvas */}
-                                <section>
-                                    <p style={{ fontSize: '12px', color: '#888', marginBottom: '10px' }}>
+                                <section className="rrm-canvas-section">
+                                    <p className="rrm-canvas-hint">
                                         {selectedRoomData.isLocked
                                             ? 'Click on vacant seats to assign students. Click assigned seats to view details.'
                                             : 'Drag elements to reposition. Double-click to delete.'}
                                     </p>
 
-                                    <div
-                                        style={{
-                                            position: 'relative',
-                                            width: `${selectedRoomData.width}px`,
-                                            height: `${selectedRoomData.height}px`,
-                                            border: '2px solid #333',
-                                            backgroundColor: '#f9f9f9',
-                                            borderRadius: '8px',
-                                            overflow: 'hidden',
-                                            cursor: isDragging ? 'grabbing' : 'default',
-                                            margin: '0 auto'
-                                        }}
-                                        onMouseMove={handleMouseMove}
-                                        onMouseUp={handleMouseUp}
-                                        onMouseLeave={handleMouseUp}
-                                    >
+                                    <div className="rrm-canvas-wrapper">
+                                        <div
+                                            className={`rrm-canvas-container ${isDragging ? 'dragging' : ''}`}
+                                            style={{
+                                                width: `${selectedRoomData.width}px`,
+                                                height: `${selectedRoomData.height}px`,
+                                                transform: `scale(${canvasScale})`
+                                            }}
+                                            onMouseMove={handleMouseMove}
+                                            onMouseUp={handleMouseUp}
+                                            onMouseLeave={handleMouseUp}
+                                        >
                                         {/* Controls inside room canvas */}
-                                        <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 100, display: 'flex', gap: '8px' }}>
+                                        <div className="rrm-canvas-controls">
                                             <button
                                                 onClick={() => handleToggleLock(selectedRoom)}
-                                                style={{
-                                                    padding: '8px',
-                                                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                                    color: '#333',
-                                                    border: '1px solid #ddd',
-                                                    borderRadius: '4px',
-                                                    cursor: 'pointer',
-                                                    fontSize: '20px',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    width: '40px',
-                                                    height: '40px',
-                                                    transition: 'all 0.2s',
-                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                                }}
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.backgroundColor = '#f5f5f5';
-                                                    e.currentTarget.style.borderColor = '#333';
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
-                                                    e.currentTarget.style.borderColor = '#ddd';
-                                                }}
+                                                className="rrm-canvas-btn"
                                                 title={selectedRoomData.isLocked ? 'Unlock Layout' : 'Lock Layout'}
                                             >
                                                 {selectedRoomData.isLocked ? '🔓' : '🔒'}
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteRoom(selectedRoom)}
-                                                style={{
-                                                    padding: '8px',
-                                                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                                    color: '#333',
-                                                    border: '1px solid #ddd',
-                                                    borderRadius: '4px',
-                                                    cursor: 'pointer',
-                                                    fontSize: '20px',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    width: '40px',
-                                                    height: '40px',
-                                                    transition: 'all 0.2s',
-                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                                }}
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.backgroundColor = '#ffebee';
-                                                    e.currentTarget.style.borderColor = '#f44';
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
-                                                    e.currentTarget.style.borderColor = '#ddd';
-                                                }}
+                                                className="rrm-canvas-btn delete"
                                                 title="Delete Room"
                                             >
                                                 🗑️
@@ -957,6 +856,7 @@ function ReadingRoomManagement({ onBack }) {
                                                 );
                                             });
                                         })()}
+                                        </div>
                                     </div>
                                 </section>
                             </div>

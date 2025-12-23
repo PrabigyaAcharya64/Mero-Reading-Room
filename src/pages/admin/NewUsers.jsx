@@ -4,6 +4,7 @@ import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, orderBy } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
+import '../../styles/NewUsers.css';
 
 
 
@@ -15,6 +16,13 @@ function NewUsers({ onBack }) {
   const [activeTab, setActiveTab] = useState('pending'); // 'pending' or 'verified'
   const [verifying, setVerifying] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
+
+  useEffect(() => {
+    // Reset to page 1 when tab or search changes
+    setCurrentPage(1);
+  }, [activeTab, searchQuery]);
 
   useEffect(() => {
     loadUsers();
@@ -115,8 +123,7 @@ function NewUsers({ onBack }) {
   };
 
 
-  // Filter users based on search query (only for verified tab)
-  const displayUsers = activeTab === 'pending'
+  const filteredUsers = activeTab === 'pending'
     ? pendingUsers
     : verifiedUsers.filter(user =>
       user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -124,230 +131,188 @@ function NewUsers({ onBack }) {
       user.mrrNumber?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const displayUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      // Scroll to top of grid
+      const body = document.querySelector('.nu-body');
+      if (body) body.scrollTop = 0;
+    }
+  };
+
   return (
-    <div className="landing-screen">
-      <header className="landing-header">
+    <div className="nu-container">
+      <header className="nu-header">
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
           <EnhancedBackButton onBack={onBack} />
         </div>
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-          <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)' }}>Verification</p>
-        </div>
+        <h1 className="nu-title">Verification</h1>
         <div style={{ flex: 1 }}></div>
       </header>
 
-      <main className="landing-body" style={{ padding: '20px' }}>
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{ display: 'flex', gap: '10px', borderBottom: '2px solid #eee' }}>
-            <button
-              type="button"
-              onClick={() => setActiveTab('pending')}
-              style={{
-                padding: '12px 24px',
-                border: 'none',
-                background: 'none',
-                borderBottom: activeTab === 'pending' ? '2px solid #0066cc' : '2px solid transparent',
-                color: activeTab === 'pending' ? '#0066cc' : '#666',
-                cursor: 'pointer',
-                fontWeight: activeTab === 'pending' ? 'bold' : 'normal',
-                fontSize: '16px',
-              }}
-            >
-              Pending ({pendingUsers.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('verified')}
-              style={{
-                padding: '12px 24px',
-                border: 'none',
-                background: 'none',
-                borderBottom: activeTab === 'verified' ? '2px solid #0066cc' : '2px solid transparent',
-                color: activeTab === 'verified' ? '#0066cc' : '#666',
-                cursor: 'pointer',
-                fontWeight: activeTab === 'verified' ? 'bold' : 'normal',
-                fontSize: '16px',
-              }}
-            >
-              Verified ({verifiedUsers.length})
-            </button>
-          </div>
+      <main className="nu-body">
+        <div className="nu-tabs">
+          <button
+            type="button"
+            className={`nu-tab ${activeTab === 'pending' ? 'active' : ''}`}
+            onClick={() => setActiveTab('pending')}
+          >
+            Pending ({pendingUsers.length})
+          </button>
+          <button
+            type="button"
+            className={`nu-tab ${activeTab === 'verified' ? 'active' : ''}`}
+            onClick={() => setActiveTab('verified')}
+          >
+            Verified ({verifiedUsers.length})
+          </button>
         </div>
 
         {/* Search bar - only visible in verified tab */}
         {activeTab === 'verified' && (
-          <div style={{ marginBottom: '20px' }}>
+          <div className="nu-search-container">
             <input
               type="text"
               placeholder="Search by name, email, or MRR ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                maxWidth: '500px',
-                padding: '12px 16px',
-                fontSize: '16px',
-                border: '1px solid #ddd',
-                borderRadius: '8px',
-                fontFamily: 'var(--brand-font-body)',
-              }}
+              className="nu-search-input"
             />
           </div>
         )}
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px' }}>
+          <div className="nu-empty">
             <LoadingSpinner size="40" stroke="3" color="#666" />
-            <p style={{ marginTop: '15px', color: '#666' }}>Loading users...</p>
+            <p style={{ marginTop: '15px' }}>Loading users...</p>
           </div>
         ) : displayUsers.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px' }}>
-            <p style={{ color: '#666' }}>
+          <div className="nu-empty">
+            <p>
               {activeTab === 'pending'
                 ? 'No pending users at this time.'
                 : 'No verified users yet.'}
             </p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gap: '20px' }}>
+          <div className="nu-grid">
             {displayUsers.map((userData) => (
-              <div
-                key={userData.id}
-                style={{
-                  border: '1px solid #ddd',
-                  borderRadius: '12px',
-                  padding: '20px',
-                  backgroundColor: '#fff',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                }}
-              >
-                <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: '20px' }}>
-                  {/* Photo */}
-                  <div>
-                    {userData.photoUrl ? (
-                      <img
-                        src={userData.photoUrl}
-                        alt={userData.name || 'User'}
-                        style={{
-                          width: '150px',
-                          height: '150px',
-                          objectFit: 'cover',
-                          borderRadius: '8px',
-                          border: '1px solid #ddd',
-                        }}
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          width: '150px',
-                          height: '150px',
-                          backgroundColor: '#f0f0f0',
-                          borderRadius: '8px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#999',
-                        }}
+              <div key={userData.id} className="nu-card">
+                {/* Photo */}
+                <div className="nu-card__photo">
+                  {userData.photoUrl ? (
+                    <img
+                      src={userData.photoUrl}
+                      alt={userData.name || 'User'}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <span>👤</span>
+                  )}
+                </div>
+
+                {/* User Info */}
+                <div className="nu-card__content">
+                  <h3 className="nu-card__name">
+                    {userData.name || 'N/A'}
+                  </h3>
+                  
+                  <div className="nu-card__row">
+                    <span className="nu-card__label">MRR ID:</span>
+                    <span className="nu-card__value">{userData.mrrNumber || 'N/A'}</span>
+                  </div>
+                  
+                  <div className="nu-card__row">
+                    <span className="nu-card__label">Email:</span>
+                    <span className="nu-card__value">{userData.email || 'N/A'}</span>
+                  </div>
+                  
+                  <div className="nu-card__row">
+                    <span className="nu-card__label">Phone:</span>
+                    <span className="nu-card__value">{userData.phoneNumber || 'N/A'}</span>
+                  </div>
+                  
+                  <div className="nu-card__row">
+                    <span className="nu-card__label">DOB:</span>
+                    <span className="nu-card__value">
+                      {userData.dateOfBirth
+                        ? new Date(userData.dateOfBirth).toLocaleDateString()
+                        : 'N/A'}
+                    </span>
+                  </div>
+
+                  <div className="nu-card__row">
+                    <span className="nu-card__label">Interest:</span>
+                    <span className="nu-card__value">
+                      {Array.isArray(userData.interestedIn)
+                        ? userData.interestedIn.join(', ')
+                        : userData.interestedIn || 'N/A'}
+                    </span>
+                  </div>
+
+                  <div className="nu-card__meta">
+                    Submitted: {userData.submittedAt
+                      ? new Date(userData.submittedAt).toLocaleString()
+                      : 'N/A'}
+                    {userData.verifiedAt && (
+                      <span style={{ color: '#2e7d32', marginLeft: '0.5rem' }}>
+                        • Verified
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  {activeTab === 'pending' && (
+                    <div className="nu-card__actions">
+                      <button
+                        type="button"
+                        className="nu-btn nu-btn--verify"
+                        onClick={() => handleVerify(userData.id)}
+                        disabled={verifying === userData.id}
                       >
-                        No Photo
-                      </div>
-                    )}
-                  </div>
-
-                  {/* User Info */}
-                  <div>
-                    <div style={{ marginBottom: '15px' }}>
-                      <h3 style={{ margin: '0 0 10px 0', fontSize: '20px' }}>
-                        {userData.name || 'N/A'}
-                      </h3>
-                      <p style={{ margin: '5px 0', color: '#666' }}>
-                        <strong>MRR ID:</strong> {userData.mrrNumber || 'N/A'}
-                      </p>
-                      <p style={{ margin: '5px 0', color: '#666' }}>
-                        <strong>Email:</strong> {userData.email || 'N/A'}
-                      </p>
-                      <p style={{ margin: '5px 0', color: '#666' }}>
-                        <strong>Phone:</strong> {userData.phoneNumber || 'N/A'}
-                      </p>
-                      <p style={{ margin: '5px 0', color: '#666' }}>
-                        <strong>Date of Birth:</strong>{' '}
-                        {userData.dateOfBirth
-                          ? new Date(userData.dateOfBirth).toLocaleDateString()
-                          : 'N/A'}
-                      </p>
-                      <p style={{ margin: '5px 0', color: '#666' }}>
-                        <strong>Interested In:</strong>{' '}
-                        {Array.isArray(userData.interestedIn)
-                          ? userData.interestedIn.join(', ')
-                          : userData.interestedIn || 'N/A'}
-                      </p>
-                      <p style={{ margin: '5px 0', color: '#666', fontSize: '12px' }}>
-                        <strong>Submitted:</strong>{' '}
-                        {userData.submittedAt
-                          ? new Date(userData.submittedAt).toLocaleString()
-                          : 'N/A'}
-                      </p>
-                      {userData.verifiedAt && (
-                        <p style={{ margin: '5px 0', color: '#4a4', fontSize: '12px' }}>
-                          <strong>Verified:</strong>{' '}
-                          {new Date(userData.verifiedAt).toLocaleString()}
-                        </p>
-                      )}
+                        {verifying === userData.id ? <LoadingSpinner size="16" stroke="2" color="white" /> : '✓ Verify'}
+                      </button>
+                      <button
+                        type="button"
+                        className="nu-btn nu-btn--reject"
+                        onClick={() => handleReject(userData.id)}
+                        disabled={verifying === userData.id}
+                      >
+                        {verifying === userData.id ? <LoadingSpinner size="16" stroke="2" color="white" /> : '✗ Reject'}
+                      </button>
                     </div>
-
-                    {/* Action Buttons */}
-                    {activeTab === 'pending' && (
-                      <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                        <button
-                          type="button"
-                          onClick={() => handleVerify(userData.id)}
-                          disabled={verifying === userData.id}
-                          style={{
-                            padding: '10px 20px',
-                            backgroundColor: '#4a4',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '8px',
-                            cursor: verifying === userData.id ? 'not-allowed' : 'pointer',
-                            fontSize: '14px',
-                            fontWeight: 'bold',
-                            opacity: verifying === userData.id ? 0.6 : 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px'
-                          }}
-                        >
-                          {verifying === userData.id ? <LoadingSpinner size="16" stroke="2" color="white" /> : '✓ Verify'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleReject(userData.id)}
-                          disabled={verifying === userData.id}
-                          style={{
-                            padding: '10px 20px',
-                            backgroundColor: '#f44',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '8px',
-                            cursor: verifying === userData.id ? 'not-allowed' : 'pointer',
-                            fontSize: '14px',
-                            fontWeight: 'bold',
-                            opacity: verifying === userData.id ? 0.6 : 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px'
-                          }}
-                        >
-                          {verifying === userData.id ? <LoadingSpinner size="16" stroke="2" color="white" /> : '✗ Reject'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
             ))}
+          </div>
+        )}
+        
+        {/* Pagination Controls */}
+        {!loading && filteredUsers.length > 0 && (
+          <div className="nu-pagination">
+            <button
+              className="nu-pagination-btn"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
+            <span className="nu-pagination-info">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              className="nu-pagination-btn"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </button>
           </div>
         )}
       </main>

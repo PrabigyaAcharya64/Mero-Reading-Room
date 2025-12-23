@@ -4,7 +4,9 @@ import { db } from '../../lib/firebase';
 import { collection, addDoc, getDocs, doc, setDoc, getDoc, query, where, deleteDoc } from 'firebase/firestore';
 import { validateMenuItemName, validatePrice, validateDescription, validateCategory } from '../../utils/validation';
 import LoadingSpinner from '../../components/LoadingSpinner';
+
 import EnhancedBackButton from '../../components/EnhancedBackButton';
+import '../../styles/MenuManagement.css';
 
 const IMGBB_API_KEY = 'f3836c3667cc5c73c64e1aa4f0849566';
 
@@ -422,38 +424,40 @@ function MenuManagement({ onBack }) {
 
 
   return (
-    <div className="landing-screen">
-      <header className="landing-header">
+    <div className="mm-container">
+      <header className="mm-header">
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
           {onBack && <EnhancedBackButton onBack={onBack} />}
         </div>
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-          <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)' }}>Menu Management</p>
-        </div>
+        <h1 className="mm-title">Menu Management</h1>
         <div style={{ flex: 1 }}></div>
       </header>
 
-      <main className="landing-body" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-        <section style={{ marginBottom: '30px' }}>
-          <h2>Add New Menu Item</h2>
-          <form onSubmit={handleAddMenuItem} style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxWidth: '500px' }}>
-            <label className="input-field">
-              <span className="input-field__label">Dish Name</span>
+      <main className="mm-body">
+        {/* Left Column: Form */}
+        <div className="mm-form-section">
+          <h2 className="mm-section-title">Add Menu Item</h2>
+          
+          <form onSubmit={handleAddMenuItem} className="mm-form">
+            <div className="mm-input-group">
+              <label className="mm-label">Dish Name</label>
               <input
                 type="text"
                 name="name"
+                className="mm-input"
                 value={formData.name}
                 onChange={handleInputChange}
                 placeholder="e.g., Dal Bhat"
                 required
               />
-            </label>
+            </div>
 
-            <label className="input-field">
-              <span className="input-field__label">Price (रु)</span>
+            <div className="mm-input-group">
+              <label className="mm-label">Price (रु)</label>
               <input
                 type="number"
                 name="price"
+                className="mm-input"
                 value={formData.price}
                 onChange={handleInputChange}
                 placeholder="e.g., 150"
@@ -461,29 +465,29 @@ function MenuManagement({ onBack }) {
                 min="0"
                 required
               />
-            </label>
+            </div>
 
-            <label className="input-field">
-              <span className="input-field__label">Description</span>
+            <div className="mm-input-group">
+              <label className="mm-label">Description</label>
               <textarea
                 name="description"
+                className="mm-textarea"
                 value={formData.description}
                 onChange={handleInputChange}
                 placeholder="Describe the dish..."
                 rows="3"
                 required
-                style={{ width: '100%', padding: '10px', fontFamily: 'inherit', fontSize: 'inherit' }}
               />
-            </label>
+            </div>
 
-            <label className="input-field">
-              <span className="input-field__label">Category</span>
+            <div className="mm-input-group">
+              <label className="mm-label">Category</label>
               <select
                 name="category"
+                className="mm-select"
                 value={formData.category}
                 onChange={handleInputChange}
                 required
-                style={{ width: '100%', padding: '10px', fontFamily: 'inherit', fontSize: 'inherit' }}
               >
                 <option value="Breakfast">Breakfast</option>
                 <option value="Meal">Meal</option>
@@ -491,259 +495,192 @@ function MenuManagement({ onBack }) {
                 <option value="Snacks">Snacks</option>
                 <option value="Drinks">Drinks</option>
               </select>
-            </label>
+            </div>
 
-            <label className="input-field">
-              <span className="input-field__label">Food Photo</span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoChange}
-                style={{ width: '100%', padding: '10px', fontFamily: 'inherit', fontSize: 'inherit' }}
-              />
+            <div className="mm-input-group">
+              <label className="mm-label">Food Photo</label>
+              <div className="mm-file-input-wrapper">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="mm-file-input"
+                />
+              </div>
               {photoPreview && (
-                <div style={{ marginTop: '10px', position: 'relative', display: 'inline-block' }}>
+                <div className="mm-preview-container">
                   <img
                     src={photoPreview}
                     alt="Preview"
-                    style={{
-                      maxWidth: '200px',
-                      maxHeight: '200px',
-                      borderRadius: '8px',
-                      border: '1px solid #ddd'
-                    }}
+                    className="mm-preview-img"
                   />
                   <button
                     type="button"
                     onClick={handleRemovePhoto}
-                    style={{
-                      position: 'absolute',
-                      top: '5px',
-                      right: '5px',
-                      backgroundColor: '#f44',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '50%',
-                      width: '24px',
-                      height: '24px',
-                      cursor: 'pointer',
-                      fontSize: '14px'
-                    }}
+                    className="mm-remove-preview"
                   >
                     ×
                   </button>
                 </div>
               )}
-            </label>
+            </div>
 
-            <button type="submit" className="cta-button cta-button--primary" disabled={loading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <button type="submit" className="mm-btn mm-btn-primary" disabled={loading}>
               {loading ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'Add Menu Item'}
             </button>
           </form>
 
           {message && (
-            <p style={{ marginTop: '15px', padding: '10px', backgroundColor: message.includes('Error') ? '#fee' : '#efe', borderRadius: '4px' }}>
+            <div className={`mm-message ${message.toLowerCase().includes('success') ? 'success' : 'error'}`}>
               {message}
-            </p>
+            </div>
           )}
-        </section>
+        </div>
 
-        <section style={{ marginBottom: '30px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
-            <h2>All Menu Items ({menuItems.length})</h2>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <span style={{ fontSize: '14px', color: '#666' }}>
-                {selectedItems.length} selected
-              </span>
+        {/* Right Column: Menu List */}
+        <div className="mm-content-section">
+          
+          {/* Toolbar */}
+          <div className="mm-toolbar">
+            <h2 className="mm-section-title" style={{ margin: 0, border: 'none' }}>
+              All Menu Items ({menuItems.length})
+            </h2>
+            
+            <div className="mm-stats">
+              {selectedItems.length} selected
+            </div>
+
+            <div className="mm-actions">
               <button
                 onClick={handleSelectAll}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#666',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
+                className="mm-btn mm-btn-secondary"
                 disabled={loading || menuItems.length === 0}
               >
                 Select All
               </button>
               <button
                 onClick={handleDeselectAll}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#666',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
+                className="mm-btn mm-btn-secondary"
                 disabled={loading || selectedItems.length === 0}
               >
                 Deselect All
               </button>
               <button
                 onClick={handleSetTodaysMenu}
-                className="cta-button cta-button--primary"
+                className="mm-btn mm-btn-primary"
                 disabled={loading || selectedItems.length === 0}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
               >
-                {loading ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : `Set Selected as Today's Menu (${selectedItems.length})`}
+                {loading ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : "Set Today's Menu"}
               </button>
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' }}>
+          {/* Menu Items Grid */}
+          <div className="mm-grid">
             {menuItems.map((item) => {
               const isSelected = selectedItems.includes(item.id);
               const isInTodaysMenu = todaysMenu.some(menuItem => menuItem.id === item.id);
 
               return (
-                <div key={item.id} style={{
-                  border: isSelected ? '2px solid #4a4' : isInTodaysMenu ? '2px solid #4aa' : '1px solid #ddd',
-                  borderRadius: '8px',
-                  padding: '15px',
-                  backgroundColor: isSelected ? '#f0fff0' : isInTodaysMenu ? '#f0f8ff' : '#fff',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                  position: 'relative'
-                }}>
-                  <label style={{
-                    position: 'absolute',
-                    top: '10px',
-                    right: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                    cursor: 'pointer',
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    padding: '5px 10px',
-                    borderRadius: '4px',
-                    zIndex: 1
-                  }}>
+                <div 
+                  key={item.id} 
+                  className={`mm-card ${isSelected ? 'selected' : ''} ${isInTodaysMenu ? 'todays-special' : ''}`}
+                >
+                  <label className="mm-card-select">
                     <input
                       type="checkbox"
+                      className="mm-checkbox"
                       checked={isSelected}
                       onChange={() => handleToggleSelection(item.id)}
-                      style={{ cursor: 'pointer', width: '18px', height: '18px' }}
                     />
                     <span style={{ fontSize: '12px', fontWeight: 'bold' }}>
                       {isInTodaysMenu ? 'In Menu' : 'Select'}
                     </span>
                   </label>
 
-                  {item.photoURL && (
-                    <img
-                      src={item.photoURL}
-                      alt={item.name}
-                      style={{
-                        width: '100%',
-                        height: '200px',
-                        objectFit: 'cover',
-                        borderRadius: '8px',
-                        marginBottom: '10px'
-                      }}
-                    />
-                  )}
-                  <h3 style={{ margin: '0 0 5px 0', fontSize: '18px' }}>{item.name}</h3>
-                  <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#888', fontWeight: 'bold' }}>
-                    {item.category || 'Uncategorized'}
-                  </p>
-                  <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '14px' }}>{item.description}</p>
-                  <p style={{ margin: '0 0 15px 0', fontSize: '20px', fontWeight: 'bold', color: '#111' }}>
+                  <div className="mm-card-img-wrapper">
+                    {item.photoURL ? (
+                      <img
+                        src={item.photoURL}
+                        alt={item.name}
+                        className="mm-card-img"
+                      />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eee', color: '#999' }}>
+                        No Image
+                      </div>
+                    )}
+                  </div>
+                  
+                  <h3 className="mm-card-title">{item.name}</h3>
+                  <div className="mm-card-category">{item.category || 'Uncategorized'}</div>
+                  <p className="mm-card-desc">{item.description}</p>
+                  <div className="mm-card-price">
                     रु {item.price != null ? Number(item.price).toFixed(2) : '0.00'}
-                  </p>
-                  <button
-                    onClick={() => handleDeleteMenuItem(item.id)}
-                    style={{
-                      padding: '8px 16px',
-                      backgroundColor: '#f44',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      width: '100%'
-                    }}
-                  >
-                    Delete
-                  </button>
+                  </div>
+
+                  <div className="mm-card-actions">
+                    <button
+                      onClick={() => handleDeleteMenuItem(item.id)}
+                      className="mm-btn mm-btn-danger"
+                      style={{ width: '100%' }}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               );
             })}
           </div>
 
           {menuItems.length === 0 && (
-            <p style={{ textAlign: 'center', color: '#666', padding: '40px' }}>
-              No menu items yet. Add your first menu item above.
-            </p>
+            <div className="nu-empty">
+              No menu items yet. Add your first menu item from the form.
+            </div>
           )}
-        </section>
-
-        <section>
-          <h2>Today's Menu ({todaysMenu.length} items)</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' }}>
-            {todaysMenu.map((item, index) => (
-              <div key={item.id || index} style={{
-                border: '2px solid #4a4',
-                borderRadius: '8px',
-                padding: '15px',
-                backgroundColor: '#f0fff0',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                position: 'relative'
-              }}>
-                {item.photoURL && (
-                  <img
-                    src={item.photoURL}
-                    alt={item.name}
-                    style={{
-                      width: '100%',
-                      height: '200px',
-                      objectFit: 'cover',
-                      borderRadius: '8px',
-                      marginBottom: '10px'
-                    }}
-                  />
-                )}
-                <h3 style={{ margin: '0 0 5px 0', fontSize: '18px' }}>{item.name}</h3>
-                <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#888', fontWeight: 'bold' }}>
-                  {item.category || 'Uncategorized'}
-                </p>
-                <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '14px' }}>{item.description}</p>
-                <p style={{ margin: '0 0 15px 0', fontSize: '20px', fontWeight: 'bold', color: '#111' }}>
-                  रु {item.price != null ? Number(item.price).toFixed(2) : '0.00'}
-                </p>
-                <button
-                  onClick={() => handleRemoveFromMenu(item.id)}
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#ff8800',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px'
-                  }}
-                  disabled={loading}
-                >
-                  {loading ? <LoadingSpinner size="16" stroke="2" color="white" /> : 'Remove from Menu'}
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {todaysMenu.length === 0 && (
-            <p style={{ textAlign: 'center', color: '#666', padding: '40px' }}>
-              No menu set for today. Click "Set as Today's Menu" to set today's menu.
-            </p>
+          
+          {/* Today's Menu Preview Section */}
+          {todaysMenu.length > 0 && (
+            <div style={{ marginTop: '3rem' }}>
+               <h2 className="mm-section-title">Today's Active Menu ({todaysMenu.length})</h2>
+               <div className="mm-grid">
+                 {todaysMenu.map((item, index) => (
+                    <div key={item.id || index} className="mm-card todays-special">
+                      <div className="mm-card-img-wrapper">
+                        {item.photoURL ? (
+                          <img
+                            src={item.photoURL}
+                            alt={item.name}
+                            className="mm-card-img"
+                          />
+                        ) : (
+                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eee', color: '#999' }}>
+                            No Image
+                          </div>
+                        )}
+                      </div>
+                      <h3 className="mm-card-title">{item.name}</h3>
+                      <div className="mm-card-category">{item.category || 'Uncategorized'}</div>
+                      <div className="mm-card-price">
+                        रु {item.price != null ? Number(item.price).toFixed(2) : '0.00'}
+                      </div>
+                      <div className="mm-card-actions">
+                        <button
+                          onClick={() => handleRemoveFromMenu(item.id)}
+                          className="mm-btn mm-btn-remove"
+                          disabled={loading}
+                        >
+                          {loading ? <LoadingSpinner size="16" stroke="2" color="currentColor" /> : 'Remove from Today'}
+                        </button>
+                      </div>
+                    </div>
+                 ))}
+               </div>
+            </div>
           )}
-        </section>
+        </div>
       </main>
+
     </div>
   );
 }

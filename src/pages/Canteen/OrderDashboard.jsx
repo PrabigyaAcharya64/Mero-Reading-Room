@@ -4,6 +4,7 @@ import { db } from '../../lib/firebase';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
+import '../../styles/OrderDashboard.css';
 
 
 
@@ -12,6 +13,15 @@ function OrderDashboard({ onBack }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'pending', 'completed', 'cancelled'
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    // Reset to first page when filter changes
+    setCurrentPage(1);
+  }, [filterStatus]);
 
   useEffect(() => {
     const ordersRef = collection(db, 'orders');
@@ -103,6 +113,14 @@ function OrderDashboard({ onBack }) {
     ? orders
     : orders.filter(order => order.status === filterStatus);
 
+  // Pagination Logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentOrders = filteredOrders.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
@@ -129,65 +147,29 @@ function OrderDashboard({ onBack }) {
   };
 
   return (
-    <div className="landing-screen">
-      <header className="landing-header">
+    <div className="od-container">
+      <header className="od-header">
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
           {onBack && <EnhancedBackButton onBack={onBack} />}
         </div>
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-          <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)' }}>Orders Dashboard</p>
-        </div>
+        <h1 className="od-title">Orders Dashboard</h1>
         <div style={{ flex: 1 }}></div>
       </header>
 
-      <main className="landing-body" style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto' }}>
-
+      <main className="od-body">
         <section>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
-            <h2>Orders Dashboard ({filteredOrders.length})</h2>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                onClick={() => setFilterStatus('all')}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: filterStatus === 'all' ? '#4a4' : '#666',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setFilterStatus('pending')}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: filterStatus === 'pending' ? '#ff9800' : '#666',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
-              >
-                Pending
-              </button>
-              <button
-                onClick={() => setFilterStatus('completed')}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: filterStatus === 'completed' ? '#4caf50' : '#666',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
-              >
-                Completed
-              </button>
+          <div className="od-toolbar">
+            <h2 className="od-section-title">Orders ({filteredOrders.length})</h2>
+            <div className="od-filters">
+              {['all', 'pending', 'completed'].map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setFilterStatus(status)}
+                  className={`od-filter-btn ${status} ${filterStatus === status ? 'active' : ''}`}
+                >
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -197,123 +179,72 @@ function OrderDashboard({ onBack }) {
               <p style={{ marginTop: '15px', color: '#666' }}>Loading orders...</p>
             </div>
           ) : filteredOrders.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+            <div className="od-empty">
               No orders found.
             </div>
           ) : (
-            <div style={{ display: 'grid', gap: '20px' }}>
-              {filteredOrders.map((order) => (
-                <div
-                  key={order.id}
-                  style={{
-                    border: '1px solid #ddd',
-                    borderRadius: '8px',
-                    padding: '20px',
-                    backgroundColor: '#fff',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
-                    <div>
-                      <h3 style={{ margin: '0 0 5px 0', fontSize: '18px' }}>
-                        {order.userName || order.userEmail || 'Unknown User'}
-                      </h3>
-                      <p style={{ margin: '0', color: '#666', fontSize: '14px' }}>
+            <div className="od-grid">
+              {currentOrders.map((order) => (
+                <div key={order.id} className="od-card">
+                  
+                  {/* Card Header */}
+                  <div className="od-card-header">
+                    <div className="od-user-info">
+                      <h3>{order.userName || order.userEmail || 'Unknown User'}</h3>
+                      <p className="od-user-email">
                         {order.userEmail && order.userEmail !== order.userName ? order.userEmail : ''}
                       </p>
-                      <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
-                        Order ID: {order.id.substring(0, 8)}...
-                      </p>
-                      <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
-                        {formatDate(order.createdAt)}
-                      </p>
+                      <p className="od-order-id">ID: {order.id.substring(0, 8)}...</p>
+                      <p className="od-order-date">{formatDate(order.createdAt)}</p>
                     </div>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <span
-                        style={{
-                          padding: '6px 12px',
-                          backgroundColor: getStatusColor(order.status || 'pending'),
-                          color: 'white',
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          fontWeight: 'bold',
-                          textTransform: 'uppercase'
-                        }}
-                      >
+
+                    <div className="od-card-actions">
+                      <span className="od-status-badge" style={{ backgroundColor: getStatusColor(order.status || 'pending') }}>
                         {order.status || 'pending'}
                       </span>
+                      
                       {order.status === 'pending' && (
-                        <>
+                        <div className="od-action-btn-group">
                           <button
                             onClick={() => handleUpdateStatus(order.id, 'completed')}
-                            style={{
-                              padding: '6px 12px',
-                              backgroundColor: '#4caf50',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '4px'
-                            }}
+                            className="od-btn-icon od-btn-complete"
+                            title="Mark as Completed"
                           >
-                            <LoadingSpinner size="12" stroke="1.5" color="white" />
-                            Mark Complete
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
                           </button>
                           <button
                             onClick={() => handleUpdateStatus(order.id, 'cancelled')}
-                            style={{
-                              padding: '6px 12px',
-                              backgroundColor: '#f44336',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '4px'
-                            }}
+                            className="od-btn-icon od-btn-cancel"
+                            title="Cancel Order"
                           >
-                            <LoadingSpinner size="12" stroke="1.5" color="white" />
-                            Cancel
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="18" y1="6" x2="6" y2="18"></line>
+                              <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
                           </button>
-                        </>
+                        </div>
                       )}
                     </div>
                   </div>
 
-                  <div style={{ marginBottom: '15px' }}>
-                    <h4 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#333' }}>Order Items:</h4>
-                    <div style={{ display: 'grid', gap: '10px' }}>
+                  {/* Order Items */}
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <h4 className="od-items-title">Order Items:</h4>
+                    <div className="od-items-grid">
                       {order.items && order.items.map((item, index) => (
-                        <div
-                          key={index}
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '10px',
-                            backgroundColor: '#f9f9f9',
-                            borderRadius: '4px'
-                          }}
-                        >
-                          <div style={{ flex: 1 }}>
-                            <p style={{ margin: '0 0 5px 0', fontWeight: 'bold' }}>{item.name}</p>
-                            <p style={{ margin: '0', color: '#666', fontSize: '14px' }}>
-                              Quantity: {item.quantity || 1}
-                            </p>
+                        <div key={index} className="od-item">
+                          <div className="od-item-info">
+                            <p className="od-item-name">{item.name}</p>
+                            <p className="od-item-qty">Qty: {item.quantity || 1}</p>
                           </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <p style={{ margin: '0', fontSize: '16px', fontWeight: 'bold' }}>
+                          <div className="od-item-price">
+                            <p className="od-item-total">
                               रु {((item.price || 0) * (item.quantity || 1)).toFixed(2)}
                             </p>
-                            <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '12px' }}>
-                              रु {item.price?.toFixed(2) || '0.00'} each
+                            <p className="od-item-unit">
+                              {item.price?.toFixed(2) || '0.00'} ea
                             </p>
                           </div>
                         </div>
@@ -321,42 +252,56 @@ function OrderDashboard({ onBack }) {
                     </div>
                   </div>
 
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                    gap: '15px',
-                    marginBottom: '15px',
-                    padding: '15px',
-                    backgroundColor: '#f0f0f0',
-                    borderRadius: '4px'
-                  }}>
-                    <div>
-                      <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#666', fontWeight: 'bold' }}>TOTAL PRICE</p>
-                      <p style={{ margin: '0', fontSize: '20px', fontWeight: 'bold', color: '#111' }}>
+                  {/* Summary */}
+                  <div className="od-summary">
+                    <div className="od-summary-item">
+                      <p>TOTAL PRICE</p>
+                      <p className="od-summary-total">
                         रु {order.total?.toFixed(2) || '0.00'}
                       </p>
                     </div>
-                    <div>
-                      <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#666', fontWeight: 'bold' }}>LOCATION</p>
-                      <p style={{ margin: '0', fontSize: '16px', color: '#333' }}>
+                    <div className="od-summary-item">
+                      <p>LOCATION</p>
+                      <p className="od-summary-text">
                         {order.location || 'Not specified'}
                       </p>
                     </div>
                   </div>
 
+                  {/* Notes */}
                   {order.note && (
-                    <div style={{
-                      padding: '15px',
-                      backgroundColor: '#fff3cd',
-                      borderRadius: '4px',
-                      borderLeft: '4px solid #ffc107'
-                    }}>
-                      <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#666', fontWeight: 'bold' }}>NOTE FROM CUSTOMER:</p>
-                      <p style={{ margin: '0', fontSize: '14px', color: '#333' }}>{order.note}</p>
+                    <div className="od-note">
+                      <p className="od-note-label">NOTE FROM CUSTOMER:</p>
+                      <p className="od-note-text">{order.note}</p>
                     </div>
                   )}
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {filteredOrders.length > itemsPerPage && (
+            <div className="od-pagination">
+              <button
+                onClick={() => paginate(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="od-page-btn"
+              >
+                Previous
+              </button>
+              
+              <span className="od-page-info">
+                Page {currentPage} of {totalPages}
+              </span>
+              
+              <button
+                onClick={() => paginate(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="od-page-btn"
+              >
+                Next
+              </button>
             </div>
           )}
         </section>

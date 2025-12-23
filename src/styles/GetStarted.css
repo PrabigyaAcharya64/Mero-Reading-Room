@@ -1,0 +1,198 @@
+/* GetStarted.css - Refactored for True Vertical Stretching */
+
+.gs-container {
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  /* Relying on container padding for consistent top/bottom breathing room */
+  padding: clamp(2rem, 10vh, 6rem) clamp(1.5rem, 5vw, 2.5rem);
+  background-color: var(--color-background);
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.gs-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* CHANGED: Switched to flex-start to let flex-grow ratios control vertical ownership */
+  justify-content: flex-start;
+  height: 100%;
+  width: 100%;
+  /* REMOVED: gap and space-around distribution logic */
+}
+
+/* Header Section */
+.gs-header {
+  /* Flex ratio for slight vertical ownership */
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Center text vertically within its allocated slice */
+  gap: 0.5rem;
+  max-width: 600px;
+}
+
+.gs-eyebrow {
+  font-family: var(--brand-font-sans);
+  font-size: clamp(0.75rem, 2vh, 0.85rem);
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  margin: 0;
+  opacity: 0;
+  animation: fadeInDown 0.8s ease-out forwards;
+}
+
+.gs-headline {
+  font-family: var(--brand-font-serif);
+  font-size: clamp(1.75rem, 6vh, 3rem);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--color-text-primary);
+  margin: 0;
+  opacity: 0;
+  animation: fadeInUp 0.8s ease-out 0.4s forwards;
+}
+
+.gs-subtext {
+  font-family: var(--brand-font-body);
+  font-size: clamp(0.95rem, 2.5vh, 1.2rem);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0;
+  opacity: 0;
+  animation: fadeInUp 0.8s ease-out 0.6s forwards;
+}
+
+/* Image Section - The primary "Stretcher" */
+.gs-image-container {
+  /* CHANGED: Dominant flex ratio (3) ensures this section visibly expands on tall screens */
+  flex: 3 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 120px;
+  /* RELAXED: Removed max-height cap to allow true vertical stretching */
+  margin: 0;
+  opacity: 0;
+  animation: fadeIn 1s ease-out 0.2s forwards;
+}
+
+.gs-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: var(--radius-default);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+}
+
+/* Actions Section */
+.gs-actions {
+  /* Balanced vertical ownership with the header */
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Center buttons within their allocated slice */
+  gap: 0.85rem;
+  width: 100%;
+  max-width: 340px;
+  opacity: 0;
+  animation: fadeInUp 0.8s ease-out 0.8s forwards;
+}
+
+.gs-btn-primary {
+  background-color: var(--color-primary, #000);
+  color: #fff;
+  border: none;
+  padding: clamp(0.9rem, 2.2vh, 1.25rem) 2rem;
+  font-family: var(--brand-font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: var(--radius-default, 6px);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.gs-btn-primary:hover {
+  transform: translateY(-3px);
+  background-color: #1a1a1a;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.18);
+}
+
+.gs-btn-secondary {
+  background: transparent;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  padding: clamp(0.8rem, 2vh, 1.1rem) 2rem;
+  font-family: var(--brand-font-sans);
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  border-radius: var(--radius-default, 6px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gs-btn-secondary:hover {
+  background-color: var(--color-secondary, #f9f9f9);
+  border-color: var(--color-text-primary);
+}
+
+/* Animations (Minimal transform to prevent layout jitter) */
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Short-screen safety to prevent overlap on small viewports */
+@media (max-height: 550px) {
+  .gs-container {
+    padding: 1rem 1.25rem;
+  }
+  .gs-header, .gs-actions {
+    flex: 0 0 auto; /* Stop stretching when space is tight */
+  }
+  .gs-headline { font-size: clamp(1.5rem, 8vh, 2rem); }
+  .gs-image-container { 
+    flex: 1 1 auto;
+    margin: 0.5rem 0;
+    max-height: 35vh; 
+  }
+  .gs-actions { 
+    flex-direction: row; 
+    max-width: none; 
+    justify-content: center; 
+    gap: 1.5rem;
+  }
+}
+
+/* Tall screen / Desktop optimization */
+@media (min-width: 768px) and (min-height: 600px) {
+  .gs-actions {
+    flex-direction: row;
+    max-width: none;
+    justify-content: center;
+    gap: 2rem;
+  }
+  .gs-btn-primary, .gs-btn-secondary { min-width: 220px; }
+}

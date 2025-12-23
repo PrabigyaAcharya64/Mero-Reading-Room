@@ -4,6 +4,7 @@ import { db } from '../../lib/firebase';
 import { collection, query, getDocs, orderBy, onSnapshot, limit } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
+import '../../styles/SalesDashboard.css';
 
 
 
@@ -115,223 +116,148 @@ function SalesDashboard({ onBack }) {
   const salesHistory = Object.values(salesByDate).sort((a, b) => b.date.localeCompare(a.date));
 
   return (
-    <div className="landing-screen">
-      <header className="landing-header">
+    <div className="sd-container">
+      <header className="sd-header">
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
           {onBack && <EnhancedBackButton onBack={onBack} />}
         </div>
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-          <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)' }}>Sales Dashboard</p>
-        </div>
+        <h1 className="sd-title">Sales Dashboard</h1>
         <div style={{ flex: 1 }}></div>
       </header>
 
-      <main className="landing-body" style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto' }}>
-
+      <main className="sd-body">
         <section>
           {/* Summary Cards */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '20px',
-            marginBottom: '30px'
-          }}>
-            <div style={{
-              padding: '20px',
-              backgroundColor: '#4caf50',
-              borderRadius: '8px',
-              color: 'white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}>
-              <p style={{ margin: '0 0 10px 0', fontSize: '14px', opacity: 0.9 }}>Today's Total Sales</p>
-              <p style={{ margin: '0', fontSize: '32px', fontWeight: 'bold' }}>
-                रु {todaysSales.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </p>
-            </div>
-            <div style={{
-              padding: '20px',
-              backgroundColor: '#2196f3',
-              borderRadius: '8px',
-              color: 'white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}>
-              <p style={{ margin: '0 0 10px 0', fontSize: '14px', opacity: 0.9 }}>Today's Total Orders</p>
-              <p style={{ margin: '0', fontSize: '32px', fontWeight: 'bold' }}>
-                {todaysOrders}
-              </p>
-            </div>
-            {selectedDate && selectedDate !== new Date().toISOString().split('T')[0] && (
-              <div style={{
-                padding: '20px',
-                backgroundColor: '#ff9800',
-                borderRadius: '8px',
-                color: 'white',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}>
-                <p style={{ margin: '0 0 10px 0', fontSize: '14px', opacity: 0.9 }}>
-                  Sales for {formatDateDisplay(selectedDate)}
-                </p>
-                <p style={{ margin: '0', fontSize: '32px', fontWeight: 'bold' }}>
-                  रु {sales.reduce((sum, sale) => sum + (sale.total || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
+          <div className="sd-stats-grid">
+            {(!selectedDate || selectedDate === new Date().toISOString().split('T')[0]) ? (
+              <>
+                <div className="sd-stat-card green">
+                  <div>
+                    <p className="sd-stat-label">Today's Total Sales</p>
+                    <p className="sd-stat-value">
+                      रु {todaysSales.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                </div>
+                <div className="sd-stat-card blue">
+                  <div>
+                    <p className="sd-stat-label">Today's Total Orders</p>
+                    <p className="sd-stat-value">{todaysOrders}</p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="sd-stat-card orange">
+                <div>
+                  <p className="sd-stat-label">Sales for {formatDateDisplay(selectedDate)}</p>
+                  <p className="sd-stat-value">
+                    रु {sales.reduce((sum, sale) => sum + (sale.total || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
               </div>
             )}
           </div>
 
           {/* Date Filter */}
-          <div style={{ marginBottom: '30px', display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <label style={{ fontSize: '16px', fontWeight: 'bold', color: '#333' }}>
-              Filter by Date:
-            </label>
+          <div className="sd-filter-section">
+            <label className="sd-filter-label">Filter by Date:</label>
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              style={{
-                padding: '10px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '14px',
-                cursor: 'pointer'
-              }}
+              className="sd-date-input"
             />
             <button
               onClick={() => setSelectedDate('')}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#666',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
+              className="sd-btn sd-btn-secondary"
             >
               Show All
             </button>
             <button
               onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#4caf50',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
+              className="sd-btn sd-btn-primary"
             >
               Today
             </button>
           </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px' }}>
+            <div style={{ textAlign: 'center', padding: '3rem' }}>
               <LoadingSpinner size="40" stroke="3" color="#666" />
-              <p style={{ marginTop: '15px', color: '#666' }}>Loading sales data...</p>
+              <p style={{ marginTop: '1rem', color: 'var(--color-text-secondary)' }}>Loading sales data...</p>
             </div>
           ) : selectedDate ? (
             // Show detailed sales for selected date
             <div>
-              <h2 style={{ marginBottom: '20px' }}>
+              <h2 className="sd-section-title">
                 Sales for {formatDateDisplay(selectedDate)} ({sales.length} orders)
               </h2>
               {sales.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-                  No sales found for this date.
-                </div>
+                <div className="sd-empty">No sales found for this date.</div>
               ) : (
-                <div style={{ display: 'grid', gap: '15px' }}>
+                <div className="sd-list-grid">
                   {sales.map((sale) => (
-                    <div key={sale.id}>
+                    <div key={sale.id} className={`sd-card ${selectedOrder?.id === sale.id ? 'active' : ''}`}>
                       {/* Surface View - Name, Location, Sales */}
                       <div
+                        className="sd-card-summary"
                         onClick={() => setSelectedOrder(selectedOrder?.id === sale.id ? null : sale)}
-                        style={{
-                          border: selectedOrder?.id === sale.id ? '2px solid #4caf50' : '1px solid #ddd',
-                          borderRadius: '8px',
-                          padding: '20px',
-                          backgroundColor: selectedOrder?.id === sale.id ? '#f0fff0' : '#fff',
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s'
-                        }}
                       >
-                        <div style={{
-                          display: 'grid',
-                          gridTemplateColumns: '2fr 1.5fr 1fr',
-                          gap: '20px',
-                          alignItems: 'center'
-                        }}>
-                          <div>
-                            <p style={{ margin: '0 0 5px 0', fontSize: '18px', fontWeight: 'bold', color: '#333' }}>
-                              {sale.userName || sale.userEmail || 'Unknown Customer'}
-                            </p>
-                            <p style={{ margin: '0', color: '#666', fontSize: '12px' }}>
-                              Order #{sale.id.substring(0, 8)} • {formatDate(sale.completedAt || sale.createdAt)}
-                            </p>
-                          </div>
-                          <div>
-                            <p style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#666', fontWeight: 'bold' }}>
-                              Location
-                            </p>
-                            <p style={{ margin: '0', fontSize: '16px', color: '#333' }}>
-                              {sale.location || 'Not specified'}
-                            </p>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <p style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#666', fontWeight: 'bold' }}>
-                              Total Sales
-                            </p>
-                            <p style={{ margin: '0', fontSize: '24px', fontWeight: 'bold', color: '#4caf50' }}>
-                              रु {sale.total?.toFixed(2) || '0.00'}
-                            </p>
-                          </div>
+                        <div>
+                          <p className="sd-customer-name">
+                            {sale.userName || sale.userEmail || 'Unknown Customer'}
+                          </p>
+                          <p className="sd-meta-text">
+                            Order #{sale.id.substring(0, 8)} • {formatDate(sale.completedAt || sale.createdAt)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="sd-meta-text" style={{ fontWeight: 'bold' }}>
+                            Location
+                          </p>
+                          <p className="sd-location-text">
+                            {sale.location || 'Not specified'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="sd-meta-text" style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                            Total Sales
+                          </p>
+                          <p className="sd-amount-text">
+                            रु {sale.total?.toFixed(2) || '0.00'}
+                          </p>
                         </div>
                       </div>
 
                       {/* Expanded Bill Details */}
                       {selectedOrder?.id === sale.id && (
-                        <div style={{
-                          border: '2px solid #4caf50',
-                          borderTop: 'none',
-                          borderRadius: '0 0 8px 8px',
-                          padding: '25px',
-                          backgroundColor: '#fff',
-                          marginTop: '-8px',
-                          marginBottom: '15px',
-                          boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-                        }}>
-                          <div style={{
-                            borderBottom: '2px solid #4caf50',
-                            paddingBottom: '15px',
-                            marginBottom: '20px'
-                          }}>
-                            <h3 style={{ margin: '0 0 10px 0', fontSize: '20px', color: '#333' }}>
+                        <div className="sd-details">
+                          <div className="sd-bill-header">
+                            <h3 className="sd-bill-title">
                               Bill Details
                             </h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
-                              <div>
-                                <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#666', fontWeight: 'bold' }}>CUSTOMER NAME</p>
-                                <p style={{ margin: '0', fontSize: '16px', color: '#333' }}>
+                            <div className="sd-info-grid">
+                              <div className="sd-info-item">
+                                <p>CUSTOMER NAME</p>
+                                <p>
                                   {sale.userName || sale.userEmail || 'Unknown Customer'}
                                 </p>
                               </div>
-                              <div>
-                                <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#666', fontWeight: 'bold' }}>LOCATION</p>
-                                <p style={{ margin: '0', fontSize: '16px', color: '#333' }}>
+                              <div className="sd-info-item">
+                                <p>LOCATION</p>
+                                <p>
                                   {sale.location || 'Not specified'}
                                 </p>
                               </div>
-                              <div>
-                                <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#666', fontWeight: 'bold' }}>ORDER DATE</p>
-                                <p style={{ margin: '0', fontSize: '16px', color: '#333' }}>
+                              <div className="sd-info-item">
+                                <p>ORDER DATE</p>
+                                <p>
                                   {formatDate(sale.completedAt || sale.createdAt)}
                                 </p>
                               </div>
-                              <div>
-                                <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#666', fontWeight: 'bold' }}>ORDER ID</p>
-                                <p style={{ margin: '0', fontSize: '16px', color: '#333' }}>
+                              <div className="sd-info-item">
+                                <p>ORDER ID</p>
+                                <p>
                                   {sale.id}
                                 </p>
                               </div>
@@ -339,33 +265,29 @@ function SalesDashboard({ onBack }) {
                           </div>
 
                           {/* Items List */}
-                          <div style={{ marginBottom: '20px' }}>
-                            <h4 style={{ margin: '0 0 15px 0', fontSize: '16px', color: '#333', fontWeight: 'bold' }}>
+                          <div style={{ marginBottom: '1.5rem' }}>
+                            <h4 style={{ margin: '0 0 1rem 0', fontWeight: '700', color: 'var(--color-text-primary)' }}>
                               Items Purchased
                             </h4>
-                            <div style={{
-                              border: '1px solid #ddd',
-                              borderRadius: '4px',
-                              overflow: 'hidden'
-                            }}>
-                              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <div className="sd-items-container">
+                              <table className="sd-table">
                                 <thead>
-                                  <tr style={{ backgroundColor: '#f5f5f5' }}>
-                                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: 'bold', color: '#666', borderBottom: '2px solid #ddd' }}>Item</th>
-                                    <th style={{ padding: '12px', textAlign: 'center', fontSize: '14px', fontWeight: 'bold', color: '#666', borderBottom: '2px solid #ddd' }}>Quantity</th>
-                                    <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: 'bold', color: '#666', borderBottom: '2px solid #ddd' }}>Unit Price</th>
-                                    <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: 'bold', color: '#666', borderBottom: '2px solid #ddd' }}>Total</th>
+                                  <tr>
+                                    <th>Item</th>
+                                    <th className="sd-table-center">Quantity</th>
+                                    <th className="sd-table-right">Unit Price</th>
+                                    <th className="sd-table-right">Total</th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {sale.items && sale.items.map((item, index) => (
-                                    <tr key={index} style={{ borderBottom: index < sale.items.length - 1 ? '1px solid #eee' : 'none' }}>
-                                      <td style={{ padding: '12px', fontSize: '14px', color: '#333' }}>{item.name}</td>
-                                      <td style={{ padding: '12px', textAlign: 'center', fontSize: '14px', color: '#333' }}>{item.quantity || 1}</td>
-                                      <td style={{ padding: '12px', textAlign: 'right', fontSize: '14px', color: '#333' }}>
+                                    <tr key={index}>
+                                      <td>{item.name}</td>
+                                      <td className="sd-table-center">{item.quantity || 1}</td>
+                                      <td className="sd-table-right">
                                         रु {item.price?.toFixed(2) || '0.00'}
                                       </td>
-                                      <td style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: 'bold', color: '#333' }}>
+                                      <td className="sd-table-right" style={{ fontWeight: 'bold' }}>
                                         रु {((item.price || 0) * (item.quantity || 1)).toFixed(2)}
                                       </td>
                                     </tr>
@@ -377,34 +299,20 @@ function SalesDashboard({ onBack }) {
 
                           {/* Note if exists */}
                           {sale.note && (
-                            <div style={{
-                              padding: '15px',
-                              backgroundColor: '#fff3cd',
-                              borderRadius: '4px',
-                              borderLeft: '4px solid #ffc107',
-                              marginBottom: '20px'
-                            }}>
-                              <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#666', fontWeight: 'bold' }}>
+                            <div className="sd-bill-note">
+                              <p className="sd-stat-label" style={{ color: '#bfa05aa8' }}>
                                 NOTE FROM CUSTOMER:
                               </p>
-                              <p style={{ margin: '0', fontSize: '14px', color: '#333' }}>{sale.note}</p>
+                              <p style={{ margin: 0 }}>{sale.note}</p>
                             </div>
                           )}
 
                           {/* Total */}
-                          <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '20px',
-                            backgroundColor: '#f0fff0',
-                            borderRadius: '4px',
-                            border: '2px solid #4caf50'
-                          }}>
-                            <p style={{ margin: '0', fontSize: '20px', fontWeight: 'bold', color: '#333' }}>
+                          <div className="sd-bill-total">
+                            <p className="sd-total-label">
                               GRAND TOTAL
                             </p>
-                            <p style={{ margin: '0', fontSize: '28px', fontWeight: 'bold', color: '#4caf50' }}>
+                            <p className="sd-total-amount">
                               रु {sale.total?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                             </p>
                           </div>
@@ -413,18 +321,12 @@ function SalesDashboard({ onBack }) {
                     </div>
                   ))}
                   {/* Daily Total */}
-                  <div style={{
-                    border: '2px solid #4caf50',
-                    borderRadius: '8px',
-                    padding: '20px',
-                    backgroundColor: '#f0fff0',
-                    marginTop: '20px'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <p style={{ margin: '0', fontSize: '20px', fontWeight: 'bold' }}>
+                  <div className="sd-bill-total" style={{ marginTop: '1.5rem', backgroundColor: 'var(--color-background)', border: '2px solid var(--color-primary)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                      <p className="sd-total-label">
                         Daily Total ({sales.length} orders)
                       </p>
-                      <p style={{ margin: '0', fontSize: '28px', fontWeight: 'bold', color: '#4caf50' }}>
+                      <p className="sd-total-amount">
                         रु {sales.reduce((sum, sale) => sum + (sale.total || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     </div>
@@ -435,41 +337,30 @@ function SalesDashboard({ onBack }) {
           ) : (
             // Show sales history grouped by date
             <div>
-              <h2 style={{ marginBottom: '20px' }}>Sales History</h2>
+              <h2 className="sd-section-title">Sales History</h2>
               {salesHistory.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-                  No sales history found.
-                </div>
+                <div className="sd-empty">No sales history found.</div>
               ) : (
-                <div style={{ display: 'grid', gap: '20px' }}>
+                <div className="sd-list-grid">
                   {salesHistory.map((daySales) => (
                     <div
                       key={daySales.date}
-                      style={{
-                        border: '1px solid #ddd',
-                        borderRadius: '8px',
-                        padding: '20px',
-                        backgroundColor: '#fff',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                        cursor: 'pointer'
-                      }}
+                      className="sd-card"
+                      style={{ cursor: 'pointer' }}
                       onClick={() => setSelectedDate(daySales.date)}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div className="sd-card-summary" style={{ gridTemplateColumns: '1fr 1fr' }}>
                         <div>
-                          <h3 style={{ margin: '0 0 5px 0', fontSize: '18px' }}>
+                          <h3 className="sd-customer-name" style={{ fontSize: '1.25rem' }}>
                             {formatDateDisplay(daySales.date)}
                           </h3>
-                          <p style={{ margin: '0', color: '#666', fontSize: '14px' }}>
-                            {daySales.count} {daySales.count === 1 ? 'order' : 'orders'}
+                          <p className="sd-meta-text">
+                            {daySales.count} {daySales.count === 1 ? 'order' : 'orders'} • Click to view
                           </p>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <p style={{ margin: '0', fontSize: '24px', fontWeight: 'bold', color: '#4caf50' }}>
+                          <p className="sd-amount-text" style={{ fontSize: '1.5rem', color: 'var(--color-primary)' }}>
                             रु {daySales.total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </p>
-                          <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '12px' }}>
-                            Click to view details
                           </p>
                         </div>
                       </div>
