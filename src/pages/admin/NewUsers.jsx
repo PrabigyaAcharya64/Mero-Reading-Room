@@ -147,10 +147,9 @@ function NewUsers({ onBack }) {
 
   return (
     <div className="nu-container">
+      {onBack && <EnhancedBackButton onBack={onBack} />}
       <header className="nu-header">
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
-          <EnhancedBackButton onBack={onBack} />
-        </div>
+        <div style={{ flex: 1 }}></div>
         <h1 className="nu-title">Verification</h1>
         <div style={{ flex: 1 }}></div>
       </header>

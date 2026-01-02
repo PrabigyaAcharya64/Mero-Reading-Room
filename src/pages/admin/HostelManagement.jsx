@@ -4,9 +4,9 @@ import EnhancedBackButton from '../../components/EnhancedBackButton';
 function HostelManagement({ onBack }) {
     return (
         <div className="landing-screen">
+            {onBack && <EnhancedBackButton onBack={onBack} />}
             <header className="landing-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <EnhancedBackButton onBack={onBack} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
                     <h2 style={{ margin: 0 }}>Hostel Management</h2>
                 </div>
             </header>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
-import { doc, onSnapshot, collection, addDoc } from 'firebase/firestore';
+import { doc, onSnapshot, collection, addDoc, query, where } from 'firebase/firestore';
 import { validateOrderNote } from '../../utils/validation';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 
@@ -20,6 +20,7 @@ function CanteenClient({ onBack }) {
   const [currentView, setCurrentView] = useState('landing');
   
   const [todaysMenu, setTodaysMenu] = useState([]);
+  const [fixedMenu, setFixedMenu] = useState([]);
   const [cart, setCart] = useState([]);
   const [orderMessage, setOrderMessage] = useState('');
 
@@ -48,6 +49,33 @@ function CanteenClient({ onBack }) {
         console.error('Error listening to menu updates:', error);
         setTodaysMenu([]);
       }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  // ------------------------------------------------------------------
+  // Data Fetching (Fixed Menu)
+  // ------------------------------------------------------------------
+  useEffect(() => {
+    const q = query(
+      collection(db, 'menuItems'),
+      where('isFixed', '==', true)
+    );
+
+    const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+            const items = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            setFixedMenu(items);
+        },
+        (error) => {
+            console.error('Error fetching fixed menu:', error);
+            setFixedMenu([]);
+        }
     );
 
     return () => unsubscribe();
@@ -157,6 +185,7 @@ function CanteenClient({ onBack }) {
         onBack={() => setCurrentView('landing')}
         onNavigate={setCurrentView}
         todaysMenu={todaysMenu}
+        fixedMenu={fixedMenu}
         cart={cart}
         addToCart={addToCart}
         userBalance={userBalance}
@@ -186,8 +215,8 @@ function CanteenClient({ onBack }) {
   // Default: Landing (Inlined)
   return (
     <div className="canteen-landing">
+      <EnhancedBackButton onBack={onBack} />
       <div className="canteen-header">
-        <EnhancedBackButton onBack={onBack} />
         <h1 className="header-title" style={{ flex: 1, textAlign: 'center' }}>Canteen</h1>
         
         <div className="landing-balance" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginLeft: 'auto' }}>

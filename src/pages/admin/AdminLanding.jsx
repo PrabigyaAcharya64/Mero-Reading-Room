@@ -25,6 +25,16 @@ function AdminLanding() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [unreadCount, setUnreadCount] = useState(0);
   const [announcements, setAnnouncements] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  // Filter announcements
+  const displayedAnnouncements = announcements.filter(a => {
+    const expiresAt = a.expiresAt?.toDate ? a.expiresAt.toDate() : new Date(a.expiresAt);
+    const now = new Date();
+    // Reset time part for comparison if needed or just compare timestamps
+    const isExpired = expiresAt < now;
+    return showHistory ? isExpired : !isExpired;
+  });
 
   useEffect(() => {
     const q = query(collection(db, 'messages'), where('read', '==', false));
@@ -194,8 +204,25 @@ function AdminLanding() {
         </section>
 
         <section className="landing-announcements">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2>Admin Announcements</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <h2 style={{ margin: 0 }}>{showHistory ? 'Announcement History' : 'Active Announcements'}</h2>
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '1.2rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  color: showHistory ? 'var(--color-primary)' : 'var(--color-text-secondary)'
+                }}
+                title={showHistory ? "Show Active" : "Show History"}
+              >
+                🕒
+              </button>
+            </div>
             <button
               onClick={() => setCurrentView('create-announcement')}
               style={{
@@ -216,21 +243,22 @@ function AdminLanding() {
               +
             </button>
           </div>
-          {announcements.length === 0 ? (
+          {displayedAnnouncements.length === 0 ? (
             <div className="landing-announcements__empty">
-              No announcements at this time.
+              {showHistory ? 'No expired announcements found.' : 'No active announcements at this time.'}
             </div>
           ) : (
             <div style={{ display: 'grid', gap: '1rem' }}>
-              {announcements.map(announcement => (
+              {displayedAnnouncements.map(announcement => (
                 <div
                   key={announcement.id}
                   style={{
                     padding: '1rem',
                     border: '1px solid var(--color-border)',
-                    backgroundColor: '#fff',
+                    backgroundColor: showHistory ? '#f5f5f5' : '#fff',
                     textAlign: 'left',
-                    position: 'relative'
+                    position: 'relative',
+                    opacity: showHistory ? 0.8 : 1
                   }}
                 >
                   <button

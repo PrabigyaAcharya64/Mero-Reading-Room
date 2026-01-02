@@ -6,9 +6,9 @@ const newUserIcon = new URL('../../assets/newuser.svg', import.meta.url).href;
 function UserManagement({ onBack, onNavigate }) {
     return (
         <div className="landing-screen">
+            {onBack && <EnhancedBackButton onBack={onBack} />}
             <header className="landing-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <EnhancedBackButton onBack={onBack} />
+                <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
                     <h2 style={{ margin: 0 }}>User Management</h2>
                 </div>
             </header>

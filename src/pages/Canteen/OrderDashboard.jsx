@@ -13,6 +13,7 @@ function OrderDashboard({ onBack }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'pending', 'completed', 'cancelled'
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -109,9 +110,11 @@ function OrderDashboard({ onBack }) {
   };
 
 
-  const filteredOrders = filterStatus === 'all'
-    ? orders
-    : orders.filter(order => order.status === filterStatus);
+  const filteredOrders = orders.filter(order => {
+    const matchesStatus = filterStatus === 'all' || order.status === filterStatus;
+    const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
 
   // Pagination Logic
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -148,10 +151,9 @@ function OrderDashboard({ onBack }) {
 
   return (
     <div className="od-container">
+      {onBack && <EnhancedBackButton onBack={onBack} />}
       <header className="od-header">
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
-          {onBack && <EnhancedBackButton onBack={onBack} />}
-        </div>
+        <div style={{ flex: 1 }}></div>
         <h1 className="od-title">Orders Dashboard</h1>
         <div style={{ flex: 1 }}></div>
       </header>
@@ -161,6 +163,21 @@ function OrderDashboard({ onBack }) {
           <div className="od-toolbar">
             <h2 className="od-section-title">Orders ({filteredOrders.length})</h2>
             <div className="od-filters">
+              <input
+                type="text"
+                placeholder="Search by Order ID..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="od-search-input"
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: 'var(--radius-default)',
+                  border: '1px solid #ddd',
+                  fontFamily: 'var(--brand-font-sans)',
+                  fontSize: '0.9rem',
+                  width: '200px'
+                }}
+              />
               {['all', 'pending', 'completed'].map((status) => (
                 <button
                   key={status}
@@ -194,7 +211,7 @@ function OrderDashboard({ onBack }) {
                       <p className="od-user-email">
                         {order.userEmail && order.userEmail !== order.userName ? order.userEmail : ''}
                       </p>
-                      <p className="od-order-id">ID: {order.id.substring(0, 8)}...</p>
+                      <p className="od-order-id">ID: {order.id}</p>
                       <p className="od-order-date">{formatDate(order.createdAt)}</p>
                     </div>
 

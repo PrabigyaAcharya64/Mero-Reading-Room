@@ -309,10 +309,8 @@ const Discussion = ({ onBack }) => {
     if (viewMode === 'list') {
         return (
             <div className="discussion-page">
+                {onBack && <EnhancedBackButton onBack={onBack} />}
                 <header className="subpage-header">
-                    <div className="subpage-header__left">
-                        {onBack && <EnhancedBackButton onBack={onBack} />}
-                    </div>
                     <h1 className="subpage-header__title">Discussion Room</h1>
                     <div className="subpage-header__spacer"></div>
                 </header>
@@ -373,10 +371,8 @@ const Discussion = ({ onBack }) => {
 
     return (
         <div className="discussion-page">
+            <EnhancedBackButton onBack={() => setViewMode('list')} />
             <header className="subpage-header">
-                <div className="subpage-header__left">
-                    <EnhancedBackButton onBack={() => setViewMode('list')} />
-                </div>
                 <h1 className="subpage-header__title">Discussion Room</h1>
                 <div className="subpage-header__spacer"></div>
             </header>

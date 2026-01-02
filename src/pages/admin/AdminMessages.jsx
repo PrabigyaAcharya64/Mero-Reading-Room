@@ -1,4 +1,4 @@
-import { collection, doc, onSnapshot, orderBy, query, updateDoc } from 'firebase/firestore';
+import { collection, doc, onSnapshot, orderBy, query, updateDoc, getDocs } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { db } from '../../lib/firebase';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -10,6 +10,28 @@ function AdminMessages({ onBack }) {
     const [loading, setLoading] = useState(true);
     const [selectedMessage, setSelectedMessage] = useState(null);
     const [filter, setFilter] = useState('unread'); // 'unread' or 'all'
+
+    const [userMap, setUserMap] = useState({});
+    const [searchQuery, setSearchQuery] = useState('');
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const usersSnap = await getDocs(collection(db, 'users'));
+                const map = {};
+                usersSnap.forEach(doc => {
+                    const data = doc.data();
+                    if (data.email && data.mrrNumber) {
+                        map[data.email] = data.mrrNumber;
+                    }
+                });
+                setUserMap(map);
+            } catch (error) {
+                console.error("Error fetching users for MRR ID mapping:", error);
+            }
+        };
+        fetchUsers();
+    }, []);
 
     useEffect(() => {
         const q = query(collection(db, 'messages'), orderBy('createdAt', 'desc'));
@@ -66,8 +88,8 @@ function AdminMessages({ onBack }) {
 
     return (
         <div className="am-container">
+            {onBack && <EnhancedBackButton onBack={onBack} />}
             <header className="am-header">
-                <EnhancedBackButton onBack={onBack} />
                 <h1 className="am-title">Messages</h1>
                 <div className="am-header-spacer"></div>
             </header>
@@ -77,20 +99,34 @@ function AdminMessages({ onBack }) {
 
                     {/* Message List */}
                     <div className="am-list-panel">
-                        {/* Filter Buttons */}
-                        <div className="am-filter-bar">
-                            <button
-                                onClick={() => setFilter('unread')}
-                                className={`am-filter-btn ${filter === 'unread' ? 'active' : ''}`}
-                            >
-                                Unread {messages.filter(m => !m.read).length > 0 && `(${messages.filter(m => !m.read).length})`}
-                            </button>
-                            <button
-                                onClick={() => setFilter('all')}
-                                className={`am-filter-btn ${filter === 'all' ? 'active' : ''}`}
-                            >
-                                All ({messages.length})
-                            </button>
+                        {/* Filter Buttons & Search */}
+                        <div className="am-filter-bar" style={{ flexDirection: 'column', gap: '10px', alignItems: 'stretch' }}>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button
+                                    onClick={() => setFilter('unread')}
+                                    className={`am-filter-btn ${filter === 'unread' ? 'active' : ''}`}
+                                >
+                                    Unread {messages.filter(m => !m.read).length > 0 && `(${messages.filter(m => !m.read).length})`}
+                                </button>
+                                <button
+                                    onClick={() => setFilter('all')}
+                                    className={`am-filter-btn ${filter === 'all' ? 'active' : ''}`}
+                                >
+                                    All ({messages.length})
+                                </button>
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Search by MRR ID or Name..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                style={{
+                                    padding: '8px',
+                                    borderRadius: '4px',
+                                    border: '1px solid #ddd',
+                                    marginTop: '5px'
+                                }}
+                            />
                         </div>
 
                         {/* Messages List */}
@@ -99,21 +135,40 @@ function AdminMessages({ onBack }) {
                                 <LoadingSpinner size="40" stroke="3" color="#666" />
                                 <p className="am-loading-text">Loading messages...</p>
                             </div>
-                        ) : messages.filter(msg => filter === 'all' || !msg.read).length === 0 ? (
-                            <div className="am-empty">
-                                {filter === 'unread' ? 'No unread messages.' : 'No messages found.'}
-                            </div>
                         ) : (
-                            messages
-                                .filter(msg => filter === 'all' || !msg.read)
-                                .map(msg => (
+                            (() => {
+                                const filtered = messages.filter(msg => {
+                                    const isUnreadMatch = filter === 'all' || !msg.read;
+                                    const mrrId = userMap[msg.email] || '';
+                                    const searchMatch = searchQuery === '' ||
+                                        mrrId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                        (msg.name && msg.name.toLowerCase().includes(searchQuery.toLowerCase()));
+                                    return isUnreadMatch && searchMatch;
+                                });
+
+                                if (filtered.length === 0) {
+                                    return (
+                                        <div className="am-empty">
+                                            {searchQuery ? 'No matching messages.' : (filter === 'unread' ? 'No unread messages.' : 'No messages found.')}
+                                        </div>
+                                    );
+                                }
+
+                                return filtered.map(msg => (
                                     <div
                                         key={msg.id}
                                         onClick={() => handleMessageClick(msg)}
                                         className={`am-message-item ${!msg.read ? 'unread' : ''} ${selectedMessage?.id === msg.id ? 'selected' : ''}`}
                                     >
                                         <div className="am-message-header">
-                                            <span className={`am-message-name ${!msg.read ? 'unread' : ''}`}>{msg.name}</span>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span className={`am-message-name ${!msg.read ? 'unread' : ''}`}>{msg.name}</span>
+                                                {userMap[msg.email] && (
+                                                    <span style={{ fontSize: '0.75rem', color: '#666', fontWeight: 'bold' }}>
+                                                        {userMap[msg.email]}
+                                                    </span>
+                                                )}
+                                            </div>
                                             <span className="am-message-date">
                                                 {msg.createdAt ? msg.createdAt.toLocaleDateString() : 'N/A'}
                                             </span>
@@ -122,7 +177,8 @@ function AdminMessages({ onBack }) {
                                             {msg.message}
                                         </div>
                                     </div>
-                                ))
+                                ));
+                            })()
                         )}
                     </div>
 
@@ -133,6 +189,7 @@ function AdminMessages({ onBack }) {
                                 <div className="am-detail-header">
                                     <h3 className="am-detail-title">{selectedMessage.name}</h3>
                                     <div className="am-detail-meta">
+                                        {userMap[selectedMessage.email] && <div>MRR ID: <strong>{userMap[selectedMessage.email]}</strong></div>}
                                         <div>Email: {selectedMessage.email}</div>
                                         <div>Phone: {selectedMessage.phone}</div>
                                         <div>Date: {selectedMessage.createdAt ? selectedMessage.createdAt.toLocaleString() : 'N/A'}</div>

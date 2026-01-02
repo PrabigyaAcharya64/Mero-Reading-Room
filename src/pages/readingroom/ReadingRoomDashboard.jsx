@@ -162,10 +162,8 @@ function ReadingRoomDashboard({ onBack }) {
 
     return (
         <div className="landing-screen">
+            {onBack && <EnhancedBackButton onBack={onBack} />}
             <header className="subpage-header">
-                <div className="subpage-header__left">
-                    {onBack && <EnhancedBackButton onBack={onBack} />}
-                </div>
                 <h1 className="subpage-header__title">Reading Room</h1>
                 <div className="subpage-header__spacer"></div>
             </header>

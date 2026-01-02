@@ -16,6 +16,7 @@ function SalesDashboard({ onBack }) {
   const [todaysSales, setTodaysSales] = useState(0);
   const [todaysOrders, setTodaysOrders] = useState(0);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadSales();
@@ -117,10 +118,9 @@ function SalesDashboard({ onBack }) {
 
   return (
     <div className="sd-container">
+      {onBack && <EnhancedBackButton onBack={onBack} />}
       <header className="sd-header">
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
-          {onBack && <EnhancedBackButton onBack={onBack} />}
-        </div>
+        <div style={{ flex: 1 }}></div>
         <h1 className="sd-title">Sales Dashboard</h1>
         <div style={{ flex: 1 }}></div>
       </header>
@@ -189,14 +189,33 @@ function SalesDashboard({ onBack }) {
           ) : selectedDate ? (
             // Show detailed sales for selected date
             <div>
-              <h2 className="sd-section-title">
-                Sales for {formatDateDisplay(selectedDate)} ({sales.length} orders)
-              </h2>
-              {sales.length === 0 ? (
-                <div className="sd-empty">No sales found for this date.</div>
+              <div className="sd-section-header-group">
+                <h2 className="sd-section-title" style={{ marginBottom: 0 }}>
+                  Sales for {formatDateDisplay(selectedDate)}
+                </h2>
+                <div className="sd-search-container">
+                    <input
+                        type="text"
+                        placeholder="Search by Order ID..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="sd-search-input"
+                    />
+                </div>
+              </div>
+              <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.5rem', marginTop: '0.5rem' }}>
+                {sales.filter(s => s.id.toLowerCase().includes(searchQuery.toLowerCase())).length} orders
+              </p>
+
+              {sales.filter(s => s.id.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
+                <div className="sd-empty">
+                    {searchQuery ? 'No orders match your search.' : 'No sales found for this date.'}
+                </div>
               ) : (
                 <div className="sd-list-grid">
-                  {sales.map((sale) => (
+                  {sales
+                    .filter(sale => sale.id.toLowerCase().includes(searchQuery.toLowerCase()))
+                    .map((sale) => (
                     <div key={sale.id} className={`sd-card ${selectedOrder?.id === sale.id ? 'active' : ''}`}>
                       {/* Surface View - Name, Location, Sales */}
                       <div

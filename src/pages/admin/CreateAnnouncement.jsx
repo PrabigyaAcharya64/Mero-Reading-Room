@@ -49,8 +49,8 @@ function CreateAnnouncement({ onBack }) {
 
     return (
         <div className="landing-screen">
+            {onBack && <EnhancedBackButton onBack={onBack} />}
             <header className="landing-header">
-                <EnhancedBackButton onBack={onBack} />
                 <h1 style={{
                     margin: 0,
                     fontFamily: 'var(--brand-font-serif)',
@@ -60,7 +60,6 @@ function CreateAnnouncement({ onBack }) {
                 }}>
                     New Announcement
                 </h1>
-                <div style={{ width: '100px' }}></div>
             </header>
 
             <main className="landing-body">

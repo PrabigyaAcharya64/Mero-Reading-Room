@@ -529,14 +529,11 @@ function ReadingRoomManagement({ onBack }) {
 
     return (
         <div className="rrm-container">
+            {onBack && <EnhancedBackButton onBack={onBack} />}
             <header className="rrm-header">
-                {onBack && (
-                    <EnhancedBackButton onBack={onBack} />
-                )}
                 <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-                    <p className="rrm-title">Admin Management</p>
+                    <p className="rrm-title">Reading Room Management</p>
                 </div>
-                <div style={{ flex: 1 }}></div>
             </header>
 
             <main className="rrm-body">
@@ -551,33 +548,37 @@ function ReadingRoomManagement({ onBack }) {
                 {/* Create New Room Form */}
                 <section className="rrm-create-section">
                     <h2 className="rrm-section-title">Create New Room</h2>
-                    <form onSubmit={handleCreateRoom} className="rrm-form-grid">
-                        <label className="input-field">
-                            <span className="input-field__label">Room Name</span>
-                            <input
-                                type="text"
-                                value={roomForm.name}
-                                onChange={(e) => setRoomForm({ ...roomForm, name: e.target.value })}
-                                placeholder="e.g., Study Hall A"
-                                required
-                            />
-                        </label>
+                    <form onSubmit={handleCreateRoom}>
+                        <div className="rrm-form-grid" style={{ gridTemplateColumns: '1fr 1fr', marginBottom: '1rem' }}>
+                            <label className="input-field">
+                                <span className="input-field__label">Room Name</span>
+                                <input
+                                    type="text"
+                                    value={roomForm.name}
+                                    onChange={(e) => setRoomForm({ ...roomForm, name: e.target.value })}
+                                    placeholder="e.g., Study Hall A"
+                                    required
+                                />
+                            </label>
 
-                        <label className="input-field">
-                            <span className="input-field__label">Room Type</span>
-                            <select
-                                value={roomForm.type}
-                                onChange={(e) => setRoomForm({ ...roomForm, type: e.target.value })}
-                                style={{ width: '100%', padding: '10px', fontFamily: 'inherit', fontSize: 'inherit' }}
-                            >
-                                <option value="ac">AC</option>
-                                <option value="non-ac">Non-AC</option>
-                            </select>
-                        </label>
+                            <label className="input-field">
+                                <span className="input-field__label">Room Type</span>
+                                <select
+                                    value={roomForm.type}
+                                    onChange={(e) => setRoomForm({ ...roomForm, type: e.target.value })}
+                                    style={{ width: '100%', padding: '10px', fontFamily: 'inherit', fontSize: 'inherit' }}
+                                >
+                                    <option value="ac">AC</option>
+                                    <option value="non-ac">Non-AC</option>
+                                </select>
+                            </label>
+                        </div>
 
-                        <button type="submit" className="cta-button cta-button--primary" disabled={loading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                            {loading ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'Create Room'}
-                        </button>
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                            <button type="submit" className="cta-button cta-button--primary" disabled={loading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', minWidth: '200px' }}>
+                                {loading ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'Create Room'}
+                            </button>
+                        </div>
                     </form>
                 </section>
 

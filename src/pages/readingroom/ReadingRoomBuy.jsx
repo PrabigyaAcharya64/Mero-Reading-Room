@@ -139,10 +139,8 @@ function ReadingRoomBuy({ onBack, selectedOption, onComplete }) {
 
     return (
         <div style={{ minHeight: '100vh', backgroundColor: '#fff', padding: '20px' }}>
+            {onBack && <EnhancedBackButton onBack={onBack} />}
             <header className="subpage-header">
-                <div className="subpage-header__left">
-                    {onBack && <EnhancedBackButton onBack={onBack} />}
-                </div>
                 <h1 className="subpage-header__title">Confirm Payment</h1>
                 <div className="subpage-header__spacer"></div>
             </header>

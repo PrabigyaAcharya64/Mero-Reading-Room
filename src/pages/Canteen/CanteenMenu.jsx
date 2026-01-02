@@ -7,27 +7,41 @@ const CanteenMenu = ({
   onBack, 
   onNavigate, 
   todaysMenu, 
+  fixedMenu = [], // Default to empty array
   cart, 
   addToCart, 
   userBalance 
 }) => {
-  // Group menu by category
-  const groupedMenu = todaysMenu.reduce((acc, item) => {
-    const category = item.category || 'Other';
-    if (!acc[category]) acc[category] = [];
-    acc[category].push(item);
-    return acc;
-  }, {});
-
   const categoryOrder = ['Breakfast', 'Meal', 'Dinner', 'Snacks', 'Drinks'];
-  const sortedCategories = categoryOrder.filter(cat => groupedMenu[cat]?.length > 0);
-  
-  // Add remaining categories that aren't in the predefined list
-  Object.keys(groupedMenu).forEach(cat => {
-    if (!categoryOrder.includes(cat) && !sortedCategories.includes(cat)) {
-      sortedCategories.push(cat);
-    }
-  });
+
+  // Helper to group items by category
+  const groupByCategory = (items) => {
+    return items.reduce((acc, item) => {
+      const category = item.category || 'Other';
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(item);
+      return acc;
+    }, {});
+  };
+
+  // Group menus
+  const groupedTodaysMenu = groupByCategory(todaysMenu);
+  const groupedFixedMenu = groupByCategory(fixedMenu);
+
+  // Helper to sort categories
+  const getSortedCategories = (groupedItems) => {
+     const sorted = categoryOrder.filter(cat => groupedItems[cat]?.length > 0);
+     Object.keys(groupedItems).forEach(cat => {
+        if (!categoryOrder.includes(cat) && !sorted.includes(cat)) {
+          sorted.push(cat);
+        }
+      });
+      return sorted;
+  };
+
+  const todaysCategories = getSortedCategories(groupedTodaysMenu);
+  const fixedCategories = getSortedCategories(groupedFixedMenu);
+
 
   // Carousel component with center detection
   const FoodCarousel = ({ items, category }) => {
@@ -96,7 +110,7 @@ const CanteenMenu = ({
               <p className="card-food-desc">{item.description || 'Delicious meal'}</p>
               
               <div className="card-footer">
-                <span className="card-price">Rs. {item.price.toFixed(2)}</span>
+                <span className="card-price">Rs. {Number(item.price).toFixed(2)}</span>
                 <button 
                   className="card-add-btn"
                   onClick={(e) => {
@@ -116,17 +130,15 @@ const CanteenMenu = ({
 
   return (
     <div className="canteen-menu-page">
+      {onBack && <EnhancedBackButton onBack={onBack} />}
+      
       {/* Header Section - Independent from container */}
       <header className="subpage-header" style={{ padding: '1rem 1.25rem' }}>
-        <div className="subpage-header__left">
-          {onBack && <EnhancedBackButton onBack={onBack} />}
-        </div>
-        <h1 className="subpage-header__title">Today's Menu</h1>
-        <div className="subpage-header__spacer"></div>
+        <h1 className="subpage-header__title" style={{ width: '100%', textAlign: 'center' }}>Menu</h1>
       </header>
 
       {/* Main Content Container */}
-      <div style={{ maxWidth: '600px', margin: '0 auto', backgroundColor: 'white', borderRadius: '20px', overflow: 'hidden' }}>
+      <div style={{ maxWidth: '600px', margin: '0 auto', backgroundColor: 'white', borderRadius: '20px', overflow: 'hidden', paddingBottom: '80px' }}>
         {/* Cart Icon */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '10px 20px 0 20px' }}>
           <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => onNavigate('cart')}>
@@ -162,27 +174,68 @@ const CanteenMenu = ({
         {/* Balance */}
         <div className="menu-balance-container">
           <span className="balance-label">Balance</span>
-          <span className="balance-value">Rs. {userBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          <span className="balance-value">Rs. {(userBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </div>
 
         {/* Menu Sections */}
         <div className="menu-scroll-container">
-          {todaysMenu.length === 0 ? (
-            <div className="empty-state">
-              <p>No menu available for today.</p>
-            </div>
-          ) : (
-            sortedCategories.map(category => {
-              const items = groupedMenu[category];
-              
-              return (
-                <div key={category} className="menu-category-section">
-                  <h2 className="category-title">{category}</h2>
-                  <FoodCarousel items={items} category={category} />
-                </div>
-              );
-            })
+          
+          {/* Today's Special Section */}
+          {todaysMenu.length > 0 && (
+              <div className="menu-section-group" style={{ marginBottom: '2rem' }}>
+                  <div className="section-header-banner" style={{ 
+                      backgroundColor: '#ff9800', 
+                      color: 'white', 
+                      padding: '0.5rem 1rem', 
+                      borderRadius: '8px', 
+                      display: 'inline-block',
+                      marginBottom: '1rem',
+                      fontWeight: 'bold',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}>
+                      Today's Special
+                  </div>
+                  
+                  {todaysCategories.map(category => (
+                      <div key={`today-${category}`} className="menu-category-section">
+                        <h2 className="category-title">{category}</h2>
+                        <FoodCarousel items={groupedTodaysMenu[category]} category={category} />
+                      </div>
+                  ))}
+              </div>
           )}
+
+          {/* Fixed Menu Section */}
+          {fixedMenu.length > 0 && (
+               <div className="menu-section-group">
+                  <div className="section-header-banner" style={{ 
+                      backgroundColor: '#4CAF50', 
+                      color: 'white', 
+                      padding: '0.5rem 1rem', 
+                      borderRadius: '8px', 
+                      display: 'inline-block',
+                      marginBottom: '1rem',
+                      fontWeight: 'bold',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}>
+                      Fixed Menu
+                  </div>
+                  
+                  {fixedCategories.map(category => (
+                      <div key={`fixed-${category}`} className="menu-category-section">
+                        <h2 className="category-title">{category}</h2>
+                        <FoodCarousel items={groupedFixedMenu[category]} category={category} />
+                      </div>
+                  ))}
+               </div>
+          )}
+
+          {todaysMenu.length === 0 && fixedMenu.length === 0 && (
+            <div className="empty-state">
+              <p>No menu available right now.</p>
+            </div>
+          )}
+
         </div>
       </div>
     </div>

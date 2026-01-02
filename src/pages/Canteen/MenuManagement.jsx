@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
-import { collection, addDoc, getDocs, doc, setDoc, getDoc, query, where, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, setDoc, getDoc, query, where, deleteDoc, updateDoc } from 'firebase/firestore';
 import { validateMenuItemName, validatePrice, validateDescription, validateCategory } from '../../utils/validation';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
@@ -322,6 +322,24 @@ function MenuManagement({ onBack }) {
     });
   };
 
+  const handleToggleFixed = async (itemId, currentStatus) => {
+      try {
+          const itemRef = doc(db, 'menuItems', itemId);
+          await updateDoc(itemRef, {
+              isFixed: !currentStatus
+          });
+          
+          // Optimistically update local state
+          setMenuItems(prev => prev.map(item => 
+              item.id === itemId ? { ...item, isFixed: !currentStatus } : item
+          ));
+          
+      } catch (error) {
+          console.error("Error updating fixed status:", error);
+          setMessage("Failed to update fixed status");
+      }
+  };
+
   const handleSelectAll = () => {
     setSelectedItems(menuItems.map(item => item.id));
   };
@@ -425,10 +443,9 @@ function MenuManagement({ onBack }) {
 
   return (
     <div className="mm-container">
+      {onBack && <EnhancedBackButton onBack={onBack} />}
       <header className="mm-header">
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
-          {onBack && <EnhancedBackButton onBack={onBack} />}
-        </div>
+        <div style={{ flex: 1 }}></div>
         <h1 className="mm-title">Menu Management</h1>
         <div style={{ flex: 1 }}></div>
       </header>
@@ -570,7 +587,7 @@ function MenuManagement({ onBack }) {
                 className="mm-btn mm-btn-primary"
                 disabled={loading || selectedItems.length === 0}
               >
-                {loading ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : "Set Today's Menu"}
+                {loading ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : "Set Today's Special"}
               </button>
             </div>
           </div>
@@ -621,6 +638,14 @@ function MenuManagement({ onBack }) {
 
                   <div className="mm-card-actions">
                     <button
+                        type="button"
+                        onClick={() => handleToggleFixed(item.id, item.isFixed)}
+                        className={`mm-btn ${item.isFixed ? 'mm-btn-success' : 'mm-btn-secondary'}`}
+                        style={{ width: '100%', marginBottom: '0.5rem' }}
+                    >
+                        {item.isFixed ? '★ Fixed Menu' : '☆ Making Fixed'}
+                    </button>
+                    <button
                       onClick={() => handleDeleteMenuItem(item.id)}
                       className="mm-btn mm-btn-danger"
                       style={{ width: '100%' }}
@@ -642,7 +667,7 @@ function MenuManagement({ onBack }) {
           {/* Today's Menu Preview Section */}
           {todaysMenu.length > 0 && (
             <div style={{ marginTop: '3rem' }}>
-               <h2 className="mm-section-title">Today's Active Menu ({todaysMenu.length})</h2>
+               <h2 className="mm-section-title">Today's Special ({todaysMenu.length})</h2>
                <div className="mm-grid">
                  {todaysMenu.map((item, index) => (
                     <div key={item.id || index} className="mm-card todays-special">
@@ -670,7 +695,7 @@ function MenuManagement({ onBack }) {
                           className="mm-btn mm-btn-remove"
                           disabled={loading}
                         >
-                          {loading ? <LoadingSpinner size="16" stroke="2" color="currentColor" /> : 'Remove from Today'}
+                          {loading ? <LoadingSpinner size="16" stroke="2" color="currentColor" /> : 'Remove from Special'}
                         </button>
                       </div>
                     </div>

@@ -141,10 +141,8 @@ function IDCard({ onBack }) {
 
   return (
     <div className="profile-container">
+      {onBack && <EnhancedBackButton onBack={onBack} />}
       <header className="profile-header">
-        <div className="profile-header__left">
-          {onBack && <EnhancedBackButton onBack={onBack} />}
-        </div>
         <p className="profile-header__title">My Profile</p>
         <div className="profile-header__spacer"></div>
       </header>

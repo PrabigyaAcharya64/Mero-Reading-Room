@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import '../../styles/ClientOrderHistory.css';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 
 
@@ -97,10 +98,8 @@ function ClientOrderHistory({ onBack }) {
 
   return (
     <div className="landing-screen">
+      {onBack && <EnhancedBackButton onBack={onBack} />}
       <header className="subpage-header">
-        <div className="subpage-header__left">
-          {onBack && <EnhancedBackButton onBack={onBack} />}
-        </div>
         <h1 className="subpage-header__title">My Orders</h1>
         <div className="subpage-header__spacer"></div>
       </header>
@@ -162,7 +161,7 @@ function ClientOrderHistory({ onBack }) {
               No orders found.
             </div>
           ) : (
-            <div style={{ display: 'grid', gap: '20px' }}>
+            <div className="coh-grid">
               {filteredOrders.map((order) => (
                 <div key={order.id}>
                   {/* Surface View - Order Summary */}

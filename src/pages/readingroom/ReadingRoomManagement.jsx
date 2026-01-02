@@ -4,6 +4,7 @@ import { db } from '../../lib/firebase';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, setDoc, getDoc } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
+import '../../styles/ReadingRoomManagement.css';
 
 const profileIcon =
     'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDI3QzIyLjYyNzQgMjcgMjguMDgwOSA0My4wMDEgMjggNDNMNCA0M0M0IDQzLjAwMSA5LjM3MjYgMjcgMTYgMjdaIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSI2IiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
@@ -475,17 +476,17 @@ function ReadingRoomManagement({ onBack }) {
     const selectedRoomData = getSelectedRoomData();
 
     return (
-        <div className="landing-screen">
-            <header className="subpage-header">
-                <div className="subpage-header__left">
+        <div className="rrm-container">
+            <header className="rrm-header">
+                <div style={{ width: 44, height: 44, flexShrink: 0 }}>
                     {onBack && <EnhancedBackButton onBack={onBack} />}
                 </div>
-                <h1 className="subpage-header__title">Management</h1>
-                <div className="subpage-header__spacer"></div>
+                <h1 className="rrm-title">Reading Room Management</h1>
+                <div style={{ width: 44, flexShrink: 0 }}></div>
             </header>
 
-            <main className="landing-body">
-                <h1>Reading Room Management</h1>
+            <main className="rrm-body">
+
 
                 {message && (
                     <p style={{
@@ -499,9 +500,9 @@ function ReadingRoomManagement({ onBack }) {
                 )}
 
                 {/* Create New Room Form */}
-                <section style={{ marginBottom: '30px', padding: '20px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fff' }}>
-                    <h2 style={{ marginBottom: '20px' }}>Create New Room</h2>
-                    <form onSubmit={handleCreateRoom} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '15px', alignItems: 'end' }}>
+                <section className="rrm-create-section">
+                    <h2 className="rrm-section-title" style={{ textAlign: 'center' }}>Create New Room</h2>
+                    <form onSubmit={handleCreateRoom} className="rrm-form-grid">
                         <label className="input-field">
                             <span className="input-field__label">Room Name</span>
                             <input
@@ -532,9 +533,9 @@ function ReadingRoomManagement({ onBack }) {
                 </section>
 
                 {/* All Rooms List */}
-                <section style={{ padding: '30px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fff' }}>
-                    <h2 style={{ marginBottom: '30px', fontSize: '1.5rem' }}>All Rooms ({rooms.length})</h2>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '25px' }}>
+                <section className="rrm-rooms-section">
+                    <h2 className="rrm-section-title">All Rooms ({rooms.length})</h2>
+                    <div className="rrm-rooms-grid">
                         {rooms.map(room => {
                             const elements = room.elements || room.seats || [];
                             const seats = elements.filter(e => !e.type || e.type === 'seat');
@@ -545,35 +546,26 @@ function ReadingRoomManagement({ onBack }) {
                             return (
                                 <div
                                     key={room.id}
-                                    style={{
-                                        padding: '15px',
-                                        border: '1px solid #ddd',
-                                        borderRadius: '8px',
-                                        backgroundColor: '#fafafa',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s'
-                                    }}
+                                    className="rrm-room-card"
                                     onClick={() => openRoomModal(room.id)}
-                                    onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
                                 >
-                                    <div style={{ marginBottom: '10px' }}>
-                                        <h3 style={{ margin: '0 0 5px 0', fontSize: '18px' }}>{room.name}</h3>
-                                        <p style={{ margin: '0', fontSize: '13px', color: '#666', textTransform: 'uppercase' }}>
+                                    <div className="rrm-room-header">
+                                        <h3 className="rrm-room-name">{room.name}</h3>
+                                        <p className="rrm-room-type">
                                             {room.type === 'ac' ? 'AC' : 'Non-AC'} {room.isLocked && '• Locked'}
                                         </p>
                                     </div>
-                                    <div style={{ fontSize: '14px', display: 'grid', gap: '5px' }}>
+                                    <div className="rrm-room-stats">
                                         <div>Total Seats: {seats.length}</div>
-                                        <div style={{ color: '#4caf50' }}>Assigned: {assignedCount}</div>
-                                        <div style={{ color: '#90caf9' }}>Available: {unassignedCount}</div>
+                                        <div className="rrm-stat-assigned">Assigned: {assignedCount}</div>
+                                        <div className="rrm-stat-available">Available: {unassignedCount}</div>
                                     </div>
                                 </div>
                             );
                         })}
 
                         {rooms.length === 0 && (
-                            <p style={{ textAlign: 'center', color: '#666', padding: '20px', gridColumn: '1 / -1' }}>
+                            <p className="rrm-empty-state">
                                 No rooms yet. Create your first room above.
                             </p>
                         )}

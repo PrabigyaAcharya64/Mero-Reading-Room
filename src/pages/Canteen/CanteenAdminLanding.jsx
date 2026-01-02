@@ -5,12 +5,10 @@ import OrderDashboard from './OrderDashboard';
 import SalesDashboard from './SalesDashboard';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 
-const settingsIcon =
-  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDE1QzEzLjY1NjkgMTUgMTUgMTMuNjU2OSAxNSAxMkMxNSAxMC4zNDMxIDEzLjY1NjkgOSAxMiA5QzEwLjM0MzEgOSA5IDEwLjM0MzEgOSAxMkM5IDEzLjY1NjkgMTAuMzQzMSAxNSAxMiAxNVoiIHN0cm9rZT0iIzExMSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHBhdGggZD0iTTE5LjQgMTVBMi41IDIuNSAwIDAgMCAyMC4wMiAxMmEyLjUgMi41IDAgMCAwLS42Mi0zTDIyIDdMMjAgNUwxNi4wNiA2QTIuNSAyLjUgMCAwIDAgMTIgNS4wMiAyLjUgMi41IDAgMCAwIDcuOTQgNkw0IDVMMiA3TDUuMzggOUEyLjUgMi41IDAgMCAwIDQuNzYgMTIgMi41IDIuNSAwIDAgMCA1LjM4IDE1TDIgMTdMNCAxOUw3Ljk0IDE4QTIuNSAyLjUgMCAwIDAgMTIgMTguOTggMi41IDIuNSAwIDAgMCAxNi4wNiAxOEwyMCAxOUwyMiAxN0wxOS40IDE1WiIgc3Ryb2tlPSIjMTExIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K';
-
 const foodIcon = new URL('../../assets/food.svg', import.meta.url).href;
 const reportIcon = new URL('../../assets/reports.svg', import.meta.url).href;
 const inventoryIcon = new URL('../../assets/inventory.svg', import.meta.url).href;
+const orderIcon = new URL('../../assets/order.svg', import.meta.url).href;
 
 function CanteenAdminLanding({ onBack }) {
   const { user } = useAuth();
@@ -31,12 +29,10 @@ function CanteenAdminLanding({ onBack }) {
 
   return (
     <div className="landing-screen">
+      {onBack && <EnhancedBackButton onBack={onBack} />}
       <header className="landing-header">
-        {onBack && <EnhancedBackButton onBack={onBack} />}
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-          <p style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--brand-font-serif)' }}>Canteen Admin</p>
         </div>
-        <div style={{ flex: 1 }}></div>
       </header>
 
       <main className="landing-body">
@@ -59,7 +55,7 @@ function CanteenAdminLanding({ onBack }) {
               onClick={() => setCurrentView('order-dashboard')}
             >
               <span className="landing-service-card__icon">
-                <img src={settingsIcon} alt="" aria-hidden="true" />
+                <img src={orderIcon} alt="" aria-hidden="true" />
               </span>
               <span className="landing-service-card__label">Order History</span>
             </button>
