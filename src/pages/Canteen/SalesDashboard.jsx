@@ -4,6 +4,7 @@ import { db } from '../../lib/firebase';
 import { collection, query, getDocs, orderBy, onSnapshot, limit } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/SalesDashboard.css';
 
 
@@ -37,7 +38,7 @@ function SalesDashboard({ onBack }) {
   const loadSales = async () => {
     setLoading(true);
     try {
- 
+
       const ordersRef = collection(db, 'orders');
 
       const q = query(ordersRef, orderBy('createdAt', 'desc'), limit(1000));
@@ -118,12 +119,7 @@ function SalesDashboard({ onBack }) {
 
   return (
     <div className="sd-container">
-      {onBack && <EnhancedBackButton onBack={onBack} />}
-      <header className="sd-header">
-        <div style={{ flex: 1 }}></div>
-        <h1 className="sd-title">Sales Dashboard</h1>
-        <div style={{ flex: 1 }}></div>
-      </header>
+      <PageHeader title="Sales Dashboard" onBack={onBack} />
 
       <main className="sd-body">
         <section>
@@ -194,13 +190,13 @@ function SalesDashboard({ onBack }) {
                   Sales for {formatDateDisplay(selectedDate)}
                 </h2>
                 <div className="sd-search-container">
-                    <input
-                        type="text"
-                        placeholder="Search by Order ID..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="sd-search-input"
-                    />
+                  <input
+                    type="text"
+                    placeholder="Search by Order ID..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="sd-search-input"
+                  />
                 </div>
               </div>
               <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.5rem', marginTop: '0.5rem' }}>
@@ -209,136 +205,136 @@ function SalesDashboard({ onBack }) {
 
               {sales.filter(s => s.id.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
                 <div className="sd-empty">
-                    {searchQuery ? 'No orders match your search.' : 'No sales found for this date.'}
+                  {searchQuery ? 'No orders match your search.' : 'No sales found for this date.'}
                 </div>
               ) : (
                 <div className="sd-list-grid">
                   {sales
                     .filter(sale => sale.id.toLowerCase().includes(searchQuery.toLowerCase()))
                     .map((sale) => (
-                    <div key={sale.id} className={`sd-card ${selectedOrder?.id === sale.id ? 'active' : ''}`}>
-                      {/* Surface View - Name, Location, Sales */}
-                      <div
-                        className="sd-card-summary"
-                        onClick={() => setSelectedOrder(selectedOrder?.id === sale.id ? null : sale)}
-                      >
-                        <div>
-                          <p className="sd-customer-name">
-                            {sale.userName || sale.userEmail || 'Unknown Customer'}
-                          </p>
-                          <p className="sd-meta-text">
-                            Order #{sale.id.substring(0, 8)} • {formatDate(sale.completedAt || sale.createdAt)}
-                          </p>
+                      <div key={sale.id} className={`sd-card ${selectedOrder?.id === sale.id ? 'active' : ''}`}>
+                        {/* Surface View - Name, Location, Sales */}
+                        <div
+                          className="sd-card-summary"
+                          onClick={() => setSelectedOrder(selectedOrder?.id === sale.id ? null : sale)}
+                        >
+                          <div>
+                            <p className="sd-customer-name">
+                              {sale.userName || sale.userEmail || 'Unknown Customer'}
+                            </p>
+                            <p className="sd-meta-text">
+                              Order #{sale.id.substring(0, 8)} • {formatDate(sale.completedAt || sale.createdAt)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="sd-meta-text" style={{ fontWeight: 'bold' }}>
+                              Location
+                            </p>
+                            <p className="sd-location-text">
+                              {sale.location || 'Not specified'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="sd-meta-text" style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                              Total Sales
+                            </p>
+                            <p className="sd-amount-text">
+                              रु {sale.total?.toFixed(2) || '0.00'}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="sd-meta-text" style={{ fontWeight: 'bold' }}>
-                            Location
-                          </p>
-                          <p className="sd-location-text">
-                            {sale.location || 'Not specified'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="sd-meta-text" style={{ textAlign: 'right', fontWeight: 'bold' }}>
-                            Total Sales
-                          </p>
-                          <p className="sd-amount-text">
-                            रु {sale.total?.toFixed(2) || '0.00'}
-                          </p>
-                        </div>
-                      </div>
 
-                      {/* Expanded Bill Details */}
-                      {selectedOrder?.id === sale.id && (
-                        <div className="sd-details">
-                          <div className="sd-bill-header">
-                            <h3 className="sd-bill-title">
-                              Bill Details
-                            </h3>
-                            <div className="sd-info-grid">
-                              <div className="sd-info-item">
-                                <p>CUSTOMER NAME</p>
-                                <p>
-                                  {sale.userName || sale.userEmail || 'Unknown Customer'}
-                                </p>
-                              </div>
-                              <div className="sd-info-item">
-                                <p>LOCATION</p>
-                                <p>
-                                  {sale.location || 'Not specified'}
-                                </p>
-                              </div>
-                              <div className="sd-info-item">
-                                <p>ORDER DATE</p>
-                                <p>
-                                  {formatDate(sale.completedAt || sale.createdAt)}
-                                </p>
-                              </div>
-                              <div className="sd-info-item">
-                                <p>ORDER ID</p>
-                                <p>
-                                  {sale.id}
-                                </p>
+                        {/* Expanded Bill Details */}
+                        {selectedOrder?.id === sale.id && (
+                          <div className="sd-details">
+                            <div className="sd-bill-header">
+                              <h3 className="sd-bill-title">
+                                Bill Details
+                              </h3>
+                              <div className="sd-info-grid">
+                                <div className="sd-info-item">
+                                  <p>CUSTOMER NAME</p>
+                                  <p>
+                                    {sale.userName || sale.userEmail || 'Unknown Customer'}
+                                  </p>
+                                </div>
+                                <div className="sd-info-item">
+                                  <p>LOCATION</p>
+                                  <p>
+                                    {sale.location || 'Not specified'}
+                                  </p>
+                                </div>
+                                <div className="sd-info-item">
+                                  <p>ORDER DATE</p>
+                                  <p>
+                                    {formatDate(sale.completedAt || sale.createdAt)}
+                                  </p>
+                                </div>
+                                <div className="sd-info-item">
+                                  <p>ORDER ID</p>
+                                  <p>
+                                    {sale.id}
+                                  </p>
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          {/* Items List */}
-                          <div style={{ marginBottom: '1.5rem' }}>
-                            <h4 style={{ margin: '0 0 1rem 0', fontWeight: '700', color: 'var(--color-text-primary)' }}>
-                              Items Purchased
-                            </h4>
-                            <div className="sd-items-container">
-                              <table className="sd-table">
-                                <thead>
-                                  <tr>
-                                    <th>Item</th>
-                                    <th className="sd-table-center">Quantity</th>
-                                    <th className="sd-table-right">Unit Price</th>
-                                    <th className="sd-table-right">Total</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {sale.items && sale.items.map((item, index) => (
-                                    <tr key={index}>
-                                      <td>{item.name}</td>
-                                      <td className="sd-table-center">{item.quantity || 1}</td>
-                                      <td className="sd-table-right">
-                                        रु {item.price?.toFixed(2) || '0.00'}
-                                      </td>
-                                      <td className="sd-table-right" style={{ fontWeight: 'bold' }}>
-                                        रु {((item.price || 0) * (item.quantity || 1)).toFixed(2)}
-                                      </td>
+                            {/* Items List */}
+                            <div style={{ marginBottom: '1.5rem' }}>
+                              <h4 style={{ margin: '0 0 1rem 0', fontWeight: '700', color: 'var(--color-text-primary)' }}>
+                                Items Purchased
+                              </h4>
+                              <div className="sd-items-container">
+                                <table className="sd-table">
+                                  <thead>
+                                    <tr>
+                                      <th>Item</th>
+                                      <th className="sd-table-center">Quantity</th>
+                                      <th className="sd-table-right">Unit Price</th>
+                                      <th className="sd-table-right">Total</th>
                                     </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                                  </thead>
+                                  <tbody>
+                                    {sale.items && sale.items.map((item, index) => (
+                                      <tr key={index}>
+                                        <td>{item.name}</td>
+                                        <td className="sd-table-center">{item.quantity || 1}</td>
+                                        <td className="sd-table-right">
+                                          रु {item.price?.toFixed(2) || '0.00'}
+                                        </td>
+                                        <td className="sd-table-right" style={{ fontWeight: 'bold' }}>
+                                          रु {((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
                             </div>
-                          </div>
 
-                          {/* Note if exists */}
-                          {sale.note && (
-                            <div className="sd-bill-note">
-                              <p className="sd-stat-label" style={{ color: '#bfa05aa8' }}>
-                                NOTE FROM CUSTOMER:
+                            {/* Note if exists */}
+                            {sale.note && (
+                              <div className="sd-bill-note">
+                                <p className="sd-stat-label" style={{ color: '#bfa05aa8' }}>
+                                  NOTE FROM CUSTOMER:
+                                </p>
+                                <p style={{ margin: 0 }}>{sale.note}</p>
+                              </div>
+                            )}
+
+                            {/* Total */}
+                            <div className="sd-bill-total">
+                              <p className="sd-total-label">
+                                GRAND TOTAL
                               </p>
-                              <p style={{ margin: 0 }}>{sale.note}</p>
+                              <p className="sd-total-amount">
+                                रु {sale.total?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                              </p>
                             </div>
-                          )}
-
-                          {/* Total */}
-                          <div className="sd-bill-total">
-                            <p className="sd-total-label">
-                              GRAND TOTAL
-                            </p>
-                            <p className="sd-total-amount">
-                              रु {sale.total?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-                            </p>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        )}
+                      </div>
+                    ))}
                   {/* Daily Total */}
                   <div className="sd-bill-total" style={{ marginTop: '1.5rem', backgroundColor: 'var(--color-background)', border: '2px solid var(--color-primary)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>

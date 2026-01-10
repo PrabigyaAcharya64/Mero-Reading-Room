@@ -4,6 +4,7 @@ import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestor
 import { db } from '../../lib/firebase';
 import '../../styles/ClientOrderHistory.css';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
+import PageHeader from '../../components/PageHeader';
 
 
 
@@ -18,8 +19,9 @@ function ClientOrderHistory({ onBack }) {
     if (!user) return;
 
     const ordersRef = collection(db, 'orders');
-    // Query without orderBy to avoid index requirement - we'll sort client-side
-    const q = query(ordersRef);
+    // Query with userId filter to satisfy security rules
+    // Rule: allow list if resource.data.userId == request.auth.uid
+    const q = query(ordersRef, where('userId', '==', user.uid));
 
     // Set up real-time listener for orders
     const unsubscribe = onSnapshot(
@@ -92,17 +94,13 @@ function ClientOrderHistory({ onBack }) {
     }
   };
 
-  const filteredOrders = filterStatus === 'all' 
-    ? orders 
+  const filteredOrders = filterStatus === 'all'
+    ? orders
     : orders.filter(order => order.status === filterStatus);
 
   return (
     <div className="landing-screen">
-      {onBack && <EnhancedBackButton onBack={onBack} />}
-      <header className="subpage-header">
-        <h1 className="subpage-header__title">My Orders</h1>
-        <div className="subpage-header__spacer"></div>
-      </header>
+      <PageHeader title="My Orders" onBack={onBack} />
 
       <main className="landing-body" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
         <section>
@@ -177,8 +175,8 @@ function ClientOrderHistory({ onBack }) {
                       transition: 'all 0.2s'
                     }}
                   >
-                    <div style={{ 
-                      display: 'grid', 
+                    <div style={{
+                      display: 'grid',
                       gridTemplateColumns: '2fr 1fr 1fr',
                       gap: '20px',
                       alignItems: 'center'
@@ -236,10 +234,10 @@ function ClientOrderHistory({ onBack }) {
                       marginBottom: '20px',
                       boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
                     }}>
-                      <div style={{ 
-                        borderBottom: '2px solid #4caf50', 
-                        paddingBottom: '15px', 
-                        marginBottom: '20px' 
+                      <div style={{
+                        borderBottom: '2px solid #4caf50',
+                        paddingBottom: '15px',
+                        marginBottom: '20px'
                       }}>
                         <h3 style={{ margin: '0 0 10px 0', fontSize: '20px', color: '#333' }}>
                           Order Details
@@ -284,8 +282,8 @@ function ClientOrderHistory({ onBack }) {
                         <h4 style={{ margin: '0 0 15px 0', fontSize: '16px', color: '#333', fontWeight: 'bold' }}>
                           Items Ordered
                         </h4>
-                        <div style={{ 
-                          border: '1px solid #ddd', 
+                        <div style={{
+                          border: '1px solid #ddd',
                           borderRadius: '4px',
                           overflow: 'hidden'
                         }}>

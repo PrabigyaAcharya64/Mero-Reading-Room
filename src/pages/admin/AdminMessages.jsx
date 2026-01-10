@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { db } from '../../lib/firebase';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/AdminMessages.css';
 
 function AdminMessages({ onBack }) {
@@ -88,11 +89,7 @@ function AdminMessages({ onBack }) {
 
     return (
         <div className="am-container">
-            {onBack && <EnhancedBackButton onBack={onBack} />}
-            <header className="am-header">
-                <h1 className="am-title">Messages</h1>
-                <div className="am-header-spacer"></div>
-            </header>
+            <PageHeader title="Messages" onBack={onBack} />
 
             <main className="am-body">
                 <div className="am-grid">

@@ -4,6 +4,7 @@ import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, orderBy } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/NewUsers.css';
 
 
@@ -147,12 +148,7 @@ function NewUsers({ onBack }) {
 
   return (
     <div className="nu-container">
-      {onBack && <EnhancedBackButton onBack={onBack} />}
-      <header className="nu-header">
-        <div style={{ flex: 1 }}></div>
-        <h1 className="nu-title">Verification</h1>
-        <div style={{ flex: 1 }}></div>
-      </header>
+      <PageHeader title="Verification" onBack={onBack} />
 
       <main className="nu-body">
         <div className="nu-tabs">
@@ -220,22 +216,22 @@ function NewUsers({ onBack }) {
                   <h3 className="nu-card__name">
                     {userData.name || 'N/A'}
                   </h3>
-                  
+
                   <div className="nu-card__row">
                     <span className="nu-card__label">MRR ID:</span>
                     <span className="nu-card__value">{userData.mrrNumber || 'N/A'}</span>
                   </div>
-                  
+
                   <div className="nu-card__row">
                     <span className="nu-card__label">Email:</span>
                     <span className="nu-card__value">{userData.email || 'N/A'}</span>
                   </div>
-                  
+
                   <div className="nu-card__row">
                     <span className="nu-card__label">Phone:</span>
                     <span className="nu-card__value">{userData.phoneNumber || 'N/A'}</span>
                   </div>
-                  
+
                   <div className="nu-card__row">
                     <span className="nu-card__label">DOB:</span>
                     <span className="nu-card__value">
@@ -291,7 +287,7 @@ function NewUsers({ onBack }) {
             ))}
           </div>
         )}
-        
+
         {/* Pagination Controls */}
         {!loading && filteredUsers.length > 0 && (
           <div className="nu-pagination">

@@ -4,6 +4,7 @@ import { db } from '../../lib/firebase';
 import { useAuth } from '../../auth/AuthProvider';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
+import PageHeader from '../../components/PageHeader';
 
 function CreateAnnouncement({ onBack }) {
     const { user } = useAuth();
@@ -49,18 +50,7 @@ function CreateAnnouncement({ onBack }) {
 
     return (
         <div className="landing-screen">
-            {onBack && <EnhancedBackButton onBack={onBack} />}
-            <header className="landing-header">
-                <h1 style={{
-                    margin: 0,
-                    fontFamily: 'var(--brand-font-serif)',
-                    fontSize: '1.5rem',
-                    flex: 1,
-                    textAlign: 'center'
-                }}>
-                    New Announcement
-                </h1>
-            </header>
+            <PageHeader title="New Announcement" onBack={onBack} />
 
             <main className="landing-body">
                 <div className="auth-card" style={{ maxWidth: '600px', margin: '0 auto' }}>

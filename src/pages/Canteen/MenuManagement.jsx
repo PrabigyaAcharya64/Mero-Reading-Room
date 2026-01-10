@@ -6,6 +6,7 @@ import { validateMenuItemName, validatePrice, validateDescription, validateCateg
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 import EnhancedBackButton from '../../components/EnhancedBackButton';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/MenuManagement.css';
 
 const IMGBB_API_KEY = 'f3836c3667cc5c73c64e1aa4f0849566';
@@ -323,21 +324,21 @@ function MenuManagement({ onBack }) {
   };
 
   const handleToggleFixed = async (itemId, currentStatus) => {
-      try {
-          const itemRef = doc(db, 'menuItems', itemId);
-          await updateDoc(itemRef, {
-              isFixed: !currentStatus
-          });
-          
-          // Optimistically update local state
-          setMenuItems(prev => prev.map(item => 
-              item.id === itemId ? { ...item, isFixed: !currentStatus } : item
-          ));
-          
-      } catch (error) {
-          console.error("Error updating fixed status:", error);
-          setMessage("Failed to update fixed status");
-      }
+    try {
+      const itemRef = doc(db, 'menuItems', itemId);
+      await updateDoc(itemRef, {
+        isFixed: !currentStatus
+      });
+
+      // Optimistically update local state
+      setMenuItems(prev => prev.map(item =>
+        item.id === itemId ? { ...item, isFixed: !currentStatus } : item
+      ));
+
+    } catch (error) {
+      console.error("Error updating fixed status:", error);
+      setMessage("Failed to update fixed status");
+    }
   };
 
   const handleSelectAll = () => {
@@ -443,18 +444,13 @@ function MenuManagement({ onBack }) {
 
   return (
     <div className="mm-container">
-      {onBack && <EnhancedBackButton onBack={onBack} />}
-      <header className="mm-header">
-        <div style={{ flex: 1 }}></div>
-        <h1 className="mm-title">Menu Management</h1>
-        <div style={{ flex: 1 }}></div>
-      </header>
+      <PageHeader title="Menu Management" onBack={onBack} />
 
       <main className="mm-body">
         {/* Left Column: Form */}
         <div className="mm-form-section">
           <h2 className="mm-section-title">Add Menu Item</h2>
-          
+
           <form onSubmit={handleAddMenuItem} className="mm-form">
             <div className="mm-input-group">
               <label className="mm-label">Dish Name</label>
@@ -556,13 +552,13 @@ function MenuManagement({ onBack }) {
 
         {/* Right Column: Menu List */}
         <div className="mm-content-section">
-          
+
           {/* Toolbar */}
           <div className="mm-toolbar">
             <h2 className="mm-section-title" style={{ margin: 0, border: 'none' }}>
               All Menu Items ({menuItems.length})
             </h2>
-            
+
             <div className="mm-stats">
               {selectedItems.length} selected
             </div>
@@ -599,8 +595,8 @@ function MenuManagement({ onBack }) {
               const isInTodaysMenu = todaysMenu.some(menuItem => menuItem.id === item.id);
 
               return (
-                <div 
-                  key={item.id} 
+                <div
+                  key={item.id}
                   className={`mm-card ${isSelected ? 'selected' : ''} ${isInTodaysMenu ? 'todays-special' : ''}`}
                 >
                   <label className="mm-card-select">
@@ -628,7 +624,7 @@ function MenuManagement({ onBack }) {
                       </div>
                     )}
                   </div>
-                  
+
                   <h3 className="mm-card-title">{item.name}</h3>
                   <div className="mm-card-category">{item.category || 'Uncategorized'}</div>
                   <p className="mm-card-desc">{item.description}</p>
@@ -638,12 +634,12 @@ function MenuManagement({ onBack }) {
 
                   <div className="mm-card-actions">
                     <button
-                        type="button"
-                        onClick={() => handleToggleFixed(item.id, item.isFixed)}
-                        className={`mm-btn ${item.isFixed ? 'mm-btn-success' : 'mm-btn-secondary'}`}
-                        style={{ width: '100%', marginBottom: '0.5rem' }}
+                      type="button"
+                      onClick={() => handleToggleFixed(item.id, item.isFixed)}
+                      className={`mm-btn ${item.isFixed ? 'mm-btn-success' : 'mm-btn-secondary'}`}
+                      style={{ width: '100%', marginBottom: '0.5rem' }}
                     >
-                        {item.isFixed ? '★ Fixed Menu' : '☆ Making Fixed'}
+                      {item.isFixed ? '★ Fixed Menu' : '☆ Making Fixed'}
                     </button>
                     <button
                       onClick={() => handleDeleteMenuItem(item.id)}
@@ -663,44 +659,44 @@ function MenuManagement({ onBack }) {
               No menu items yet. Add your first menu item from the form.
             </div>
           )}
-          
+
           {/* Today's Menu Preview Section */}
           {todaysMenu.length > 0 && (
             <div style={{ marginTop: '3rem' }}>
-               <h2 className="mm-section-title">Today's Special ({todaysMenu.length})</h2>
-               <div className="mm-grid">
-                 {todaysMenu.map((item, index) => (
-                    <div key={item.id || index} className="mm-card todays-special">
-                      <div className="mm-card-img-wrapper">
-                        {item.photoURL ? (
-                          <img
-                            src={item.photoURL}
-                            alt={item.name}
-                            className="mm-card-img"
-                          />
-                        ) : (
-                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eee', color: '#999' }}>
-                            No Image
-                          </div>
-                        )}
-                      </div>
-                      <h3 className="mm-card-title">{item.name}</h3>
-                      <div className="mm-card-category">{item.category || 'Uncategorized'}</div>
-                      <div className="mm-card-price">
-                        रु {item.price != null ? Number(item.price).toFixed(2) : '0.00'}
-                      </div>
-                      <div className="mm-card-actions">
-                        <button
-                          onClick={() => handleRemoveFromMenu(item.id)}
-                          className="mm-btn mm-btn-remove"
-                          disabled={loading}
-                        >
-                          {loading ? <LoadingSpinner size="16" stroke="2" color="currentColor" /> : 'Remove from Special'}
-                        </button>
-                      </div>
+              <h2 className="mm-section-title">Today's Special ({todaysMenu.length})</h2>
+              <div className="mm-grid">
+                {todaysMenu.map((item, index) => (
+                  <div key={item.id || index} className="mm-card todays-special">
+                    <div className="mm-card-img-wrapper">
+                      {item.photoURL ? (
+                        <img
+                          src={item.photoURL}
+                          alt={item.name}
+                          className="mm-card-img"
+                        />
+                      ) : (
+                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eee', color: '#999' }}>
+                          No Image
+                        </div>
+                      )}
                     </div>
-                 ))}
-               </div>
+                    <h3 className="mm-card-title">{item.name}</h3>
+                    <div className="mm-card-category">{item.category || 'Uncategorized'}</div>
+                    <div className="mm-card-price">
+                      रु {item.price != null ? Number(item.price).toFixed(2) : '0.00'}
+                    </div>
+                    <div className="mm-card-actions">
+                      <button
+                        onClick={() => handleRemoveFromMenu(item.id)}
+                        className="mm-btn mm-btn-remove"
+                        disabled={loading}
+                      >
+                        {loading ? <LoadingSpinner size="16" stroke="2" color="currentColor" /> : 'Remove from Special'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

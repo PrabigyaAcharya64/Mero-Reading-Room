@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import cartIcon from '../../assets/cart.svg';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/CanteenMenu.css';
 
-const CanteenMenu = ({ 
-  onBack, 
-  onNavigate, 
-  todaysMenu, 
+const CanteenMenu = ({
+  onBack,
+  onNavigate,
+  todaysMenu,
   fixedMenu = [], // Default to empty array
-  cart, 
-  addToCart, 
-  userBalance 
+  cart,
+  addToCart,
+  userBalance
 }) => {
   const categoryOrder = ['Breakfast', 'Meal', 'Dinner', 'Snacks', 'Drinks'];
 
@@ -30,13 +31,13 @@ const CanteenMenu = ({
 
   // Helper to sort categories
   const getSortedCategories = (groupedItems) => {
-     const sorted = categoryOrder.filter(cat => groupedItems[cat]?.length > 0);
-     Object.keys(groupedItems).forEach(cat => {
-        if (!categoryOrder.includes(cat) && !sorted.includes(cat)) {
-          sorted.push(cat);
-        }
-      });
-      return sorted;
+    const sorted = categoryOrder.filter(cat => groupedItems[cat]?.length > 0);
+    Object.keys(groupedItems).forEach(cat => {
+      if (!categoryOrder.includes(cat) && !sorted.includes(cat)) {
+        sorted.push(cat);
+      }
+    });
+    return sorted;
   };
 
   const todaysCategories = getSortedCategories(groupedTodaysMenu);
@@ -82,11 +83,11 @@ const CanteenMenu = ({
       const handleThrottledScroll = () => {
         requestAnimationFrame(handleScroll);
       };
-      
+
       if (carousel) {
         carousel.addEventListener('scroll', handleThrottledScroll);
         handleScroll(); // Initialize on first render
-        
+
         return () => carousel.removeEventListener('scroll', handleThrottledScroll);
       }
     }, [items.length]);
@@ -99,19 +100,19 @@ const CanteenMenu = ({
             className={`food-card ${index === activeIndex ? 'active' : ''}`}
           >
             <div className="food-card-image">
-              <img 
-                src={item.photoURL || "https://placehold.co/400x300?text=Food"} 
-                alt={item.name} 
+              <img
+                src={item.photoURL || "https://placehold.co/400x300?text=Food"}
+                alt={item.name}
                 onError={(e) => { e.target.src = "https://placehold.co/400x300?text=Food"; }}
               />
             </div>
             <div className="card-content">
               <h3 className="card-food-name">{item.name}</h3>
               <p className="card-food-desc">{item.description || 'Delicious meal'}</p>
-              
+
               <div className="card-footer">
                 <span className="card-price">Rs. {Number(item.price).toFixed(2)}</span>
-                <button 
+                <button
                   className="card-add-btn"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -130,26 +131,21 @@ const CanteenMenu = ({
 
   return (
     <div className="canteen-menu-page">
-      {onBack && <EnhancedBackButton onBack={onBack} />}
-      
-      {/* Header Section - Independent from container */}
-      <header className="subpage-header" style={{ padding: '1rem 1.25rem' }}>
-        <h1 className="subpage-header__title" style={{ width: '100%', textAlign: 'center' }}>Menu</h1>
-      </header>
+      <PageHeader title="Menu" onBack={onBack} />
 
       {/* Main Content Container */}
       <div style={{ maxWidth: '600px', margin: '0 auto', backgroundColor: 'white', borderRadius: '20px', overflow: 'hidden', paddingBottom: '80px' }}>
         {/* Cart Icon */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '10px 20px 0 20px' }}>
           <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => onNavigate('cart')}>
-            <img 
-              src={cartIcon} 
-              alt="Cart" 
-              style={{ 
-                width: '24px', 
+            <img
+              src={cartIcon}
+              alt="Cart"
+              style={{
+                width: '24px',
                 height: '24px',
                 display: 'block'
-              }} 
+              }}
             />
             <div style={{
               position: 'absolute',
@@ -179,55 +175,55 @@ const CanteenMenu = ({
 
         {/* Menu Sections */}
         <div className="menu-scroll-container">
-          
+
           {/* Today's Special Section */}
           {todaysMenu.length > 0 && (
-              <div className="menu-section-group" style={{ marginBottom: '2rem' }}>
-                  <div className="section-header-banner" style={{ 
-                      backgroundColor: '#ff9800', 
-                      color: 'white', 
-                      padding: '0.5rem 1rem', 
-                      borderRadius: '8px', 
-                      display: 'inline-block',
-                      marginBottom: '1rem',
-                      fontWeight: 'bold',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                  }}>
-                      Today's Special
-                  </div>
-                  
-                  {todaysCategories.map(category => (
-                      <div key={`today-${category}`} className="menu-category-section">
-                        <h2 className="category-title">{category}</h2>
-                        <FoodCarousel items={groupedTodaysMenu[category]} category={category} />
-                      </div>
-                  ))}
+            <div className="menu-section-group" style={{ marginBottom: '2rem' }}>
+              <div className="section-header-banner" style={{
+                backgroundColor: '#ff9800',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                display: 'inline-block',
+                marginBottom: '1rem',
+                fontWeight: 'bold',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}>
+                Today's Special
               </div>
+
+              {todaysCategories.map(category => (
+                <div key={`today-${category}`} className="menu-category-section">
+                  <h2 className="category-title">{category}</h2>
+                  <FoodCarousel items={groupedTodaysMenu[category]} category={category} />
+                </div>
+              ))}
+            </div>
           )}
 
           {/* Fixed Menu Section */}
           {fixedMenu.length > 0 && (
-               <div className="menu-section-group">
-                  <div className="section-header-banner" style={{ 
-                      backgroundColor: '#4CAF50', 
-                      color: 'white', 
-                      padding: '0.5rem 1rem', 
-                      borderRadius: '8px', 
-                      display: 'inline-block',
-                      marginBottom: '1rem',
-                      fontWeight: 'bold',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                  }}>
-                      Fixed Menu
-                  </div>
-                  
-                  {fixedCategories.map(category => (
-                      <div key={`fixed-${category}`} className="menu-category-section">
-                        <h2 className="category-title">{category}</h2>
-                        <FoodCarousel items={groupedFixedMenu[category]} category={category} />
-                      </div>
-                  ))}
-               </div>
+            <div className="menu-section-group">
+              <div className="section-header-banner" style={{
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                display: 'inline-block',
+                marginBottom: '1rem',
+                fontWeight: 'bold',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}>
+                Fixed Menu
+              </div>
+
+              {fixedCategories.map(category => (
+                <div key={`fixed-${category}`} className="menu-category-section">
+                  <h2 className="category-title">{category}</h2>
+                  <FoodCarousel items={groupedFixedMenu[category]} category={category} />
+                </div>
+              ))}
+            </div>
           )}
 
           {todaysMenu.length === 0 && fixedMenu.length === 0 && (

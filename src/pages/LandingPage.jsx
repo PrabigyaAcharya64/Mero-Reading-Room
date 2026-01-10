@@ -27,20 +27,34 @@ function LandingPage({ onBack }) {
   const [announcements, setAnnouncements] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  // isAdmin is already declared above, removing duplicate
+  const [membershipStatus, setMembershipStatus] = useState({ hasSeat: false, isExpired: false, loading: true });
+
   useEffect(() => {
     if (user) {
-      const checkAdmin = async () => {
+      const fetchData = async () => {
         try {
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           if (userDoc.exists()) {
             const userData = userDoc.data();
             setIsAdmin(userData.role === 'admin');
+
+            // Check membership status
+            const hasSeat = !!(userData.registrationCompleted && userData.currentSeat);
+            const isExpired = userData.nextPaymentDue && new Date(userData.nextPaymentDue) < new Date();
+
+            setMembershipStatus({ hasSeat, isExpired, loading: false });
+          } else {
+            setMembershipStatus({ hasSeat: false, isExpired: false, loading: false });
           }
         } catch (error) {
-          console.error('Error checking admin role:', error);
+          console.error('Error fetching user data:', error);
+          setMembershipStatus(prev => ({ ...prev, loading: false }));
         }
       };
-      checkAdmin();
+      fetchData();
+    } else {
+      setMembershipStatus({ hasSeat: false, isExpired: false, loading: false });
     }
   }, [user]);
 
@@ -73,6 +87,19 @@ function LandingPage({ onBack }) {
     } finally {
       setCheckingMembership(false);
     }
+  };
+
+  const handleDiscussionClick = async () => {
+    // If not a member, button shouldn't even be visible, but double check
+    if (!membershipStatus.hasSeat) return;
+
+    if (membershipStatus.isExpired) {
+      // Redirect to renew/buy
+      setCurrentView('readingroom-options');
+      return;
+    }
+
+    setCurrentView('discussion');
   };
 
   useEffect(() => {
@@ -217,16 +244,18 @@ function LandingPage({ onBack }) {
               </span>
               <span className="landing-service-card__label">Hostel</span>
             </button>
-            <button type="button" className="landing-service-card" onClick={() => setCurrentView('discussion')}>
-              <span className="landing-service-card__icon">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M17 20H7C6 20 5 20 4 20C4 20 4 15 4 15C4 12.2386 6.23858 10 9 10H15C17.7614 10 20 12.2386 20 15V15C20 15 20 20 20 20H17Z" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  <path d="M12 10C13.6569 10 15 8.65685 15 7C15 5.34315 13.6569 4 12 4C10.3431 4 9 5.34315 9 7C9 8.65685 10.3431 10 12 10Z" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </span>
-              <span className="landing-service-card__label">Discussion</span>
-            </button>
-            
+            {membershipStatus.hasSeat && (
+              <button type="button" className="landing-service-card" onClick={handleDiscussionClick}>
+                <span className="landing-service-card__icon">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17 20H7C6 20 5 20 4 20C4 20 4 15 4 15C4 12.2386 6.23858 10 9 10H15C17.7614 10 20 12.2386 20 15V15C20 15 20 20 20 20H17Z" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M12 10C13.6569 10 15 8.65685 15 7C15 5.34315 13.6569 4 12 4C10.3431 4 9 5.34315 9 7C9 8.65685 10.3431 10 12 10Z" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </span>
+                <span className="landing-service-card__label">Discussion</span>
+              </button>
+            )}
+
             {isAdmin && (
               <button type="button" className="landing-service-card" onClick={() => setCurrentView('canteen-admin')}>
                 <span className="landing-service-card__icon">
@@ -250,7 +279,7 @@ function LandingPage({ onBack }) {
             </button>
           </div>
         </section>
-        
+
         <section className="landing-announcements">
           <h2 style={{ textAlign: 'center' }}>Notices</h2>
           {announcements.length === 0 ? (

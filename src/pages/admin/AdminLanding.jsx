@@ -220,7 +220,12 @@ function AdminLanding() {
                 }}
                 title={showHistory ? "Show Active" : "Show History"}
               >
-                🕒
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                  <line x1="10" y1="12" x2="14" y2="12" />
+                  <line x1="2" y1="8" x2="22" y2="8" />
+                  <line x1="2" y1="2" x2="22" y2="2" />
+                </svg>
               </button>
             </div>
             <button

@@ -4,17 +4,18 @@ import { db } from '../../lib/firebase';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/OrderDashboard.css';
 
 
 
 function OrderDashboard({ onBack }) {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'pending', 'completed', 'cancelled'
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -26,7 +27,17 @@ function OrderDashboard({ onBack }) {
 
   useEffect(() => {
     const ordersRef = collection(db, 'orders');
-    const q = query(ordersRef, orderBy('createdAt', 'desc'));
+    // Determine valid role
+    const isStaff = userRole === 'admin' || userRole === 'canteen';
+
+    // Rule: allow list: if loggedIn() && (isStaff() || resource.data.userId == request.auth.uid)
+    // Non-staff queries MUST include where('userId', '==', uid) to pass the rule.
+    let q;
+    if (isStaff) {
+      q = query(ordersRef, orderBy('createdAt', 'desc'));
+    } else {
+      q = query(ordersRef, where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
+    }
 
     // Set up real-time listener for orders
     const unsubscribe = onSnapshot(
@@ -151,12 +162,7 @@ function OrderDashboard({ onBack }) {
 
   return (
     <div className="od-container">
-      {onBack && <EnhancedBackButton onBack={onBack} />}
-      <header className="od-header">
-        <div style={{ flex: 1 }}></div>
-        <h1 className="od-title">Orders Dashboard</h1>
-        <div style={{ flex: 1 }}></div>
-      </header>
+      <PageHeader title="Orders Dashboard" onBack={onBack} />
 
       <main className="od-body">
         <section>
@@ -203,7 +209,7 @@ function OrderDashboard({ onBack }) {
             <div className="od-grid">
               {currentOrders.map((order) => (
                 <div key={order.id} className="od-card">
-                  
+
                   {/* Card Header */}
                   <div className="od-card-header">
                     <div className="od-user-info">
@@ -219,7 +225,7 @@ function OrderDashboard({ onBack }) {
                       <span className="od-status-badge" style={{ backgroundColor: getStatusColor(order.status || 'pending') }}>
                         {order.status || 'pending'}
                       </span>
-                      
+
                       {order.status === 'pending' && (
                         <div className="od-action-btn-group">
                           <button
@@ -307,11 +313,11 @@ function OrderDashboard({ onBack }) {
               >
                 Previous
               </button>
-              
+
               <span className="od-page-info">
                 Page {currentPage} of {totalPages}
               </span>
-              
+
               <button
                 onClick={() => paginate(currentPage + 1)}
                 disabled={currentPage === totalPages}

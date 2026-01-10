@@ -18,6 +18,29 @@ const Discussion = ({ onBack }) => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
 
+    useEffect(() => {
+        const verifyMembership = async () => {
+            if (!user) return;
+            try {
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    const isExpired = userData.nextPaymentDue && new Date(userData.nextPaymentDue) < new Date();
+                    const hasActiveSeat = userData.registrationCompleted && userData.currentSeat && !isExpired;
+
+                    if (!hasActiveSeat) {
+                        // Redirect back if not active member
+                        if (onBack) onBack();
+                    }
+                }
+            } catch (error) {
+                console.error("Error verifying membership:", error);
+                if (onBack) onBack();
+            }
+        };
+        verifyMembership();
+    }, [user, onBack]);
+
 
     const [bookings, setBookings] = useState({});
 

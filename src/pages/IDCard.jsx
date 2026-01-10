@@ -3,6 +3,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { db } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import EnhancedBackButton from '../components/EnhancedBackButton';
+import PageHeader from '../components/PageHeader';
 import '../styles/IDCard.css';
 
 const logoUrl = new URL('../assets/logo.png', import.meta.url).href;
@@ -27,7 +28,7 @@ function IDCard({ onBack }) {
       setLoading(true);
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
-      
+
       if (userDoc.exists()) {
         setUserData({
           id: userDoc.id,
@@ -84,7 +85,7 @@ function IDCard({ onBack }) {
       setDownloading(true);
       const html2canvasModule = await import('html2canvas');
       const html2canvas = html2canvasModule.default || html2canvasModule;
-      
+
       const card = document.getElementById('id-card');
       if (!card) {
         alert('ID card element not found');
@@ -141,11 +142,7 @@ function IDCard({ onBack }) {
 
   return (
     <div className="profile-container">
-      {onBack && <EnhancedBackButton onBack={onBack} />}
-      <header className="profile-header">
-        <p className="profile-header__title">My Profile</p>
-        <div className="profile-header__spacer"></div>
-      </header>
+      <PageHeader title="My Profile" onBack={onBack} />
 
       <main className="profile-main">
         <div className="id-card-preview-wrapper">
@@ -208,7 +205,7 @@ function IDCard({ onBack }) {
           >
             {downloading ? 'Generating...' : 'Download ID Card'}
           </button>
-          
+
           <button className="profile-btn profile-btn--signout" onClick={handleSignOut}>
             Sign Out
           </button>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthProvider';
 import { auth, db } from '../lib/firebase';
-import { doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { signOut } from 'firebase/auth';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -42,7 +42,14 @@ function AdditionalDetails({ onComplete }) {
     try {
 
       const usersRef = collection(db, 'users');
-      const q = query(usersRef, orderBy('mrrNumber', 'desc'), limit(1));
+      // Query must match the security rule: (limit <= 10 && filters.mrrNumber != null)
+      // We add `where('mrrNumber', '!=', '')` to satisfy the filter requirement.
+      const q = query(
+        usersRef,
+        where('mrrNumber', '!=', ''),
+        orderBy('mrrNumber', 'desc'),
+        limit(1)
+      );
 
       const snapshot = await getDocs(q);
       let nextMrrNumber = 'MRR001';
@@ -192,7 +199,7 @@ function AdditionalDetails({ onComplete }) {
         interestedIn: Array.isArray(formData.interestedIn) ? formData.interestedIn : [formData.interestedIn],
         photoUrl: photoUrl,
         mrrNumber: mrrNumber,
-        verified: false, // Not verified yet
+        // verified: false, // Security Rule Violation: User cannot update protected field 'verified'
         submittedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }, { merge: true });
