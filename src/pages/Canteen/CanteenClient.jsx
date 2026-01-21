@@ -5,9 +5,9 @@ import { doc, onSnapshot, collection, addDoc, query, where } from 'firebase/fire
 import { validateOrderNote } from '../../utils/validation';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 
-import CanteenMenu from "./CanteenMenu";
+import CanteenMenu from "./CanteenMenu.jsx";
 import CanteenCart from './CanteenCart';
-import ClientOrderHistory from './ClientOrderHistory';
+import ClientOrderHistory from './clientOrderHistory.jsx';
 import '../../styles/CanteenLanding.css';
 
 const foodIcon = new URL('../../assets/food.svg', import.meta.url).href;
@@ -129,14 +129,14 @@ function CanteenClient({ onBack }) {
         return;
       }
 
-      // Deduct balance first
+
       const success = await deductBalance(total);
       if (!success) {
         setOrderMessage('Payment failed. Please try again.');
         return;
       }
 
-      // Sanitize Note
+
       let sanitizedNote = null;
       if (note && note.trim()) {
         const noteValidation = validateOrderNote(note, 500);
