@@ -3,7 +3,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { db } from '../lib/firebase';
 import { doc, getDoc, collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 import IDCard from './IDCard';
-import CanteenClient from './canteen/CanteenClient';
+import CanteenClient from './canteen/CanteenClient.jsx';
 import CanteenAdminLanding from './Canteen_Admin/CanteenAdminLanding';
 import Contact from './Contact';
 import ReadingRoomOptions from './readingroom/ReadingRoomOptions';
