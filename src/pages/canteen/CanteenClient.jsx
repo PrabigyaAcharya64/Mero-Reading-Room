@@ -16,7 +16,6 @@ const orderIcon = new URL('../../assets/order.svg', import.meta.url).href;
 function CanteenClient({ onBack }) {
   const { user, userBalance, deductBalance } = useAuth();
 
-  // View State: 'landing' | 'menu' | 'cart' | 'orders'
   const [currentView, setCurrentView] = useState('landing');
 
   const [todaysMenu, setTodaysMenu] = useState([]);
@@ -24,9 +23,6 @@ function CanteenClient({ onBack }) {
   const [cart, setCart] = useState([]);
   const [orderMessage, setOrderMessage] = useState('');
 
-  // ------------------------------------------------------------------
-  // Data Fetching (Menu)
-  // ------------------------------------------------------------------
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     const todaysMenuRef = doc(db, 'todaysMenu', today);
@@ -219,12 +215,7 @@ function CanteenClient({ onBack }) {
       <div className="canteen-header">
         <h1 className="header-title" style={{ flex: 1, textAlign: 'center' }}>Canteen</h1>
 
-        <div className="landing-balance" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginLeft: 'auto' }}>
-          <div style={{ fontSize: '10px', textTransform: 'uppercase', color: '#888', letterSpacing: '0.5px' }}>Balance</div>
-          <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#333' }}>
-            Rs. {(userBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-        </div>
+        <div className="landing-balance" style={{ display: 'none', visibility: 'hidden' }}></div>
       </div>
 
       <div className="canteen-content">

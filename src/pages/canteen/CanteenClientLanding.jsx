@@ -31,11 +31,7 @@ function CanteenClientLanding({ onBack }) {
       <header className="subpage-header">
         <div className="subpage-header__left" style={{ flex: '0 0 auto', gap: '12px' }}>
           {onBack && <EnhancedBackButton onBack={onBack} />}
-          <div className="landing-balance" aria-label="Current balance">
-            <div className="landing-balance__label">Balance</div>
-            <div className="landing-balance__value">रु {(userBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-            <button type="button" className="landing-balance__add" aria-label="Add to balance">+</button>
-          </div>
+
         </div>
 
         <h1 className="subpage-header__title">Canteen</h1>
