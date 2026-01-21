@@ -5,9 +5,9 @@ import { doc, onSnapshot, collection, addDoc, query, where } from 'firebase/fire
 import { validateOrderNote } from '../../utils/validation';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 
-import CanteenMenu from './CanteenMenu';
+import CanteenMenu from "./CanteenMenu";
 import CanteenCart from './CanteenCart';
-import ClientOrderHistory from './ClientOrderHistory'; 
+import ClientOrderHistory from './ClientOrderHistory';
 import '../../styles/CanteenLanding.css';
 
 const foodIcon = new URL('../../assets/food.svg', import.meta.url).href;
@@ -15,10 +15,10 @@ const orderIcon = new URL('../../assets/order.svg', import.meta.url).href;
 
 function CanteenClient({ onBack }) {
   const { user, userBalance, deductBalance } = useAuth();
-  
+
   // View State: 'landing' | 'menu' | 'cart' | 'orders'
   const [currentView, setCurrentView] = useState('landing');
-  
+
   const [todaysMenu, setTodaysMenu] = useState([]);
   const [fixedMenu, setFixedMenu] = useState([]);
   const [cart, setCart] = useState([]);
@@ -30,7 +30,7 @@ function CanteenClient({ onBack }) {
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     const todaysMenuRef = doc(db, 'todaysMenu', today);
-    
+
     const unsubscribe = onSnapshot(
       todaysMenuRef,
       (snapshot) => {
@@ -64,18 +64,18 @@ function CanteenClient({ onBack }) {
     );
 
     const unsubscribe = onSnapshot(
-        q,
-        (snapshot) => {
-            const items = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            setFixedMenu(items);
-        },
-        (error) => {
-            console.error('Error fetching fixed menu:', error);
-            setFixedMenu([]);
-        }
+      q,
+      (snapshot) => {
+        const items = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setFixedMenu(items);
+      },
+      (error) => {
+        console.error('Error fetching fixed menu:', error);
+        setFixedMenu([]);
+      }
     );
 
     return () => unsubscribe();
@@ -138,11 +138,11 @@ function CanteenClient({ onBack }) {
 
       // Sanitize Note
       let sanitizedNote = null;
-        if (note && note.trim()) {
+      if (note && note.trim()) {
         const noteValidation = validateOrderNote(note, 500);
         if (!noteValidation.valid) {
-            setOrderMessage(noteValidation.error);
-            return; 
+          setOrderMessage(noteValidation.error);
+          return;
         }
         sanitizedNote = noteValidation.sanitized || null;
       }
@@ -162,11 +162,11 @@ function CanteenClient({ onBack }) {
 
       setOrderMessage('Order placed successfully!');
       clearCart();
-      
+
       // Auto-navigate back to menu after success
       setTimeout(() => {
-          setOrderMessage('');
-          setCurrentView('menu');
+        setOrderMessage('');
+        setCurrentView('menu');
       }, 2000);
 
     } catch (error) {
@@ -178,10 +178,10 @@ function CanteenClient({ onBack }) {
   // ------------------------------------------------------------------
   // Render Views
   // ------------------------------------------------------------------
-  
+
   if (currentView === 'menu') {
     return (
-      <CanteenMenu 
+      <CanteenMenu
         onBack={() => setCurrentView('landing')}
         onNavigate={setCurrentView}
         todaysMenu={todaysMenu}
@@ -195,7 +195,7 @@ function CanteenClient({ onBack }) {
 
   if (currentView === 'cart') {
     return (
-      <CanteenCart 
+      <CanteenCart
         onBack={() => setCurrentView('menu')}
         onNavigate={setCurrentView}
         cart={cart}
@@ -218,33 +218,33 @@ function CanteenClient({ onBack }) {
       <EnhancedBackButton onBack={onBack} />
       <div className="canteen-header">
         <h1 className="header-title" style={{ flex: 1, textAlign: 'center' }}>Canteen</h1>
-        
+
         <div className="landing-balance" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginLeft: 'auto' }}>
-            <div style={{ fontSize: '10px', textTransform: 'uppercase', color: '#888', letterSpacing: '0.5px' }}>Balance</div>
-            <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#333' }}>
-                Rs. {(userBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
+          <div style={{ fontSize: '10px', textTransform: 'uppercase', color: '#888', letterSpacing: '0.5px' }}>Balance</div>
+          <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#333' }}>
+            Rs. {(userBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
         </div>
       </div>
 
       <div className="canteen-content">
         <div className="canteen-buttons-wrapper">
-          <button 
+          <button
             className="canteen-main-button"
             onClick={() => setCurrentView('menu')}
           >
             <div className="button-icon-wrapper">
-                <img src={foodIcon} alt="Menu" style={{width: 48, height: 48, objectFit: 'contain'}} />
+              <img src={foodIcon} alt="Menu" style={{ width: 48, height: 48, objectFit: 'contain' }} />
             </div>
             <span className="button-text">Menu</span>
           </button>
 
-          <button 
+          <button
             className="canteen-main-button"
-            onClick={() => setCurrentView('orders')} 
+            onClick={() => setCurrentView('orders')}
           >
             <div className="button-icon-wrapper">
-                <img src={orderIcon} alt="Orders" style={{width: 48, height: 48, objectFit: 'contain'}} />
+              <img src={orderIcon} alt="Orders" style={{ width: 48, height: 48, objectFit: 'contain' }} />
             </div>
             <span className="button-text">Orders</span>
           </button>

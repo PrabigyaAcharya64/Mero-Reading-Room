@@ -147,30 +147,39 @@ function IDCard({ onBack }) {
       <main className="profile-main">
         <div className="id-card-preview-wrapper">
           <div id="id-card" className="id-card">
-            {/* TOP CURVE */}
-            <div className="id-card__top-curve" />
+            {/* LEFT SIDE BAR */}
+            <div className="id-card__left-bar" />
+
+            {/* RIGHT SIDE BAR */}
+            <div className="id-card__right-bar" />
 
             {/* LOGO */}
             <div className="id-card__logo-container">
               <img src={logoUrl} alt="Logo" className="id-card__logo-img" />
             </div>
 
+            {/* ADDRESS */}
+            <p className="id-card__location-text">Mid Baneshwor, Kathmandu</p>
+
+            {/* PHONE */}
+            <p className="id-card__phone-text">986-7666655</p>
+
             {/* PHOTO */}
-            <div className="id-card__photo-outer-container">
+            <div className="id-card__photo-container">
               {userData.photoUrl ? (
-                <img src={userData.photoUrl} alt={userData.name} className="id-card__photo-img" />
+                <img src={userData.photoUrl} alt={userData.name} className="id-card__photo" />
               ) : (
                 <div className="id-card__photo-placeholder">
-                  <span style={{ fontSize: '40px' }}>👤</span>
+                  <span style={{ fontSize: '30px' }}>👤</span>
                 </div>
               )}
             </div>
 
             {/* NAME */}
-            <h2 className="id-card__name">{userData.name || 'N/A'}</h2>
+            <h2 className="id-card__name-text">{userData.name || 'N/A'}</h2>
 
             {/* INFO FIELDS */}
-            <div className="id-card__details-rows">
+            <div className="id-card__info-rows">
               <div className="id-card__row">
                 <span className="id-card__label">MRR ID:</span>
                 <span className="id-card__value">{userData.mrrNumber || 'N/A'}</span>
@@ -191,9 +200,6 @@ function IDCard({ onBack }) {
                 <span className="id-card__value">{userData.email || 'N/A'}</span>
               </div>
             </div>
-
-            {/* BOTTOM CURVE */}
-            <div className="id-card__bottom-curve" />
           </div>
         </div>
 

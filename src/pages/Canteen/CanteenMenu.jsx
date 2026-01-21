@@ -45,7 +45,7 @@ const CanteenMenu = ({
 
 
   // Carousel component with center detection
-  const FoodCarousel = ({ items, category }) => {
+  const FoodCarousel = ({ items, category, variant = 'default' }) => {
     const carouselRef = useRef(null);
     const [activeIndex, setActiveIndex] = useState(0);
 
@@ -94,10 +94,17 @@ const CanteenMenu = ({
 
     return (
       <div className="food-carousel" ref={carouselRef}>
-        {items.map((item, index) => (
+        {items.map((item, index) => {
+          const cardClasses = [
+            'food-card',
+            index === activeIndex ? 'active' : '',
+            variant === 'special' ? 'food-card--special' : ''
+          ].filter(Boolean).join(' ');
+
+          return (
           <div
             key={item.id}
-            className={`food-card ${index === activeIndex ? 'active' : ''}`}
+            className={cardClasses}
           >
             <div className="food-card-image">
               <img
@@ -124,7 +131,7 @@ const CanteenMenu = ({
               </div>
             </div>
           </div>
-        ))}
+        )})}
       </div>
     );
   };
@@ -178,24 +185,15 @@ const CanteenMenu = ({
 
           {/* Today's Special Section */}
           {todaysMenu.length > 0 && (
-            <div className="menu-section-group" style={{ marginBottom: '2rem' }}>
-              <div className="section-header-banner" style={{
-                backgroundColor: '#ff9800',
-                color: 'white',
-                padding: '0.5rem 1rem',
-                borderRadius: '8px',
-                display: 'inline-block',
-                marginBottom: '1rem',
-                fontWeight: 'bold',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}>
+            <div className="menu-section-group menu-section-group--special" style={{ marginBottom: '2rem' }}>
+              <div className="section-header-banner section-header-banner--special todays-special-title">
                 Today's Special
               </div>
 
               {todaysCategories.map(category => (
                 <div key={`today-${category}`} className="menu-category-section">
                   <h2 className="category-title">{category}</h2>
-                  <FoodCarousel items={groupedTodaysMenu[category]} category={category} />
+                  <FoodCarousel items={groupedTodaysMenu[category]} category={category} variant="special" />
                 </div>
               ))}
             </div>
@@ -204,19 +202,6 @@ const CanteenMenu = ({
           {/* Fixed Menu Section */}
           {fixedMenu.length > 0 && (
             <div className="menu-section-group">
-              <div className="section-header-banner" style={{
-                backgroundColor: '#4CAF50',
-                color: 'white',
-                padding: '0.5rem 1rem',
-                borderRadius: '8px',
-                display: 'inline-block',
-                marginBottom: '1rem',
-                fontWeight: 'bold',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}>
-                Fixed Menu
-              </div>
-
               {fixedCategories.map(category => (
                 <div key={`fixed-${category}`} className="menu-category-section">
                   <h2 className="category-title">{category}</h2>

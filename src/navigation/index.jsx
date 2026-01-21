@@ -6,7 +6,7 @@ import AdditionalDetails from '../pages/AdditionalDetails';
 import PendingVerification from '../pages/PendingVerification';
 import LandingPage from '../pages/LandingPage';
 import AdminLanding from '../pages/admin/AdminLanding';
-import CanteenLanding from '../pages/Canteen/CanteenClientLanding';
+import CanteenAdminLanding from '../pages/Canteen_Admin/CanteenAdminLanding';
 import { useAuth } from '../auth/AuthProvider';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -30,7 +30,7 @@ export function NavigationRoot() {
         const timer = setTimeout(() => {
             setInitialLoadComplete(true);
         }, 500);
-        
+
         return () => clearTimeout(timer);
     }, []);
 
@@ -38,21 +38,21 @@ export function NavigationRoot() {
     useEffect(() => {
         // Push initial state to history
         window.history.pushState({ page: 'app' }, '', window.location.href);
-        
+
         const handlePopState = (event) => {
             // Prevent default back navigation
             event.preventDefault();
-            
+
             // Push state again to keep user in the app
             window.history.pushState({ page: 'app' }, '', window.location.href);
-            
+
             // Optionally, you can add logic here to navigate within the app
             // For example, if you're on a sub-page, go back to the main page
             console.log('Back button pressed - staying in app');
         };
-        
+
         window.addEventListener('popstate', handlePopState);
-        
+
         return () => {
             window.removeEventListener('popstate', handlePopState);
         };
@@ -111,7 +111,7 @@ export function NavigationRoot() {
         } else if (!initialLoadComplete) {
             loadingText = "Initializing application...";
         }
-        
+
         return <FullScreenLoader text={loadingText} />;
     }
 
@@ -181,7 +181,7 @@ export function AppStack({ userRole }) {
     }
 
     if (userRole === 'canteen') {
-        return <CanteenLanding />;
+        return <CanteenAdminLanding />;
     }
 
     // Default landing page for users without a specific role

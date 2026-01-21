@@ -5,6 +5,7 @@ import OrderDashboard from './OrderDashboard';
 import SalesDashboard from './SalesDashboard';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
+import InventoryLanding from '../inventory/InventoryLanding';
 
 const foodIcon = new URL('../../assets/food.svg', import.meta.url).href;
 const reportIcon = new URL('../../assets/reports.svg', import.meta.url).href;
@@ -12,7 +13,7 @@ const inventoryIcon = new URL('../../assets/inventory.svg', import.meta.url).hre
 const orderIcon = new URL('../../assets/order.svg', import.meta.url).href;
 
 function CanteenAdminLanding({ onBack }) {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const [currentView, setCurrentView] = useState('landing');
 
 
@@ -28,13 +29,16 @@ function CanteenAdminLanding({ onBack }) {
     return <SalesDashboard onBack={() => setCurrentView('landing')} />;
   }
 
+  if (currentView === 'inventory') {
+    return <InventoryLanding onBack={() => setCurrentView('landing')} onNavigate={(view) => console.log('Navigate to:', view)} />;
+  }
+
   return (
     <div className="landing-screen">
       <PageHeader title="Canteen Administration" onBack={onBack} />
 
       <main className="landing-body">
         <section className="landing-services">
-          <h2>Canteen Administration</h2>
           <div className="landing-services__grid">
             <button
               type="button"
@@ -56,20 +60,22 @@ function CanteenAdminLanding({ onBack }) {
               </span>
               <span className="landing-service-card__label">Order History</span>
             </button>
+            {userRole === 'admin' && (
+              <button
+                type="button"
+                className="landing-service-card"
+                onClick={() => setCurrentView('sales-dashboard')}
+              >
+                <span className="landing-service-card__icon">
+                  <img src={reportIcon} alt="" aria-hidden="true" />
+                </span>
+                <span className="landing-service-card__label">Sales</span>
+              </button>
+            )}
             <button
               type="button"
               className="landing-service-card"
-              onClick={() => setCurrentView('sales-dashboard')}
-            >
-              <span className="landing-service-card__icon">
-                <img src={reportIcon} alt="" aria-hidden="true" />
-              </span>
-              <span className="landing-service-card__label">Sales</span>
-            </button>
-            <button
-              type="button"
-              className="landing-service-card"
-              onClick={() => alert('Inventory feature coming soon')}
+              onClick={() => setCurrentView('inventory')}
             >
               <span className="landing-service-card__icon">
                 <img src={inventoryIcon} alt="" aria-hidden="true" />

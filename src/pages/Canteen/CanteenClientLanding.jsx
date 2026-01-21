@@ -37,13 +37,13 @@ function CanteenClientLanding({ onBack }) {
             <button type="button" className="landing-balance__add" aria-label="Add to balance">+</button>
           </div>
         </div>
-        
+
         <h1 className="subpage-header__title">Canteen</h1>
 
         <div className="subpage-header__spacer" style={{ flex: '0 0 40px', justifyContent: 'flex-end', display: 'flex' }}>
-          <button 
-            type="button" 
-            className="landing-profile" 
+          <button
+            type="button"
+            className="landing-profile"
             aria-label="Profile"
             onClick={() => setCurrentView('idcard')}
           >
@@ -57,9 +57,9 @@ function CanteenClientLanding({ onBack }) {
         <section className="landing-services">
           <h2 style={{ textAlign: 'center' }}>Canteen Services</h2>
           <div className="landing-services__grid">
-            <button 
-              type="button" 
-              className="landing-service-card" 
+            <button
+              type="button"
+              className="landing-service-card"
               onClick={() => setCurrentView('menu')}
             >
               <span className="landing-service-card__icon">
@@ -67,9 +67,9 @@ function CanteenClientLanding({ onBack }) {
               </span>
               <span className="landing-service-card__label">Menu</span>
             </button>
-            <button 
-              type="button" 
-              className="landing-service-card" 
+            <button
+              type="button"
+              className="landing-service-card"
               onClick={() => setCurrentView('orders')}
             >
               <span className="landing-service-card__icon">

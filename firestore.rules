@@ -1,0 +1,359 @@
+rules_version = '2';
+
+
+service cloud.firestore {
+
+
+  match /databases/{database}/documents {
+
+
+    /* ======================
+
+       HELPER FUNCTIONS
+
+       ====================== */
+
+
+    function loggedIn() {
+
+      return request.auth != null;
+
+    }
+
+
+    function role() {
+
+
+      // Role Check: Reads user document (Standard method)
+
+      return loggedIn() &&
+
+        exists(/databases/$(database)/documents/users/$(request.auth.uid))
+
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+
+        : 'client';
+
+
+    }
+
+
+    function isAdmin() {
+
+      return role() == 'admin';
+
+    }
+
+
+    function isCanteen() {
+
+      return role() == 'canteen';
+
+    }
+
+
+    function isStaff() {
+
+      return isAdmin() || isCanteen();
+
+    }
+
+
+    function hasActiveAccess() {
+
+      return isStaff()
+
+        // Ghost User Fix: Removed !exists check. Access now requires a valid user profile.
+
+        // || !exists(/databases/$(database)/documents/users/$(request.auth.uid))
+
+        || !('nextPaymentDue' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data)
+
+        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.nextPaymentDue == null
+
+        || (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.nextPaymentDue is string)
+
+        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.nextPaymentDue >= request.time;
+
+    }
+
+
+    function isModifyingProtectedFields() {
+
+      let affected = request.resource.data.diff(resource.data).affectedKeys();
+
+
+      return (affected.hasAny(['role', 'nextPaymentDue']) && request.resource.data.role != 'client')
+
+        || affected.hasAny(['verified']);
+
+    }
+
+
+    /* ======================
+
+       USERS
+
+       ====================== */
+
+
+    match /users/{uid} {
+
+      allow get: if loggedIn();
+
+
+      // Allow listing users if staff OR if query is limited (e.g. for search)
+
+      allow list: if loggedIn() && (
+
+        isStaff()
+
+        || (request.query.limit <= 10 && request.query.filters.mrrNumber != null) // Data Scraping Fix: Require specific filter
+
+      );
+
+
+      allow create: if loggedIn()
+
+        && request.auth.uid == uid
+
+        && request.resource.data.get('role', 'client') == 'client';
+
+
+      allow update: if loggedIn() && (
+
+        isAdmin()
+
+        || (request.auth.uid == uid && !isModifyingProtectedFields())
+
+      );
+
+
+      allow delete: if isAdmin();
+
+
+      match /private_data/{docId} {
+
+        allow read: if loggedIn() && (uid == request.auth.uid || isStaff());
+
+        allow write: if loggedIn() && uid == request.auth.uid;
+
+      }
+
+    }
+
+
+    /* ======================
+
+       DISCUSSION ROOMS
+
+       ====================== */
+
+
+    match /discussion_rooms/{slotDocId} {
+
+      allow read: if loggedIn();
+
+
+      allow create: if loggedIn()
+
+        && request.resource.data.bookedBy == request.auth.uid
+
+        && hasActiveAccess();
+
+
+      allow update: if loggedIn()
+
+        && hasActiveAccess()
+
+        && request.resource.data.bookedBy == resource.data.bookedBy;
+
+
+      allow delete: if loggedIn()
+
+        && (resource.data.bookedBy == request.auth.uid || isAdmin());
+
+    }
+
+
+    /* ======================
+
+       ORDERS
+
+       ====================== */
+
+
+    match /orders/{orderId} {
+
+      allow list: if loggedIn() && (
+
+        isStaff()
+
+        || resource.data.userId == request.auth.uid
+
+      );
+
+
+      allow get: if loggedIn()
+
+        && (isStaff() || resource.data.userId == request.auth.uid);
+
+
+      allow create: if loggedIn()
+
+        && request.resource.data.userId == request.auth.uid
+
+        && hasActiveAccess()
+
+        // Data Integrity
+
+        && request.resource.data.total > 0
+
+        && request.resource.data.items is list
+
+        && request.resource.data.items.size() > 0;
+
+
+      allow update: if loggedIn()
+
+        && (isStaff() || resource.data.userId == request.auth.uid);
+
+
+      allow delete: if isStaff();
+
+    }
+
+
+    /* ======================
+
+       PAYMENTS
+
+       ====================== */
+
+
+    match /payments/{payId} {
+
+      allow read: if loggedIn()
+
+        && (isStaff() || resource.data.userId == request.auth.uid);
+
+
+      allow create: if loggedIn()
+
+        && request.resource.data.userId == request.auth.uid
+
+        // Data Integrity
+
+        && request.resource.data.amount > 0;
+
+
+      allow update, delete: if isAdmin();
+
+    }
+
+
+    /* ======================
+
+       STANDARD COLLECTIONS
+
+       ====================== */
+
+
+    match /announcements/{id} {
+
+      allow read: if loggedIn();
+
+      allow write: if isStaff();
+
+    }
+
+
+    match /menuItems/{id} {
+
+      allow read: if loggedIn();
+
+      allow write: if isStaff();
+
+    }
+
+
+    match /todaysMenu/{id} {
+
+      allow read: if loggedIn();
+
+      allow write: if isStaff();
+
+    }
+
+
+    match /readingRooms/{id} {
+
+      allow read: if loggedIn();
+
+      allow write: if isAdmin();
+
+    }
+
+
+    match /seatAssignments/{id} {
+
+      allow read: if loggedIn();
+
+      allow create: if loggedIn()
+
+        && (isAdmin() || request.resource.data.userId == request.auth.uid);
+
+      allow update, delete: if isAdmin();
+
+    }
+
+
+    match /messages/{id} {
+
+      allow read: if isStaff();
+
+      allow create: if loggedIn()
+
+        && request.resource.data.userId == request.auth.uid;
+
+    }
+
+
+    match /readingRoomEnrollments/{id} {
+
+      allow read: if loggedIn()
+
+        && (isStaff() || resource.data.userId == request.auth.uid);
+
+      allow create: if loggedIn()
+
+        && request.resource.data.userId == request.auth.uid;
+
+      allow update, delete: if isAdmin();
+
+    }
+
+
+    match /dailySales/{date} {
+
+      allow read, write: if isStaff();
+
+    }
+
+
+    /* ======================
+
+       DEFAULT DENY
+
+       ====================== */
+
+
+    match /{path=**} {
+
+      allow read, write: if isAdmin();
+
+    }
+
+  }
+
+}

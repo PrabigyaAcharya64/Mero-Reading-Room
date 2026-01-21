@@ -1,4 +1,8 @@
+import { useAuth } from '../auth/AuthProvider';
+
 function PendingVerification() {
+  const { logout } = useAuth();
+
   return (
     <div className="auth-screen">
       <div className="auth-card">
@@ -19,9 +23,9 @@ function PendingVerification() {
               9867666655
             </a>
           </p>
-          <div style={{ 
-            padding: '15px', 
-            backgroundColor: '#f0f8ff', 
+          <div style={{
+            padding: '15px',
+            backgroundColor: '#f0f8ff',
             borderRadius: '8px',
             marginTop: '20px'
           }}>
@@ -29,6 +33,15 @@ function PendingVerification() {
               We will review your information and verify your account shortly. You will be able to access all features once your account is verified.
             </p>
           </div>
+
+          <button
+            type="button"
+            className="cta-button cta-button--primary"
+            style={{ marginTop: '26px' }}
+            onClick={() => logout()}
+          >
+            Return to Login
+          </button>
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@ import { useAuth } from '../../auth/AuthProvider';
 import UserManagement from './UserManagement';
 import HostelManagement from './HostelManagement';
 import NewUsers from './NewUsers';
-import CanteenAdminLanding from '../Canteen/CanteenAdminLanding';
+import CanteenAdminLanding from '../Canteen_Admin/CanteenAdminLanding';
 import AdminMessages from './AdminMessages';
 import CreateAnnouncement from './CreateAnnouncement';
 import ReadingRoomManagement from '../readingroom/ReadingRoomManagement';

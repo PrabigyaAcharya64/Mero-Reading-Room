@@ -6,6 +6,8 @@ import { updateProfile } from 'firebase/auth';
 import { signOut } from 'firebase/auth';
 import LoadingSpinner from '../components/LoadingSpinner';
 import FullScreenLoader from '../components/FullScreenLoader';
+import readingRoomIcon from '../assets/readingroom.svg';
+import hostelIcon from '../assets/hostel.svg';
 
 const IMGBB_API_KEY = 'f3836c3667cc5c73c64e1aa4f0849566';
 
@@ -23,6 +25,20 @@ function AdditionalDetails({ onComplete }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [generatingMrr, setGeneratingMrr] = useState(true);
+  const interestOptions = [
+    {
+      value: 'Reading Room',
+      label: 'Reading Room',
+      helper: 'Quiet study spaces and resources',
+      icon: readingRoomIcon
+    },
+    {
+      value: 'Hostel',
+      label: 'Hostel',
+      helper: 'Accommodation and support',
+      icon: hostelIcon
+    }
+  ];
 
   useEffect(() => {
     // Load user's display name from Firebase
@@ -81,17 +97,16 @@ function AdditionalDetails({ onComplete }) {
     setError('');
   };
 
-  const handleCheckboxChange = (e) => {
-    const { value, checked } = e.target;
+  const handleInterestToggle = (value) => {
     setFormData(prev => {
       const currentInterests = prev.interestedIn || [];
-      if (checked) {
-        // Add to array if checked
-        return { ...prev, interestedIn: [...currentInterests, value] };
-      } else {
-        // Remove from array if unchecked
-        return { ...prev, interestedIn: currentInterests.filter(item => item !== value) };
-      }
+      const isSelected = currentInterests.includes(value);
+      return {
+        ...prev,
+        interestedIn: isSelected
+          ? currentInterests.filter(item => item !== value)
+          : [...currentInterests, value]
+      };
     });
     setError('');
   };
@@ -286,39 +301,29 @@ function AdditionalDetails({ onComplete }) {
 
           <div className="input-field">
             <span className="input-field__label" style={{ display: 'block', marginBottom: '10px' }}>
-              Interested In <span style={{ color: '#f44' }}>*</span>
+              What are you currently enrolled in, or planning to enroll in? <span style={{ color: '#f44' }}>*</span>
             </span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  value="Hostel"
-                  checked={formData.interestedIn.includes('Hostel')}
-                  onChange={handleCheckboxChange}
-                  style={{ marginRight: '8px', width: '18px', height: '18px', cursor: 'pointer' }}
-                />
-                <span>Hostel</span>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  value="Reading Room"
-                  checked={formData.interestedIn.includes('Reading Room')}
-                  onChange={handleCheckboxChange}
-                  style={{ marginRight: '8px', width: '18px', height: '18px', cursor: 'pointer' }}
-                />
-                <span>Reading Room</span>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  value="Staff"
-                  checked={formData.interestedIn.includes('Staff')}
-                  onChange={handleCheckboxChange}
-                  style={{ marginRight: '8px', width: '18px', height: '18px', cursor: 'pointer' }}
-                />
-                <span>Staff</span>
-              </label>
+            <div className="interest-card-grid">
+              {interestOptions.map((option) => {
+                const isSelected = formData.interestedIn.includes(option.value);
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`interest-card ${isSelected ? 'is-selected' : ''}`}
+                    onClick={() => handleInterestToggle(option.value)}
+                    aria-pressed={isSelected}
+                  >
+                    <span className="interest-card__icon">
+                      <img src={option.icon} alt="" aria-hidden="true" />
+                    </span>
+                    <span className="interest-card__content">
+                      <span className="interest-card__label">{option.label}</span>
+                      <span className="interest-card__helper">{option.helper}</span>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

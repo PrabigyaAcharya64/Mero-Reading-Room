@@ -639,7 +639,7 @@ function MenuManagement({ onBack }) {
                       className={`mm-btn ${item.isFixed ? 'mm-btn-success' : 'mm-btn-secondary'}`}
                       style={{ width: '100%', marginBottom: '0.5rem' }}
                     >
-                      {item.isFixed ? '★ Fixed Menu' : '☆ Making Fixed'}
+                      {item.isFixed ? '★ Fixed Item' : '☆ Mark Fix Item'}
                     </button>
                     <button
                       onClick={() => handleDeleteMenuItem(item.id)}
