@@ -5,9 +5,9 @@ import { doc, onSnapshot, collection, addDoc, query, where } from 'firebase/fire
 import { validateOrderNote } from '../../utils/validation';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 
-import CanteenMenu from "./CanteenMenu.jsx";
+import CanteenMenu from "./CanteenMenu";
 import CanteenCart from './CanteenCart';
-import ClientOrderHistory from './clientOrderHistory.jsx';
+import ClientOrderHistory from './ClientOrderHistory';
 import '../../styles/CanteenLanding.css';
 
 const foodIcon = new URL('../../assets/food.svg', import.meta.url).href;

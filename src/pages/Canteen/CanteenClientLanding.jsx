@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import CanteenClient from './CanteenClient';
-import ClientOrderHistory from 'clientOrderHistory';
+import ClientOrderHistory from './ClientOrderHistory';
 import IDCard from '../IDCard';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 
