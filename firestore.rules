@@ -186,38 +186,23 @@ service cloud.firestore {
     match /orders/{orderId} {
 
       allow list: if loggedIn() && (
-
         isStaff()
-
         || resource.data.userId == request.auth.uid
-
       );
 
-
       allow get: if loggedIn()
-
         && (isStaff() || resource.data.userId == request.auth.uid);
-
 
       allow create: if loggedIn()
-
         && request.resource.data.userId == request.auth.uid
-
         && hasActiveAccess()
-
         // Data Integrity
-
         && request.resource.data.total > 0
-
         && request.resource.data.items is list
-
         && request.resource.data.items.size() > 0;
 
-
       allow update: if loggedIn()
-
         && (isStaff() || resource.data.userId == request.auth.uid);
-
 
       allow delete: if isStaff();
 

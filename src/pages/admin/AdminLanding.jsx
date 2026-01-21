@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import UserManagement from './UserManagement';
 import HostelManagement from './HostelManagement';
 import NewUsers from './NewUsers';
 import CanteenAdminLanding from '../Canteen_Admin/CanteenAdminLanding';
+import NewOrders from '../Canteen_Admin/NewOrders';
 import AdminMessages from './AdminMessages';
 import CreateAnnouncement from './CreateAnnouncement';
 import ReadingRoomManagement from '../readingroom/ReadingRoomManagement';
@@ -18,12 +19,14 @@ const hostelIcon = new URL('../../assets/hostel.svg', import.meta.url).href;
 const reportsIcon = new URL('../../assets/reports.svg', import.meta.url).href;
 const canteenIcon = new URL('../../assets/canteen.svg', import.meta.url).href;
 const readingRoomIcon = new URL('../../assets/readingroom.svg', import.meta.url).href;
+const orderPlaceIcon = new URL('../../assets/order_place.svg', import.meta.url).href;
 
 function AdminLanding() {
   const { user, signOutUser } = useAuth();
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Admin';
   const [currentView, setCurrentView] = useState('dashboard');
   const [unreadCount, setUnreadCount] = useState(0);
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
   const [announcements, setAnnouncements] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -40,6 +43,33 @@ function AdminLanding() {
     const q = query(collection(db, 'messages'), where('read', '==', false));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setUnreadCount(snapshot.size);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const previousOrderCount = useRef(0);
+  const audioRef = useRef(new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'));
+
+  useEffect(() => {
+    // Listen for all 'pending' orders count
+    const q = query(collection(db, 'orders'), where('status', '==', 'pending'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const count = snapshot.size;
+      setNewOrdersCount(count);
+
+      // Play sound if new order comes (count increases)
+      // Check if count > previous to avoid playing on initial load if desired, 
+      // or just play. Usually we don't play on initial load.
+      if (count > previousOrderCount.current && previousOrderCount.current !== 0) {
+        audioRef.current.play().catch(e => console.log('Audio error:', e));
+      }
+
+      // If it's the very first load (0 -> N), we might optionally play or not.
+      // Let's play if > 0 and it's not strictly just init (checking against current 0 implies init if starting at 0).
+      // But standard interaction policy blocks auto-play sometimes. 
+      // Safe bet: count > previous.
+
+      previousOrderCount.current = count;
     });
     return () => unsubscribe();
   }, []);
@@ -84,6 +114,10 @@ function AdminLanding() {
 
   if (currentView === 'canteen') {
     return <CanteenAdminLanding onBack={() => setCurrentView('dashboard')} />;
+  }
+
+  if (currentView === 'new-orders') {
+    return <NewOrders onBack={() => setCurrentView('dashboard')} />;
   }
 
   if (currentView === 'messages') {
@@ -154,6 +188,39 @@ function AdminLanding() {
               </span>
               <span className="landing-service-card__label">Canteen</span>
             </button>
+
+            <button
+              type="button"
+              className="landing-service-card"
+              onClick={() => setCurrentView('new-orders')}
+              style={{ position: 'relative' }}
+            >
+              <span className="landing-service-card__icon">
+                <img src={orderPlaceIcon} alt="" aria-hidden="true" />
+              </span>
+              <span className="landing-service-card__label">New Orders</span>
+              {newOrdersCount > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: '-10px',
+                  right: '-10px',
+                  backgroundColor: '#d93025',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.8rem',
+                  fontWeight: 'bold',
+                  boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                }}>
+                  {newOrdersCount}
+                </span>
+              )}
+            </button>
+
             <button
               type="button"
               className="landing-service-card"

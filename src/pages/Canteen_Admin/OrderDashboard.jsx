@@ -1,19 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, setDoc, getDoc, where } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/OrderDashboard.css';
 
-
-
 function OrderDashboard({ onBack }) {
   const { user, userRole } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'pending', 'completed', 'cancelled'
+  const [filterStatus, setFilterStatus] = useState('completed'); // Default to completed
   const [searchQuery, setSearchQuery] = useState('');
 
   // Pagination State
@@ -30,8 +28,6 @@ function OrderDashboard({ onBack }) {
     // Determine valid role
     const isStaff = userRole === 'admin' || userRole === 'canteen';
 
-    // Rule: allow list: if loggedIn() && (isStaff() || resource.data.userId == request.auth.uid)
-    // Non-staff queries MUST include where('userId', '==', uid) to pass the rule.
     let q;
     if (isStaff) {
       q = query(ordersRef, orderBy('createdAt', 'desc'));
@@ -62,67 +58,8 @@ function OrderDashboard({ onBack }) {
     };
   }, []);
 
-  const handleUpdateStatus = async (orderId, newStatus) => {
-    try {
-      const orderRef = doc(db, 'orders', orderId);
-      const updateData = {
-        status: newStatus,
-        updatedAt: new Date().toISOString(),
-      };
-
-      // If marking as completed, add completedAt timestamp
-      if (newStatus === 'completed') {
-        updateData.completedAt = new Date().toISOString();
-
-        // Get order data to create sales record
-        const orderDoc = await getDoc(orderRef);
-        if (orderDoc.exists()) {
-          const orderData = orderDoc.data();
-          const orderDate = new Date().toISOString().split('T')[0];
-
-          // Create/update daily sales record
-          const salesRef = doc(db, 'dailySales', orderDate);
-          const salesDoc = await getDoc(salesRef);
-
-          if (salesDoc.exists()) {
-            const salesData = salesDoc.data();
-            await updateDoc(salesRef, {
-              totalSales: (salesData.totalSales || 0) + (orderData.total || 0),
-              totalOrders: (salesData.totalOrders || 0) + 1,
-              updatedAt: new Date().toISOString(),
-            });
-          } else {
-            await setDoc(salesRef, {
-              date: orderDate,
-              totalSales: orderData.total || 0,
-              totalOrders: 1,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            });
-          }
-        }
-      }
-
-      await updateDoc(orderRef, updateData);
-    } catch (error) {
-      console.error('Error updating order status:', error);
-      let errorMessage = 'Failed to update order status';
-
-      if (error?.code === 'permission-denied') {
-        errorMessage = 'Permission denied. Please check Firestore security rules.';
-      } else if (error?.code === 'not-found') {
-        errorMessage = 'Order not found. It may have been deleted.';
-      } else if (error?.message) {
-        errorMessage = `Error: ${error.message}`;
-      }
-
-      alert(errorMessage);
-    }
-  };
-
-
   const filteredOrders = orders.filter(order => {
-    const matchesStatus = filterStatus === 'all' || order.status === filterStatus;
+    const matchesStatus = order.status === filterStatus;
     const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
   });
@@ -135,16 +72,31 @@ function OrderDashboard({ onBack }) {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+  // Universal date formatter
+  const formatDate = (val) => {
+    if (!val) return 'N/A';
+    try {
+      let date;
+      // Check if val is a Firestore timestamp (object with seconds)
+      if (typeof val === 'object' && val.seconds) {
+        date = new Date(val.seconds * 1000);
+      } else {
+        // Try parsing as string or Date object
+        date = new Date(val);
+      }
+
+      if (isNaN(date.getTime())) return 'N/A';
+
+      return date.toLocaleString('en-IN', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (e) {
+      return 'N/A';
+    }
   };
 
   const getStatusColor = (status) => {
@@ -162,12 +114,12 @@ function OrderDashboard({ onBack }) {
 
   return (
     <div className="od-container">
-      <PageHeader title="Orders Dashboard" onBack={onBack} />
+      <PageHeader title="Orders History" onBack={onBack} />
 
       <main className="od-body">
         <section>
           <div className="od-toolbar">
-            <h2 className="od-section-title">Orders ({filteredOrders.length})</h2>
+            <h2 className="od-section-title">History ({filteredOrders.length})</h2>
             <div className="od-filters">
               <input
                 type="text"
@@ -184,7 +136,7 @@ function OrderDashboard({ onBack }) {
                   width: '200px'
                 }}
               />
-              {['all', 'pending', 'completed'].map((status) => (
+              {['completed', 'cancelled'].map((status) => (
                 <button
                   key={status}
                   onClick={() => setFilterStatus(status)}
@@ -225,30 +177,6 @@ function OrderDashboard({ onBack }) {
                       <span className="od-status-badge" style={{ backgroundColor: getStatusColor(order.status || 'pending') }}>
                         {order.status || 'pending'}
                       </span>
-
-                      {order.status === 'pending' && (
-                        <div className="od-action-btn-group">
-                          <button
-                            onClick={() => handleUpdateStatus(order.id, 'completed')}
-                            className="od-btn-icon od-btn-complete"
-                            title="Mark as Completed"
-                          >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => handleUpdateStatus(order.id, 'cancelled')}
-                            className="od-btn-icon od-btn-cancel"
-                            title="Cancel Order"
-                          >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                              <line x1="18" y1="6" x2="6" y2="18"></line>
-                              <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
 
@@ -264,7 +192,7 @@ function OrderDashboard({ onBack }) {
                           </div>
                           <div className="od-item-price">
                             <p className="od-item-total">
-                              रु {((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                              Rs. {((item.price || 0) * (item.quantity || 1)).toFixed(2)}
                             </p>
                             <p className="od-item-unit">
                               {item.price?.toFixed(2) || '0.00'} ea
@@ -280,7 +208,7 @@ function OrderDashboard({ onBack }) {
                     <div className="od-summary-item">
                       <p>TOTAL PRICE</p>
                       <p className="od-summary-total">
-                        रु {order.total?.toFixed(2) || '0.00'}
+                        Rs. {order.total?.toFixed(2) || '0.00'}
                       </p>
                     </div>
                     <div className="od-summary-item">
@@ -334,4 +262,3 @@ function OrderDashboard({ onBack }) {
 }
 
 export default OrderDashboard;
-
