@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, doc, updateDoc, increment, addDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import EnhancedBackButton from '../../components/EnhancedBackButton';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/RawInventory.css';
 
 const RawInventory = ({ onBack }) => {
@@ -80,18 +80,14 @@ const RawInventory = ({ onBack }) => {
 
     return (
         <div className="raw-inventory-page">
-            <div className="page-header-simple">
-                <div className="header-left">
-                    <EnhancedBackButton onBack={onBack} />
-                    <h1 className="simple-title">Raw Inventory</h1>
-                </div>
+            <PageHeader title="Raw Inventory" onBack={onBack} rightElement={
                 <button
                     className="add-item-btn-simple"
                     onClick={() => setShowAddModal(true)}
                 >
                     + Add Item
                 </button>
-            </div>
+            } />
 
             <div className="inventory-table-container simple-container">
                 <table className="inventory-table-simple">

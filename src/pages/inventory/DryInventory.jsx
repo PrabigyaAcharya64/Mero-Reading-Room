@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, doc, setDoc, updateDoc, addDoc, deleteDoc, serverTimestamp, where, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import EnhancedBackButton from '../../components/EnhancedBackButton';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/DryInventory.css';
 
 const IMGBB_API_KEY = 'f3836c3667cc5c73c64e1aa4f0849566';
@@ -307,18 +307,14 @@ const DryInventory = ({ onBack }) => {
 
     return (
         <div className="dry-inventory-page">
-            <div className="page-header-simple">
-                <div className="header-left">
-                    <EnhancedBackButton onBack={onBack} />
-                    <h1 className="simple-title">Dry Inventory</h1>
-                </div>
+            <PageHeader title="Dry Inventory" onBack={onBack} rightElement={
                 <button
                     className="add-item-btn-simple"
                     onClick={() => setShowAddModal(true)}
                 >
                     + Add Product
                 </button>
-            </div>
+            } />
 
             <div className="inventory-table-container simple-container">
                 <table className="inventory-table-simple">

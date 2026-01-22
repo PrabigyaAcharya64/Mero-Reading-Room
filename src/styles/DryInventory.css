@@ -10,28 +10,7 @@
     box-sizing: border-box;
 }
 
-/* Inherit Header & Modal from RawInventory.css (duplicated for safety) */
-.page-header-simple {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid #000;
-    position: relative;
-}
 
-.simple-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #000000;
-    margin: 0;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-}
 
 .add-item-btn-simple {
     background: #000000;
