@@ -104,10 +104,23 @@ function ReadingRoomBuy({ onBack, selectedOption, onComplete }) {
                 status: 'active'
             });
 
-            // 4. Update user document with registration completion flag
+            // 3.5 Record Transaction in 'transactions' collection for Dashboard
+            await addDoc(collection(db, 'transactions'), {
+                type: 'reading_room',
+                amount: totalAmount,
+                details: `${selectedOption.roomType === 'ac' ? 'AC' : 'Non-AC'} Room Fee`,
+                userId: user.uid,
+                userName: userData?.name || user.displayName || 'User',
+                date: new Date().toISOString(), // ISO string for consistency
+                createdAt: new Date().toISOString(),
+                roomType: selectedOption.roomType,
+                month: new Date().toLocaleString('default', { month: 'short' }) // e.g., "Jan"
+            });
+
+            // 4. Update user document with payment info (BUT NOT registration completion yet)
             await setDoc(doc(db, 'users', user.uid), {
                 selectedRoomType: selectedOption.roomType,
-                registrationCompleted: true,
+                // registrationCompleted: true, // REMOVED: This is now handled by Enrollment Form
                 lastPaymentDate: new Date().toISOString(),
                 nextPaymentDue: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
                 updatedAt: new Date().toISOString(),
@@ -119,8 +132,9 @@ function ReadingRoomBuy({ onBack, selectedOption, onComplete }) {
                 }
             }, { merge: true });
 
-            // Redirect to enrollment form after successful payment
-            onComplete();
+            // Redirect based on whether enrollment is needed
+            const needsEnrollment = !userData?.registrationCompleted;
+            onComplete(needsEnrollment);
         } catch (err) {
             console.error('Error processing payment:', err);
             setError(err.message || 'Failed to process payment. Please try again.');

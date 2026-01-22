@@ -1,0 +1,499 @@
+/* Simple B&W Theme for Retail */
+
+.dry-inventory-page {
+    padding: 24px;
+    background: #ffffff;
+    height: 100vh;
+    overflow-y: auto;
+    font-family: 'Inter', sans-serif;
+    color: #000;
+    box-sizing: border-box;
+}
+
+/* Inherit Header & Modal from RawInventory.css (duplicated for safety) */
+.page-header-simple {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #000;
+    position: relative;
+}
+
+.simple-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #000000;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.add-item-btn-simple {
+    background: #000000;
+    color: #ffffff;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: opacity 0.2s;
+}
+
+.add-item-btn-simple:hover {
+    opacity: 0.8;
+}
+
+/* Grids & Cards */
+.inventory-grid-simple {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.inventory-card-simple {
+    border: 1px solid #000;
+    background: #fff;
+    position: relative;
+    transition: box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.inventory-card-simple:hover {
+    box-shadow: 4px 4px 0px #000;
+    transform: translateY(-2px);
+}
+
+/* Image Display in Card */
+.card-image-display {
+    height: 180px;
+    border-bottom: 1px solid #000;
+    position: relative;
+    background: #f8f8f8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.card-image-display img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.no-image-placeholder {
+    font-size: 3rem;
+    font-weight: 800;
+    color: #e0e0e0;
+}
+
+.category-tag-overlay {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #000;
+    color: #fff;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    font-weight: 600;
+}
+
+.card-content-simple {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.card-content-simple h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+}
+
+.metric-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    border-bottom: 1px dashed #e0e0e0;
+    padding-bottom: 4px;
+}
+
+.metric-row:last-of-type {
+    border-bottom: none;
+}
+
+.metric-row .value {
+    font-weight: 700;
+}
+
+.text-danger {
+    color: #d32f2f;
+}
+
+.sync-btn-simple {
+    margin-top: auto;
+    background: none;
+    border: 1px solid #000;
+    padding: 0.6rem;
+    width: 100%;
+    cursor: pointer;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+}
+
+.sync-btn-simple:hover {
+    background: #000;
+    color: #fff;
+}
+
+.sold-out-simple {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-15deg);
+    border: 3px solid #d32f2f;
+    color: #d32f2f;
+    padding: 0.5rem 1rem;
+    font-weight: 800;
+    font-size: 1.5rem;
+    background: rgba(255, 255, 255, 0.95);
+    white-space: nowrap;
+    z-index: 10;
+}
+
+/* File Upload Styles */
+.file-input-wrapper {
+    position: relative;
+    overflow: hidden;
+    display: inline-block;
+    width: 100%;
+}
+
+.hidden-file-input {
+    font-size: 100px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.file-upload-label {
+    display: block;
+    background: #fff;
+    border: 1px solid #000;
+    color: #000;
+    padding: 0.5rem;
+    text-align: center;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.file-upload-label:hover {
+    background: #f0f0f0;
+}
+
+/* Modal Reuse */
+.modal-backdrop-simple {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+}
+
+.modal-simple {
+    background: white;
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem;
+    border: 2px solid #000;
+    box-shadow: 8px 8px 0px #000;
+}
+
+.modal-header-simple {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.close-btn-simple {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.form-group-simple {
+    margin-bottom: 1rem;
+}
+
+.form-row-simple {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-group-simple label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.form-group-simple input,
+.form-group-simple textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #000;
+    font-size: 1rem;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.modal-actions-simple {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.btn-simple {
+    flex: 1;
+    padding: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: 1px solid #000;
+}
+
+.btn-simple.primary {
+    background: #000;
+    color: #fff;
+}
+
+.btn-simple.primary:disabled {
+    background: #666;
+    cursor: not-allowed;
+}
+
+.btn-simple.secondary {
+    background: #fff;
+    color: #000;
+}
+
+.inventory-loading {
+    display: flex;
+    justify-content: center;
+    padding: 2rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* Added styles for inventory updates */
+
+.in-menu-tag-overlay {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: #000;
+    color: #fff;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    font-weight: 600;
+    border: 1px solid #fff;
+}
+
+.action-buttons-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: auto;
+}
+
+.delete-btn-simple {
+    background: #fff;
+    border: 1px solid #000;
+    color: #000;
+    font-weight: 700;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.delete-btn-simple:hover {
+    background: #d32f2f;
+    color: #fff;
+    border-color: #d32f2f;
+}
+
+.image-error {
+    background-color: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+/* Table Styles copied from RawInventory.css */
+.simple-container {
+    background: #ffffff;
+}
+
+.inventory-table-simple {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.inventory-table-simple th {
+    padding: 1rem;
+    color: #000000;
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    text-align: left;
+    border-bottom: 2px solid #000;
+}
+
+.inventory-table-simple td {
+    padding: 1rem;
+    border-bottom: 1px solid #e5e5e5;
+    color: #000000;
+    font-size: 0.95rem;
+    vertical-align: middle;
+}
+
+.item-name-cell {
+    font-weight: 600;
+}
+
+/* Attributes */
+.row-alert td {
+    background-color: #fff0f0;
+}
+
+.row-alert .item-name-cell {
+    color: #d32f2f;
+}
+
+.status-badge-simple {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border: 1px solid #000;
+    display: inline-block;
+}
+
+.status-badge-simple.danger {
+    color: #d32f2f;
+    border-color: #d32f2f;
+}
+
+.status-badge-simple.success {
+    color: #000;
+    border-color: #000;
+}
+
+.text-danger {
+    color: #d32f2f;
+    font-weight: 700;
+}
+
+.consume-btn-simple {
+    background: white;
+    border: 1px solid #000;
+    color: #000;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+
+.consume-btn-simple:hover:not(:disabled) {
+    background: #000;
+    color: #fff;
+}
+
+.consume-btn-simple:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.empty-state-simple {
+    text-align: center;
+    color: #666;
+    padding: 2rem !important;
+}
+
+.action-buttons-simple {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.delete-icon-btn {
+    background: #fff;
+    border: 1px solid #d32f2f;
+    color: #d32f2f;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0;
+    line-height: 1;
+}
+
+.delete-icon-btn:hover {
+    background: #d32f2f;
+    color: #fff;
+}
+
+/* Specific to DryInventory Table */
+.params-cell-image {
+    width: 60px;
+    height: 60px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f9f9f9;
+}
+
+.params-cell-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.params-cell-image .no-image-placeholder {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #ccc;
+}

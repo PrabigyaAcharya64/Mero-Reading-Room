@@ -3,6 +3,7 @@ import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, addDoc, getDocs, doc, setDoc, getDoc, query, where, deleteDoc, updateDoc } from 'firebase/firestore';
 import { validateMenuItemName, validatePrice, validateDescription, validateCategory } from '../../utils/validation';
+import { getBusinessDate } from '../../utils/dateUtils';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 import EnhancedBackButton from '../../components/EnhancedBackButton';
@@ -88,7 +89,7 @@ function MenuManagement({ onBack }) {
 
   const loadTodaysMenu = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const today = getBusinessDate();
       const todaysMenuRef = doc(db, 'todaysMenu', today);
 
       // Add timeout to prevent hanging (increased to 15 seconds)
@@ -359,7 +360,7 @@ function MenuManagement({ onBack }) {
     setMessage('');
 
     try {
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const today = getBusinessDate();
       const todaysMenuRef = doc(db, 'todaysMenu', today);
 
       // Get only selected items
@@ -411,7 +412,7 @@ function MenuManagement({ onBack }) {
     setMessage('');
 
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getBusinessDate();
       const todaysMenuRef = doc(db, 'todaysMenu', today);
 
       // Remove the item from today's menu

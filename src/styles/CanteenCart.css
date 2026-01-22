@@ -1,7 +1,9 @@
 .canteen-cart-page {
-  min-height: 100vh;
+  height: 100vh;
+  overflow-y: auto;
   background-color: var(--color-background-light);
   padding-bottom: 40px;
+  box-sizing: border-box;
 }
 
 .cart-header {
@@ -41,7 +43,7 @@
   border-radius: 12px;
   padding: 15px;
   margin-bottom: 15px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .cart-item-info {

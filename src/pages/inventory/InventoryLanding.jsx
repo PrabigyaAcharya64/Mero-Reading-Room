@@ -1,41 +1,41 @@
 import React from 'react';
-import EnhancedBackButton from '../../components/EnhancedBackButton';
-import '../../styles/InventoryLanding.css';
+import PageHeader from '../../components/PageHeader';
 
 const rawIcon = new URL('../../assets/raw.png', import.meta.url).href;
 const dryIcon = new URL('../../assets/dry.svg', import.meta.url).href;
 
 const InventoryLanding = ({ onBack, onNavigate }) => {
     return (
-        <div className="inventory-landing">
-            <div className="inventory-header">
-                <EnhancedBackButton onBack={onBack} />
-                <h1 className="header-title">Inventory Management</h1>
-            </div>
+        <div className="landing-screen">
+            <PageHeader title="Inventory Management" onBack={onBack} />
 
-            <div className="inventory-content">
-                <div className="inventory-buttons-wrapper">
-                    <button
-                        className="inventory-main-button"
-                        onClick={() => onNavigate('raw-inventory')}
-                    >
-                        <div className="button-icon-wrapper">
-                            <img src={rawIcon} alt="Raw Inventory" />
-                        </div>
-                        <span className="button-text">Raw Inventory</span>
-                    </button>
+            <main className="landing-body">
+                <section className="landing-services">
+                    <div className="landing-services__grid">
+                        <button
+                            type="button"
+                            className="landing-service-card"
+                            onClick={() => onNavigate('raw-inventory')}
+                        >
+                            <span className="landing-service-card__icon">
+                                <img src={rawIcon} alt="" aria-hidden="true" />
+                            </span>
+                            <span className="landing-service-card__label">Raw Inventory</span>
+                        </button>
 
-                    <button
-                        className="inventory-main-button"
-                        onClick={() => onNavigate('dry-inventory')}
-                    >
-                        <div className="button-icon-wrapper">
-                            <img src={dryIcon} alt="Dry Inventory" />
-                        </div>
-                        <span className="button-text">Dry Inventory</span>
-                    </button>
-                </div>
-            </div>
+                        <button
+                            type="button"
+                            className="landing-service-card"
+                            onClick={() => onNavigate('dry-inventory')}
+                        >
+                            <span className="landing-service-card__icon">
+                                <img src={dryIcon} alt="" aria-hidden="true" />
+                            </span>
+                            <span className="landing-service-card__label">Dry Inventory</span>
+                        </button>
+                    </div>
+                </section>
+            </main>
         </div>
     );
 };

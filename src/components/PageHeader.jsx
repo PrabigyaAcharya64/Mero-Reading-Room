@@ -1,5 +1,5 @@
 import React from 'react';
-import EnhancedBackButton from './EnhancedBackButton';
+import { ArrowLeft } from 'lucide-react';
 import '../styles/PageHeader.css';
 
 /**
@@ -12,16 +12,24 @@ import '../styles/PageHeader.css';
  */
 const PageHeader = ({ title, onBack, rightElement }) => {
     return (
-        <>
-            {onBack && <EnhancedBackButton onBack={onBack} />}
-            <header className="std-header">
-                <div className="std-header-spacer"></div>
-                <h1 className="std-header-title">{title}</h1>
-                <div className="std-header-spacer">
-                    {rightElement}
-                </div>
-            </header>
-        </>
+        <header className="std-header">
+            <div className="std-header-left">
+                {onBack && (
+                    <button
+                        type="button"
+                        className="std-header-back-btn"
+                        onClick={onBack}
+                        aria-label="Go back"
+                    >
+                        <ArrowLeft size={20} />
+                    </button>
+                )}
+            </div>
+            <h1 className="std-header-title">{title}</h1>
+            <div className="std-header-right">
+                {rightElement}
+            </div>
+        </header>
     );
 };
 

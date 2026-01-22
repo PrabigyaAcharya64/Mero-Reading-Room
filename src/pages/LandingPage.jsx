@@ -170,9 +170,13 @@ function LandingPage({ onBack }) {
       <ReadingRoomBuy
         onBack={() => setCurrentView('readingroom-options')}
         selectedOption={selectedRoomOption}
-        onComplete={() => {
-          // After successful payment, redirect to enrollment form
-          setCurrentView('readingroom');
+        onComplete={(needsEnrollment) => {
+          // After successful payment, check if enrollment is needed
+          if (needsEnrollment) {
+            setCurrentView('readingroom');
+          } else {
+            setCurrentView('readingroom-dashboard');
+          }
         }}
       />
     );
@@ -248,8 +252,8 @@ function LandingPage({ onBack }) {
               <button type="button" className="landing-service-card" onClick={handleDiscussionClick}>
                 <span className="landing-service-card__icon">
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M17 20H7C6 20 5 20 4 20C4 20 4 15 4 15C4 12.2386 6.23858 10 9 10H15C17.7614 10 20 12.2386 20 15V15C20 15 20 20 20 20H17Z" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                    <path d="M12 10C13.6569 10 15 8.65685 15 7C15 5.34315 13.6569 4 12 4C10.3431 4 9 5.34315 9 7C9 8.65685 10.3431 10 12 10Z" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M17 20H7C6 20 5 20 4 20C4 20 4 15 4 15C4 12.2386 6.23858 10 9 10H15C17.7614 10 20 12.2386 20 15V15C20 15 20 20 20 20H17Z" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M12 10C13.6569 10 15 8.65685 15 7C15 5.34315 13.6569 4 12 4C10.3431 4 9 5.34315 9 7C9 8.65685 10.3431 10 12 10Z" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </span>
                 <span className="landing-service-card__label">Discussion</span>

@@ -318,17 +318,17 @@ function ReadingRoomManagement({ onBack }) {
             // Delete the seat assignment
             await deleteDoc(doc(db, 'seatAssignments', assignmentId));
 
-            // Update user document to clear registration status
+            // Update user document to clear seat assignment but PRESERVE registration status
             await setDoc(doc(db, 'users', assignment.userId), {
-                registrationCompleted: false,
-                enrollmentCompleted: false,
+                // registrationCompleted: false, // REMOVED: Registration is lifetime
+                // enrollmentCompleted: false,   // REMOVED: Enrollment is lifetime
                 currentSeat: null,
                 nextPaymentDue: null,
                 lastPaymentDate: null,
                 selectedRoomType: null
             }, { merge: true });
 
-            console.log('User unassigned and registration cleared for userId:', assignment.userId);
+            console.log('User unassigned from seat (registration status preserved) for userId:', assignment.userId);
 
             setMessage('Student unassigned successfully');
             loadSeatAssignments();

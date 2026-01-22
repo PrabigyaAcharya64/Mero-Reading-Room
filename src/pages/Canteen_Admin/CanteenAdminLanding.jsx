@@ -9,6 +9,8 @@ import NewOrders from './NewOrders';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
 import InventoryLanding from '../inventory/InventoryLanding';
+import RawInventory from '../inventory/RawInventory';
+import DryInventory from '../inventory/DryInventory';
 
 const foodIcon = new URL('../../assets/food.svg', import.meta.url).href;
 const reportIcon = new URL('../../assets/reports.svg', import.meta.url).href;
@@ -54,7 +56,15 @@ function CanteenAdminLanding({ onBack }) {
   }
 
   if (currentView === 'inventory') {
-    return <InventoryLanding onBack={() => setCurrentView('landing')} onNavigate={(view) => console.log('Navigate to:', view)} />;
+    return <InventoryLanding onBack={() => setCurrentView('landing')} onNavigate={(view) => setCurrentView(view)} />;
+  }
+
+  if (currentView === 'raw-inventory') {
+    return <RawInventory onBack={() => setCurrentView('inventory')} />;
+  }
+
+  if (currentView === 'dry-inventory') {
+    return <DryInventory onBack={() => setCurrentView('inventory')} />;
   }
 
   return (

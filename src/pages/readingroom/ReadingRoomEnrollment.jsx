@@ -144,6 +144,13 @@ function ReadingRoomEnrollment({ onBack, onComplete }) {
                 status: 'pending' // Admin can approve/reject
             });
 
+            // Mark registration as completed in User profile
+            const { setDoc, doc } = await import('firebase/firestore'); // Ensure imports are available or use existing
+            await setDoc(doc(db, 'users', user.uid), {
+                registrationCompleted: true,
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
+
             setSuccess('Enrollment form submitted successfully!');
             setTimeout(() => {
                 if (onComplete) onComplete();

@@ -1,5 +1,6 @@
 .canteen-menu-page {
-  min-height: 100vh;
+  height: 100vh;
+  overflow-y: auto;
   background: white;
   padding: 20px;
   position: relative;
@@ -300,9 +301,9 @@
 }
 
 .empty-state {
-    text-align: center;
-    padding: 30px;
-    color: #999;
+  text-align: center;
+  padding: 30px;
+  color: #999;
 }
 
 /* Mobile responsiveness */
@@ -310,11 +311,11 @@
   .food-card {
     width: 350px;
   }
-  
+
   .category-title {
     text-align: center;
   }
-  
+
   .food-carousel {
     padding: 0 calc(50% - 175px);
   }

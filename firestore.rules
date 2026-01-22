@@ -83,9 +83,9 @@ service cloud.firestore {
       let affected = request.resource.data.diff(resource.data).affectedKeys();
 
 
-      return (affected.hasAny(['role', 'nextPaymentDue']) && request.resource.data.role != 'client')
-
-        || affected.hasAny(['verified']);
+      return affected.hasAny(['role', 'verified'])
+        // Security: Prevent increasing balance (must use Admin/Payment flow)
+        || (affected.hasAny(['balance']) && request.resource.data.balance > resource.data.balance);
 
     }
 
@@ -184,28 +184,27 @@ service cloud.firestore {
 
 
     match /orders/{orderId} {
-
-      allow list: if loggedIn() && (
-        isStaff()
-        || resource.data.userId == request.auth.uid
-      );
-
-      allow get: if loggedIn()
-        && (isStaff() || resource.data.userId == request.auth.uid);
+      allow list: if loggedIn() && (isStaff() || resource.data.userId == request.auth.uid);
+      allow get: if loggedIn() && (isStaff() || resource.data.userId == request.auth.uid);
 
       allow create: if loggedIn()
         && request.resource.data.userId == request.auth.uid
         && hasActiveAccess()
-        // Data Integrity
-        && request.resource.data.total > 0
-        && request.resource.data.items is list
-        && request.resource.data.items.size() > 0;
+        // Force the initial status to be 'pending'
+        && request.resource.data.status == 'pending'
+        && request.resource.data.total > 0;
 
-      allow update: if loggedIn()
-        && (isStaff() || resource.data.userId == request.auth.uid);
-
-      allow delete: if isStaff();
-
+      allow update: if loggedIn() && (
+        isStaff() // Staff can change status to 'completed' or 'delivered'
+        || (
+          request.auth.uid == resource.data.userId 
+          // Clients can ONLY update the 'cancellationRequested' field
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cancellationRequested'])
+          // Ensure they don't try to change the price or status while requesting cancellation
+          && request.resource.data.status == resource.data.status
+          && request.resource.data.total == resource.data.total
+        )
+      );
     }
 
 
@@ -322,6 +321,38 @@ service cloud.firestore {
     match /dailySales/{date} {
 
       allow read, write: if isStaff();
+
+    }
+
+
+    /* ======================
+
+       INVENTORY & CANTEEN
+
+       ====================== */
+
+
+    match /raw_materials/{id} {
+
+      allow read, write: if isStaff();
+
+    }
+
+
+    match /canteen_items/{id} {
+      allow read: if loggedIn();
+      
+      // REMOVED: Client-side stock decrementing (it is too vulnerable)
+      // Only staff can update stock counts after verifying payment/order
+      allow write: if isStaff();
+    }
+
+
+    match /canteen_menu/{id} {
+
+      allow read: if loggedIn(); // Allow all users to see the menu
+      
+      allow write: if isStaff();
 
     }
 

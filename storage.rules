@@ -15,6 +15,15 @@ service firebase.storage {
         && request.resource.contentType.matches('image/.*');  // Only images
       allow delete: if isAuthenticated();
     }
+
+    // Inventory items photos
+    match /inventory-images/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() 
+        && request.resource.size < 5 * 1024 * 1024  // Max 5MB
+        && request.resource.contentType.matches('image/.*');  // Only images
+      allow delete: if isAuthenticated();
+    }
     
     // Default: deny all other access
     match /{allPaths=**} {

@@ -12,9 +12,12 @@
 }
 
 .discussion-page {
-    min-height: 100vh;
+    height: 100vh;
+    overflow-y: auto;
     background-color: var(--discussion-white);
-    padding: 1rem; /* Equivalent to 16px-20px */
+    padding: 1rem;
+    /* Equivalent to 16px-20px */
+    box-sizing: border-box;
 }
 
 .loading-container {
@@ -38,7 +41,8 @@
 
 .discussion-card {
     background-color: var(--discussion-white);
-    padding: clamp(1.5rem, 5vw, 2.5rem); /* Responsive padding */
+    padding: clamp(1.5rem, 5vw, 2.5rem);
+    /* Responsive padding */
     border: 1px solid var(--discussion-border);
     text-align: center;
 }
@@ -51,7 +55,8 @@
     gap: 1rem;
 }
 
-.header-left, .header-right {
+.header-left,
+.header-right {
     flex: 1;
 }
 
@@ -68,14 +73,16 @@
 
 .header-title {
     font-weight: bold;
-    font-size: 1.125rem; /* 18px */
+    font-size: 1.125rem;
+    /* 18px */
     font-family: var(--brand-font-serif);
     margin: 0;
 }
 
 /* Title & Subtitle */
 .page-title {
-    font-size: clamp(1.5rem, 6vw, 1.75rem); /* Responsive font size */
+    font-size: clamp(1.5rem, 6vw, 1.75rem);
+    /* Responsive font size */
     font-weight: bold;
     margin-bottom: 0.625rem;
     color: var(--discussion-black);
@@ -90,7 +97,8 @@
 .slots-list {
     display: flex;
     flex-direction: column;
-    gap: 0.9375rem; /* 15px */
+    gap: 0.9375rem;
+    /* 15px */
 }
 
 .slot-card {
@@ -98,7 +106,8 @@
     border: 1px solid var(--discussion-border);
     cursor: pointer;
     display: flex;
-    flex-direction: column; /* Stack on mobile by default */
+    flex-direction: column;
+    /* Stack on mobile by default */
     gap: 1rem;
     text-align: left;
     transition: all 0.2s;

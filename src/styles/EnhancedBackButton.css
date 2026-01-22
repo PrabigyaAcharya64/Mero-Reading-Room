@@ -1,7 +1,7 @@
 .enhanced-back-button {
   position: fixed;
-  top: 24px;
-  left: 24px;
+  top: 70px;
+  left: 20px;
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -14,7 +14,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   padding: 0;
-  z-index: 9999;
+  z-index: 1100;
 }
 
 .enhanced-back-button:hover {
@@ -33,11 +33,10 @@
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .enhanced-back-button {
-    top: 16px;
-    left: 16px;
+    top: 70px;
+    left: 20px;
     width: 40px;
     height: 40px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 }
-
