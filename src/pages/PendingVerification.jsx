@@ -1,8 +1,15 @@
 import { useAuth } from '../auth/AuthProvider';
+import { useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
 
 function PendingVerification() {
   const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleReturnToLogin = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   return (
     <div className="auth-screen">
@@ -39,7 +46,7 @@ function PendingVerification() {
             type="button"
             variant="primary"
             style={{ marginTop: '26px' }}
-            onClick={() => logout()}
+            onClick={handleReturnToLogin}
           >
             Return to Login
           </Button>
