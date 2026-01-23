@@ -3,7 +3,9 @@ import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, setDoc, getDoc } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import EnhancedBackButton from '../../components/EnhancedBackButton';
+import FullScreenLoader from '../../components/FullScreenLoader';
+import Button from '../../components/Button';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/ReadingRoomManagement.css';
 
 const profileIcon =
@@ -69,7 +71,7 @@ const ELEMENT_CONFIG = {
     window: { width: 60, height: 60 }
 };
 
-function ReadingRoomManagement({ onBack }) {
+function ReadingRoomManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
     const { user, signOutUser } = useAuth();
     const displayName = user?.displayName || user?.email?.split('@')[0] || 'Admin';
 
@@ -293,7 +295,35 @@ function ReadingRoomManagement({ onBack }) {
         }
 
         try {
+            // Find the assignment to get the userId
+            const assignment = seatAssignments.find(a => a.id === assignmentId);
+
+            if (!assignment) {
+                setMessage('Assignment not found');
+                return;
+            }
+
+            // Delete the seat assignment document
             await deleteDoc(doc(db, 'seatAssignments', assignmentId));
+
+            // Update user document: clear active seat but PRESERVE registration/enrollment history
+            // This ensures returning users don't pay admission fee or re-fill enrollment form
+            const userDocRef = doc(db, 'users', assignment.userId);
+            await updateDoc(userDocRef, {
+                currentSeat: null,  // Clear active seat
+                nextPaymentDue: null,  // Clear active membership expiry
+                // PRESERVE these fields:
+                // - registrationCompleted: true (they've registered before)
+                // - enrollmentCompleted: true (they've filled enrollment form)
+                // - lastPaymentDate: keeps payment history
+                // - selectedRoomType: keeps room preference
+                updatedAt: new Date().toISOString(),
+                seatRemovedAt: new Date().toISOString(),  // Track when they were removed
+                seatRemovedBy: user?.uid || 'admin'  // Track who removed them
+            });
+
+            console.log('Seat unassigned. User can re-purchase without admission fee or re-enrollment:', assignment.userId);
+
             setMessage('Student unassigned successfully');
             loadSeatAssignments();
             setShowStudentModal(false);
@@ -477,13 +507,7 @@ function ReadingRoomManagement({ onBack }) {
 
     return (
         <div className="rrm-container">
-            <header className="rrm-header">
-                <div style={{ width: 44, height: 44, flexShrink: 0 }}>
-                    {onBack && <EnhancedBackButton onBack={onBack} />}
-                </div>
-                <h1 className="rrm-title">Reading Room Management</h1>
-                <div style={{ width: 44, flexShrink: 0 }}></div>
-            </header>
+            <PageHeader title="Reading Room Management" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
 
             <main className="rrm-body">
 
@@ -526,9 +550,17 @@ function ReadingRoomManagement({ onBack }) {
                             </select>
                         </label>
 
-                        <button type="submit" className="cta-button cta-button--primary" disabled={loading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                            {loading ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'Create Room'}
-                        </button>
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                            <Button
+                                type="submit"
+                                variant="primary"
+                                loading={loading}
+                                disabled={loading}
+                                style={{ minWidth: '200px' }}
+                            >
+                                Create Room
+                            </Button>
+                        </div>
                     </form>
                 </section>
 
@@ -698,9 +730,14 @@ function ReadingRoomManagement({ onBack }) {
                                                     required={elementForm.type === 'seat'}
                                                 />
                                             </label>
-                                            <button type="submit" className="cta-button cta-button--primary" disabled={loading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                                                {loading ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'Add'}
-                                            </button>
+                                            <Button
+                                                type="submit"
+                                                variant="primary"
+                                                loading={loading}
+                                                disabled={loading}
+                                            >
+                                                Add
+                                            </Button>
                                         </form>
                                     </section>
                                 )}

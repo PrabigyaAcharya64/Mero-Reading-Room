@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../auth/AuthProvider';
 import LoadingSpinner from '../components/LoadingSpinner';
+import Button from '../components/Button';
 import '../styles/Auth.css';
 
 function Login({ onSwitch }) {
@@ -49,9 +50,9 @@ function Login({ onSwitch }) {
       await resetPassword(resetEmail);
       setFeedback({ type: 'success', message: 'Password reset link sent! Check your inbox.' });
       setTimeout(() => {
-          setShowResetPassword(false);
-          setResetEmail('');
-          setFeedback({ type: '', message: '' });
+        setShowResetPassword(false);
+        setResetEmail('');
+        setFeedback({ type: '', message: '' });
       }, 3000);
     } catch (error) {
       setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'Unable to send reset email.' });
@@ -91,25 +92,25 @@ function Login({ onSwitch }) {
         </div>
 
         <div className="input-group anim-delay-2">
-            <div className="password-wrapper">
-                <input
-                    className="auth-input"
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    placeholder="Password"
-                    value={form.password}
-                    onChange={handleChange}
-                    required
-                    autoComplete="current-password"
-                />
-                <button 
-                    type="button" 
-                    className="password-toggle"
-                    onClick={() => setShowPassword(!showPassword)}
-                >
-                    {showPassword ? '👁️' : '👁️‍🗨️'}
-                </button>
-            </div>
+          <div className="password-wrapper">
+            <input
+              className="auth-input"
+              type={showPassword ? "text" : "password"}
+              name="password"
+              placeholder="Password"
+              value={form.password}
+              onChange={handleChange}
+              required
+              autoComplete="current-password"
+            />
+            <button
+              type="button"
+              className="password-toggle"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? '👁️' : '👁️‍🗨️'}
+            </button>
+          </div>
         </div>
 
         <div className="forgot-password anim-delay-3">
@@ -119,31 +120,39 @@ function Login({ onSwitch }) {
         </div>
 
         <div className="anim-delay-4">
-            <button type="submit" className="primary-btn" disabled={submitting}>
-            {submitting ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'LOGIN'}
-            </button>
+          <Button
+            type="submit"
+            variant="primary"
+            fullWidth
+            loading={submitting}
+            disabled={submitting}
+          >
+            LOGIN
+          </Button>
         </div>
 
         <div className="google-btn-container anim-delay-5">
-            <button
+          <Button
             type="button"
-            className="secondary-btn" /* Using secondary style for Google as per RN usually, or custom if needed to act as generic container */
+            variant="secondary"
+            fullWidth
             onClick={handleGoogle}
             disabled={submitting}
-            style={{borderColor: '#ddd', color: '#555'}}
-            >
-             Continue with Google
-            </button>
+            style={{ borderColor: '#ddd', color: '#555' }}
+          >
+            Continue with Google
+          </Button>
         </div>
 
         <div className="anim-delay-6">
-            <button
+          <Button
             type="button"
-            className="secondary-btn"
+            variant="ghost"
+            fullWidth
             onClick={onSwitch}
-            >
+          >
             SIGN UP
-            </button>
+          </Button>
         </div>
       </form>
 
@@ -160,7 +169,7 @@ function Login({ onSwitch }) {
           <div className="modal-content">
             <h3 className="modal-title">Reset Password</h3>
             <p className="modal-desc">Enter your email to receive a reset link.</p>
-            
+
             <input
               className="auth-input"
               type="email"
@@ -171,26 +180,26 @@ function Login({ onSwitch }) {
             />
 
             {feedback.message && feedback.type === 'error' && (
-                <p className="validation-text error" style={{marginTop: 10}}>{feedback.message}</p>
+              <p className="validation-text error" style={{ marginTop: 10 }}>{feedback.message}</p>
             )}
 
             <div className="modal-actions">
-                <button 
-                    className="modal-btn modal-btn-cancel" 
-                    onClick={() => {
-                        setShowResetPassword(false);
-                        setFeedback({type:'', message:''});
-                    }}
-                >
-                    Cancel
-                </button>
-                <button 
-                    className="modal-btn modal-btn-confirm" 
-                    onClick={handleResetPassword}
-                    disabled={resetting}
-                >
-                    {resetting ? 'Sending...' : 'Send Link'}
-                </button>
+              <button
+                className="modal-btn modal-btn-cancel"
+                onClick={() => {
+                  setShowResetPassword(false);
+                  setFeedback({ type: '', message: '' });
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="modal-btn modal-btn-confirm"
+                onClick={handleResetPassword}
+                disabled={resetting}
+              >
+                {resetting ? 'Sending...' : 'Send Link'}
+              </button>
             </div>
           </div>
         </div>

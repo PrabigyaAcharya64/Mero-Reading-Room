@@ -6,10 +6,11 @@ import { updateProfile } from 'firebase/auth';
 import { signOut } from 'firebase/auth';
 import LoadingSpinner from '../components/LoadingSpinner';
 import FullScreenLoader from '../components/FullScreenLoader';
+import Button from '../components/Button';
 import readingRoomIcon from '../assets/readingroom.svg';
 import hostelIcon from '../assets/hostel.svg';
 
-const IMGBB_API_KEY = 'f3836c3667cc5c73c64e1aa4f0849566';
+const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY;
 
 function AdditionalDetails({ onComplete }) {
   const { user } = useAuth();
@@ -17,7 +18,7 @@ function AdditionalDetails({ onComplete }) {
     name: '',
     dateOfBirth: '',
     phoneNumber: '',
-    interestedIn: [], // Changed to array for multiple selections
+    interestedIn: [],
   });
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -58,8 +59,6 @@ function AdditionalDetails({ onComplete }) {
     try {
 
       const usersRef = collection(db, 'users');
-      // Query must match the security rule: (limit <= 10 && filters.mrrNumber != null)
-      // We add `where('mrrNumber', '!=', '')` to satisfy the filter requirement.
       const q = query(
         usersRef,
         where('mrrNumber', '!=', ''),
@@ -84,7 +83,6 @@ function AdditionalDetails({ onComplete }) {
       setGeneratingMrr(false);
     } catch (error) {
       console.error('Error generating MRR number:', error);
-      // Fallback: use timestamp-based MRR number
       const timestamp = Date.now().toString().slice(-6);
       setMrrNumber(`MRR${timestamp}`);
       setGeneratingMrr(false);
@@ -114,7 +112,7 @@ function AdditionalDetails({ onComplete }) {
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) {
         setError('Photo size should be less than 5MB');
         return;
       }
@@ -157,7 +155,6 @@ function AdditionalDetails({ onComplete }) {
     e.preventDefault();
     setError('');
 
-    // Validate all fields
     if (!formData.name || !formData.name.trim()) {
       setError('Name is required');
       return;
@@ -209,6 +206,7 @@ function AdditionalDetails({ onComplete }) {
       await setDoc(userDocRef, {
         ...existingData,
         name: formData.name.trim(),
+        email: user.email, // Ensure email is saved
         dateOfBirth: formData.dateOfBirth,
         phoneNumber: formData.phoneNumber.trim(),
         interestedIn: Array.isArray(formData.interestedIn) ? formData.interestedIn : [formData.interestedIn],
@@ -360,14 +358,15 @@ function AdditionalDetails({ onComplete }) {
 
           {error && <p className="auth-feedback" style={{ color: '#f44' }}>{error}</p>}
 
-          <button
+          <Button
             type="submit"
-            className="cta-button cta-button--primary"
+            variant="primary"
+            loading={loading}
             disabled={loading}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
           >
-            {loading ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'Submit'}
-          </button>
+            Submit
+          </Button>
         </form>
       </div>
     </div>

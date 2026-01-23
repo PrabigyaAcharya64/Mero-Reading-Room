@@ -3,9 +3,11 @@ import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { doc, getDoc, setDoc, collection, getDocs, addDoc, query, where } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import EnhancedBackButton from '../../components/EnhancedBackButton';
+import PageHeader from '../../components/PageHeader';
+import { generateAndSendInvoice } from './ReadingRoomInvoice';
+import '../../styles/StandardLayout.css';
 
-function ReadingRoomBuy({ onBack, selectedOption, onComplete }) {
+function ReadingRoomBuy({ onBack, selectedOption, onComplete, isSidebarOpen, onToggleSidebar }) {
     const { user, userBalance, deductBalance } = useAuth();
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
@@ -105,7 +107,7 @@ function ReadingRoomBuy({ onBack, selectedOption, onComplete }) {
             });
 
             // 3.5 Record Transaction in 'transactions' collection for Dashboard
-            await addDoc(collection(db, 'transactions'), {
+            const transactionRef = await addDoc(collection(db, 'transactions'), {
                 type: 'reading_room',
                 amount: totalAmount,
                 details: `${selectedOption.roomType === 'ac' ? 'AC' : 'Non-AC'} Room Fee`,
@@ -132,6 +134,20 @@ function ReadingRoomBuy({ onBack, selectedOption, onComplete }) {
                 }
             }, { merge: true });
 
+            // 5. Generate and send invoice via email
+            try {
+                const invoiceResult = await generateAndSendInvoice(user.uid, transactionRef.id);
+                if (invoiceResult.success) {
+                    console.log('Invoice sent successfully:', invoiceResult.message);
+                } else {
+                    console.error('Failed to send invoice:', invoiceResult.error);
+                    // Don't fail the entire payment if invoice fails
+                }
+            } catch (invoiceError) {
+                console.error('Invoice generation error:', invoiceError);
+                // Continue with payment flow even if invoice fails
+            }
+
             // Redirect based on whether enrollment is needed
             const needsEnrollment = !userData?.registrationCompleted;
             onComplete(needsEnrollment);
@@ -152,139 +168,137 @@ function ReadingRoomBuy({ onBack, selectedOption, onComplete }) {
     }
 
     return (
-        <div style={{ minHeight: '100vh', backgroundColor: '#fff', padding: '20px' }}>
-            {onBack && <EnhancedBackButton onBack={onBack} />}
-            <header className="subpage-header">
-                <h1 className="subpage-header__title">Confirm Payment</h1>
-                <div className="subpage-header__spacer"></div>
-            </header>
+        <div className="std-container">
+            <PageHeader title="Confirm Payment" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
 
-            <div style={{ maxWidth: '900px', margin: '0 auto', border: '1px solid #333', padding: '40px' }}>
-                <div style={{ textAlign: 'center', marginBottom: '40px', borderBottom: '1px solid #eee', paddingBottom: '20px' }}>
-                    <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#000', marginBottom: '10px', textTransform: 'uppercase' }}>
-                        Confirm Payment
-                    </h1>
-                    <p style={{ fontSize: '14px', color: '#666' }}>
-                        Review details and pay using your wallet balance
-                    </p>
-                </div>
+            <main className="std-body">
+                <div style={{ maxWidth: '900px', margin: '0 auto', border: '1px solid #333', padding: '40px' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '40px', borderBottom: '1px solid #eee', paddingBottom: '20px' }}>
+                        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#000', marginBottom: '10px', textTransform: 'uppercase' }}>
+                            Confirm Payment
+                        </h1>
+                        <p style={{ fontSize: '14px', color: '#666' }}>
+                            Review details and pay using your wallet balance
+                        </p>
+                    </div>
 
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                    gap: '40px',
-                    marginBottom: '40px'
-                }}>
-                    {/* Order Summary */}
-                    <div>
-                        <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', color: '#000', textTransform: 'uppercase' }}>
-                            Order Summary
-                        </h2>
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                        gap: '40px',
+                        marginBottom: '40px'
+                    }}>
+                        {/* Order Summary */}
+                        <div>
+                            <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', color: '#000', textTransform: 'uppercase' }}>
+                                Order Summary
+                            </h2>
 
-                        <div style={{ border: '1px solid #eee', padding: '20px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
-                                <span style={{ color: '#666' }}>Room Type</span>
-                                <span style={{ fontWeight: 'bold' }}>{selectedOption.roomType === 'ac' ? 'AC Room' : 'Non-AC Room'}</span>
-                            </div>
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
-                                <span style={{ color: '#666' }}>Monthly Fee</span>
-                                <span>रु {selectedOption.monthlyFee.toLocaleString()}</span>
-                            </div>
-
-                            {selectedOption.isFirstTime && (
+                            <div style={{ border: '1px solid #eee', padding: '20px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
-                                    <span style={{ color: '#666' }}>Registration Fee</span>
-                                    <span>रु {selectedOption.registrationFee.toLocaleString()}</span>
+                                    <span style={{ color: '#666' }}>Room Type</span>
+                                    <span style={{ fontWeight: 'bold' }}>{selectedOption.roomType === 'ac' ? 'AC Room' : 'Non-AC Room'}</span>
                                 </div>
-                            )}
 
-                            <div style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                marginTop: '20px',
-                                paddingTop: '20px',
-                                borderTop: '1px solid #333',
-                                fontSize: '18px',
-                                fontWeight: 'bold'
-                            }}>
-                                <span>Total Amount</span>
-                                <span>रु {totalAmount.toLocaleString()}</span>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+                                    <span style={{ color: '#666' }}>Monthly Fee</span>
+                                    <span>रु {selectedOption.monthlyFee.toLocaleString()}</span>
+                                </div>
+
+                                {selectedOption.isFirstTime && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+                                        <span style={{ color: '#666' }}>Registration Fee</span>
+                                        <span>रु {selectedOption.registrationFee.toLocaleString()}</span>
+                                    </div>
+                                )}
+
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    marginTop: '20px',
+                                    paddingTop: '20px',
+                                    borderTop: '1px solid #333',
+                                    fontSize: '18px',
+                                    fontWeight: 'bold'
+                                }}>
+                                    <span>Total Amount</span>
+                                    <span>रु {totalAmount.toLocaleString()}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Payment Section */}
-                    <div>
-                        <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', color: '#000', textTransform: 'uppercase' }}>
-                            Payment
-                        </h2>
+                        {/* Payment Section */}
+                        <div>
+                            <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', color: '#000', textTransform: 'uppercase' }}>
+                                Payment
+                            </h2>
 
-                        <div style={{ border: '1px solid #eee', padding: '20px', backgroundColor: '#f9f9f9' }}>
-                            <div style={{ marginBottom: '20px' }}>
-                                <div style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>Your Current Balance</div>
-                                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#000' }}>
-                                    रु {userBalance.toLocaleString()}
+                            <div style={{ border: '1px solid #eee', padding: '20px', backgroundColor: '#f9f9f9' }}>
+                                <div style={{ marginBottom: '20px' }}>
+                                    <div style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>Your Current Balance</div>
+                                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#000' }}>
+                                        रु {userBalance.toLocaleString()}
+                                    </div>
                                 </div>
+
+                                {hasInsufficientBalance ? (
+                                    <div style={{
+                                        padding: '15px',
+                                        backgroundColor: '#ffebee',
+                                        color: '#c62828',
+                                        fontSize: '14px',
+                                        marginBottom: '20px',
+                                        border: '1px solid #ffcdd2'
+                                    }}>
+                                        Insufficient balance. You need रु {(totalAmount - userBalance).toLocaleString()} more.
+                                    </div>
+                                ) : (
+                                    <div style={{
+                                        padding: '15px',
+                                        backgroundColor: '#e8f5e9',
+                                        color: '#2e7d32',
+                                        fontSize: '14px',
+                                        marginBottom: '20px',
+                                        border: '1px solid #c8e6c9'
+                                    }}>
+                                        Remaining balance after payment: <strong>रु {(userBalance - totalAmount).toLocaleString()}</strong>
+                                    </div>
+                                )}
+
+                                {error && (
+                                    <div style={{
+                                        padding: '10px',
+                                        backgroundColor: '#ffebee',
+                                        color: '#c62828',
+                                        fontSize: '14px',
+                                        marginBottom: '15px'
+                                    }}>
+                                        {error}
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={handlePayment}
+                                    disabled={processing || hasInsufficientBalance}
+                                    style={{
+                                        width: '100%',
+                                        padding: '15px',
+                                        backgroundColor: processing || hasInsufficientBalance ? '#ccc' : '#000',
+                                        color: 'white',
+                                        border: 'none',
+                                        fontSize: '16px',
+                                        fontWeight: 'bold',
+                                        cursor: processing || hasInsufficientBalance ? 'not-allowed' : 'pointer',
+                                        textTransform: 'uppercase'
+                                    }}
+                                >
+                                    {processing ? 'Processing...' : 'Pay Now'}
+                                </button>
                             </div>
-
-                            {hasInsufficientBalance ? (
-                                <div style={{
-                                    padding: '15px',
-                                    backgroundColor: '#ffebee',
-                                    color: '#c62828',
-                                    fontSize: '14px',
-                                    marginBottom: '20px',
-                                    border: '1px solid #ffcdd2'
-                                }}>
-                                    Insufficient balance. You need रु {(totalAmount - userBalance).toLocaleString()} more.
-                                </div>
-                            ) : (
-                                <div style={{
-                                    padding: '15px',
-                                    backgroundColor: '#e8f5e9',
-                                    color: '#2e7d32',
-                                    fontSize: '14px',
-                                    marginBottom: '20px',
-                                    border: '1px solid #c8e6c9'
-                                }}>
-                                    Remaining balance after payment: <strong>रु {(userBalance - totalAmount).toLocaleString()}</strong>
-                                </div>
-                            )}
-
-                            {error && (
-                                <div style={{
-                                    padding: '10px',
-                                    backgroundColor: '#ffebee',
-                                    color: '#c62828',
-                                    fontSize: '14px',
-                                    marginBottom: '15px'
-                                }}>
-                                    {error}
-                                </div>
-                            )}
-
-                            <button
-                                onClick={handlePayment}
-                                disabled={processing || hasInsufficientBalance}
-                                style={{
-                                    width: '100%',
-                                    padding: '15px',
-                                    backgroundColor: processing || hasInsufficientBalance ? '#ccc' : '#000',
-                                    color: 'white',
-                                    border: 'none',
-                                    fontSize: '16px',
-                                    fontWeight: 'bold',
-                                    cursor: processing || hasInsufficientBalance ? 'not-allowed' : 'pointer',
-                                    textTransform: 'uppercase'
-                                }}
-                            >
-                                {processing ? 'Processing...' : 'Pay Now'}
-                            </button>
                         </div>
                     </div>
                 </div>
-            </div>
+            </main>
         </div>
     );
 }

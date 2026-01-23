@@ -12,6 +12,7 @@ import Sidebar from '../../components/Sidebar';
 import Dashboard from './Dashboard';
 import { collection, query, where, onSnapshot, deleteDoc, doc, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import '../../styles/StandardLayout.css';
 
 function AdminLanding() {
   const { user, signOutUser } = useAuth();
@@ -22,7 +23,7 @@ function AdminLanding() {
   // Let's default to closed for "full page" experience initially or responsive?
   // I'll default to closed to ensure "page completely" is the first impression if they want that.
   // Or better, checking window width. But for simplicity, I'll default false (Closed).
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Default to open for dashboard
   const [currentView, setCurrentView] = useState('dashboard');
 
   const [unreadCount, setUnreadCount] = useState(0);
@@ -84,10 +85,15 @@ function AdminLanding() {
     }
   };
 
-  // Navigate and Close
+  // Navigate and manage sidebar state
   const handleNavigate = (view) => {
     setCurrentView(view);
-    setIsSidebarOpen(false);
+    // Keep sidebar open on dashboard, close on other pages
+    if (view === 'dashboard') {
+      setIsSidebarOpen(true);
+    } else {
+      setIsSidebarOpen(false);
+    }
   };
 
   // ... (keep helper functions)
@@ -95,52 +101,28 @@ function AdminLanding() {
   const renderContent = () => {
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard onNavigate={handleNavigate} />;
+        return <Dashboard onNavigate={handleNavigate} isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
       case 'user-management':
-        return <UserManagement onNavigate={handleNavigate} />;
+        return <UserManagement onNavigate={handleNavigate} isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
       case 'hostel':
-        return <HostelManagement />;
+        return <HostelManagement isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
       case 'new-users':
         return <NewUsers onBack={() => handleNavigate('user-management')} />;
       case 'canteen':
-        return <CanteenAdminLanding />;
+        return <CanteenAdminLanding isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
       case 'messages':
-        return <AdminMessages />;
+        return <AdminMessages isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
       case 'create-announcement':
-        return <CreateAnnouncement />;
+        return <CreateAnnouncement isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
       case 'reading-rooms':
-        return <ReadingRoomManagement />;
+        return <ReadingRoomManagement isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
       default:
-        return <Dashboard onNavigate={handleNavigate} />;
+        return <Dashboard onNavigate={handleNavigate} isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
     }
   };
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f9fafb', position: 'relative' }}>
-
-      {/* Hamburger Button */}
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        style={{
-          position: 'fixed',
-          top: '70px',
-          left: '20px',
-          zIndex: 1100,
-          background: '#fff',
-          border: '1px solid #e5e7eb',
-          borderRadius: '8px',
-          padding: '8px',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-          transition: 'all 0.3s ease'
-        }}
-        aria-label="Toggle Sidebar"
-      >
-        {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
-      </button>
 
       <Sidebar
         currentView={currentView}

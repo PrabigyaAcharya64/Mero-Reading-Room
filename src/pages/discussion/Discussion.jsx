@@ -3,8 +3,9 @@ import { db } from '../../lib/firebase';
 import { doc, runTransaction, onSnapshot, collection, query, where, getDocs, getDoc, updateDoc, arrayUnion, deleteDoc, setDoc } from 'firebase/firestore';
 import { useAuth } from '../../auth/AuthProvider';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import EnhancedBackButton from '../../components/EnhancedBackButton';
 import '../../styles/Discussion.css';
+import '../../styles/StandardLayout.css';
+import PageHeader from '../../components/PageHeader';
 
 const SLOTS = [
     { id: '06', label: '6:00 AM - 9:00 AM', startHour: 6 },
@@ -331,14 +332,10 @@ const Discussion = ({ onBack }) => {
     // Render List of Slots
     if (viewMode === 'list') {
         return (
-            <div className="discussion-page">
-                {onBack && <EnhancedBackButton onBack={onBack} />}
-                <header className="subpage-header">
-                    <h1 className="subpage-header__title">Discussion Room</h1>
-                    <div className="subpage-header__spacer"></div>
-                </header>
+            <div className="std-container">
+                <PageHeader title="Discussion Room" onBack={onBack} />
 
-                <div className="discussion-container">
+                <main className="std-body">
                     <div className="discussion-card">
                         <h1 className="page-title">
                             Discussion Room Slots
@@ -380,7 +377,7 @@ const Discussion = ({ onBack }) => {
                             })}
                         </div>
                     </div>
-                </div>
+                </main>
             </div>
         );
     }
@@ -393,14 +390,10 @@ const Discussion = ({ onBack }) => {
     const isMyTeam = isBooked && (booking.bookedBy === user.uid || (booking.members && booking.members.some(m => m.uid === user.uid)));
 
     return (
-        <div className="discussion-page">
-            <EnhancedBackButton onBack={() => setViewMode('list')} />
-            <header className="subpage-header">
-                <h1 className="subpage-header__title">Discussion Room</h1>
-                <div className="subpage-header__spacer"></div>
-            </header>
+        <div className="std-container">
+            <PageHeader title="Discussion Room" onBack={() => setViewMode('list')} />
 
-            <div className="discussion-container">
+            <main className="std-body">
                 <div className="discussion-card">
                     <h2 className="page-title">{selectedSlot?.label}</h2>
                     <p className="page-subtitle">
@@ -553,7 +546,7 @@ const Discussion = ({ onBack }) => {
                         </div>
                     )}
                 </div>
-            </div>
+            </main>
         </div>
     );
 };

@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, doc, setDoc, updateDoc, addDoc, deleteDoc, serverTimestamp, where, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import PageHeader from '../../components/PageHeader';
+import FullScreenLoader from '../../components/FullScreenLoader';
 import '../../styles/DryInventory.css';
+import '../../styles/StandardLayout.css';
 
-const IMGBB_API_KEY = 'f3836c3667cc5c73c64e1aa4f0849566';
+const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY;
 
 const DryInventory = ({ onBack }) => {
     const [inventoryItems, setInventoryItems] = useState([]);
@@ -298,15 +300,11 @@ const DryInventory = ({ onBack }) => {
     };
 
     if (loading) {
-        return (
-            <div className="inventory-loading">
-                <p>Loading...</p>
-            </div>
-        );
+        return <FullScreenLoader text="Loading dry inventory..." />;
     }
 
     return (
-        <div className="dry-inventory-page">
+        <div className="std-container">
             <PageHeader title="Dry Inventory" onBack={onBack} rightElement={
                 <button
                     className="add-item-btn-simple"
@@ -316,326 +314,329 @@ const DryInventory = ({ onBack }) => {
                 </button>
             } />
 
-            <div className="inventory-table-container simple-container">
-                <table className="inventory-table-simple">
-                    <thead>
-                        <tr>
-                            <th>Image</th>
-                            <th>Item Name</th>
-                            <th>Category</th>
-                            <th>Status</th>
-                            <th>Stock</th>
-                            <th>Price</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {inventoryItems.map((item) => {
-                            const isSoldOut = item.stockCount === 0;
-                            return (
-                                <tr key={item.id} className={`inventory-row-simple ${isSoldOut ? 'row-alert' : ''}`}>
-                                    <td>
-                                        <div className="params-cell-image">
-                                            {item.imageURL ? (
-                                                <img
-                                                    src={item.imageURL}
-                                                    alt={item.itemName}
-                                                    onError={(e) => {
-                                                        e.target.style.display = 'none';
-                                                        e.target.parentElement.classList.add('image-error');
-                                                    }}
-                                                />
-                                            ) : (
-                                                <div className="no-image-placeholder">{item.itemName.charAt(0)}</div>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="item-name-cell">
-                                        {item.itemName}
-                                    </td>
-                                    <td>{item.category}</td>
-                                    <td>
-                                        {menuItemIds.has(item.id) && (
-                                            <span className="status-badge-simple success">IN MENU</span>
-                                        )}
-                                        {isSoldOut && (
-                                            <span className="status-badge-simple danger" style={{ marginLeft: '0.5rem' }}>SOLD OUT</span>
-                                        )}
-                                    </td>
-                                    <td className="qty-cell">
-                                        <span className={`qty-value-simple ${isSoldOut ? 'text-danger' : ''}`}>
-                                            {item.stockCount}
-                                        </span>
-                                    </td>
-                                    <td>Rs. {item.salePrice}</td>
-                                    <td>
+            <main className="std-body">
 
-                                        <div className="action-buttons-simple">
-                                            {menuItemIds.has(item.id) ? (
+                <div className="inventory-table-container simple-container">
+                    <table className="inventory-table-simple">
+                        <thead>
+                            <tr>
+                                <th>Image</th>
+                                <th>Item Name</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Stock</th>
+                                <th>Price</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {inventoryItems.map((item) => {
+                                const isSoldOut = item.stockCount === 0;
+                                return (
+                                    <tr key={item.id} className={`inventory-row-simple ${isSoldOut ? 'row-alert' : ''}`}>
+                                        <td>
+                                            <div className="params-cell-image">
+                                                {item.imageURL ? (
+                                                    <img
+                                                        src={item.imageURL}
+                                                        alt={item.itemName}
+                                                        onError={(e) => {
+                                                            e.target.style.display = 'none';
+                                                            e.target.parentElement.classList.add('image-error');
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div className="no-image-placeholder">{item.itemName.charAt(0)}</div>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="item-name-cell">
+                                            {item.itemName}
+                                        </td>
+                                        <td>{item.category}</td>
+                                        <td>
+                                            {menuItemIds.has(item.id) && (
+                                                <span className="status-badge-simple success">IN MENU</span>
+                                            )}
+                                            {isSoldOut && (
+                                                <span className="status-badge-simple danger" style={{ marginLeft: '0.5rem' }}>SOLD OUT</span>
+                                            )}
+                                        </td>
+                                        <td className="qty-cell">
+                                            <span className={`qty-value-simple ${isSoldOut ? 'text-danger' : ''}`}>
+                                                {item.stockCount}
+                                            </span>
+                                        </td>
+                                        <td>Rs. {item.salePrice}</td>
+                                        <td>
+
+                                            <div className="action-buttons-simple">
+                                                {menuItemIds.has(item.id) ? (
+                                                    <button
+                                                        className="sync-btn-simple"
+                                                        onClick={() => handleRemoveFromMenu(item)}
+                                                        style={{
+                                                            width: 'auto',
+                                                            margin: 0,
+                                                            padding: '0.4rem 0.8rem',
+                                                            background: '#000',
+                                                            color: '#fff'
+                                                        }}
+                                                        title="Remove from Menu"
+                                                    >
+                                                        In Menu
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        className="sync-btn-simple"
+                                                        onClick={() => handleOpenSync(item)}
+                                                        disabled={isSoldOut}
+                                                        style={{ width: 'auto', margin: 0, padding: '0.4rem 0.8rem' }}
+                                                    >
+                                                        Add to Menu
+                                                    </button>
+                                                )}
+
                                                 <button
-                                                    className="sync-btn-simple"
-                                                    onClick={() => handleRemoveFromMenu(item)}
+                                                    className="edit-icon-btn"
+                                                    onClick={() => handleEditClick(item)}
+                                                    title="Edit Item"
                                                     style={{
-                                                        width: 'auto',
-                                                        margin: 0,
-                                                        padding: '0.4rem 0.8rem',
-                                                        background: '#000',
-                                                        color: '#fff'
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        padding: '0.4rem',
+                                                        marginRight: '0.2rem'
                                                     }}
-                                                    title="Remove from Menu"
                                                 >
-                                                    In Menu
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '1.2rem', height: '1.2rem' }}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                                                    </svg>
                                                 </button>
-                                            ) : (
+
                                                 <button
-                                                    className="sync-btn-simple"
-                                                    onClick={() => handleOpenSync(item)}
-                                                    disabled={isSoldOut}
-                                                    style={{ width: 'auto', margin: 0, padding: '0.4rem 0.8rem' }}
+                                                    className="delete-icon-btn"
+                                                    onClick={() => handleDelete(item.id, item.itemName)}
+                                                    title="Delete Item"
                                                 >
-                                                    Add to Menu
+                                                    &times;
                                                 </button>
-                                            )}
-
-                                            <button
-                                                className="edit-icon-btn"
-                                                onClick={() => handleEditClick(item)}
-                                                title="Edit Item"
-                                                style={{
-                                                    background: 'none',
-                                                    border: 'none',
-                                                    cursor: 'pointer',
-                                                    padding: '0.4rem',
-                                                    marginRight: '0.2rem'
-                                                }}
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '1.2rem', height: '1.2rem' }}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                                                </svg>
-                                            </button>
-
-                                            <button
-                                                className="delete-icon-btn"
-                                                onClick={() => handleDelete(item.id, item.itemName)}
-                                                title="Delete Item"
-                                            >
-                                                &times;
-                                            </button>
-                                        </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                            {inventoryItems.length === 0 && (
+                                <tr>
+                                    <td colSpan="7" className="empty-state-simple">
+                                        No items found.
                                     </td>
                                 </tr>
-                            );
-                        })}
-                        {inventoryItems.length === 0 && (
-                            <tr>
-                                <td colSpan="7" className="empty-state-simple">
-                                    No items found.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-
-            {/* --- Modals --- */}
-
-            {showSyncModal && (
-                <div className="modal-backdrop-simple">
-                    <div className="modal-simple">
-                        <div className="modal-header-simple">
-                            <h2>Sync to Menu</h2>
-                            <button className="close-btn-simple" onClick={handleCloseSync}>&times;</button>
-                        </div>
-                        <form onSubmit={handleConfirmSync}>
-                            <div className="form-group-simple">
-                                <label>Display Price (Rs.)</label>
-                                <input
-                                    type="number"
-                                    name="displayPrice"
-                                    value={syncFormData.displayPrice}
-                                    onChange={handleSyncInputChange}
-                                    required
-                                />
-                            </div>
-                            <div className="form-group-simple">
-                                <label>Description</label>
-                                <textarea
-                                    name="productDescription"
-                                    value={syncFormData.productDescription}
-                                    onChange={handleSyncInputChange}
-                                    rows="3"
-                                />
-                            </div>
-                            <div className="form-group-simple">
-                                <label>Image URL (Optional override)</label>
-                                <input
-                                    type="url"
-                                    name="imageURL"
-                                    value={syncFormData.imageURL}
-                                    onChange={handleSyncInputChange}
-                                />
-                            </div>
-
-                            <div className="modal-actions-simple">
-                                <button type="button" className="btn-simple secondary" onClick={handleCloseSync}>Cancel</button>
-                                <button type="submit" className="btn-simple primary">Publish</button>
-                            </div>
-                        </form>
-                    </div>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
-            )}
 
-            {showEditModal && (
-                <div className="modal-backdrop-simple">
-                    <div className="modal-simple">
-                        <div className="modal-header-simple">
-                            <h2>Edit Product</h2>
-                            <button className="close-btn-simple" onClick={() => setShowEditModal(false)}>&times;</button>
+                {/* --- Modals --- */}
+
+                {showSyncModal && (
+                    <div className="modal-backdrop-simple">
+                        <div className="modal-simple">
+                            <div className="modal-header-simple">
+                                <h2>Sync to Menu</h2>
+                                <button className="close-btn-simple" onClick={handleCloseSync}>&times;</button>
+                            </div>
+                            <form onSubmit={handleConfirmSync}>
+                                <div className="form-group-simple">
+                                    <label>Display Price (Rs.)</label>
+                                    <input
+                                        type="number"
+                                        name="displayPrice"
+                                        value={syncFormData.displayPrice}
+                                        onChange={handleSyncInputChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group-simple">
+                                    <label>Description</label>
+                                    <textarea
+                                        name="productDescription"
+                                        value={syncFormData.productDescription}
+                                        onChange={handleSyncInputChange}
+                                        rows="3"
+                                    />
+                                </div>
+                                <div className="form-group-simple">
+                                    <label>Image URL (Optional override)</label>
+                                    <input
+                                        type="url"
+                                        name="imageURL"
+                                        value={syncFormData.imageURL}
+                                        onChange={handleSyncInputChange}
+                                    />
+                                </div>
+
+                                <div className="modal-actions-simple">
+                                    <button type="button" className="btn-simple secondary" onClick={handleCloseSync}>Cancel</button>
+                                    <button type="submit" className="btn-simple primary">Publish</button>
+                                </div>
+                            </form>
                         </div>
-                        <form onSubmit={handleUpdateItem}>
-                            <div className="form-group-simple">
-                                <label>Product Name</label>
-                                <input
-                                    type="text"
-                                    value={editFormData.itemName}
-                                    onChange={(e) => setEditFormData({ ...editFormData, itemName: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            <div className="form-row-simple">
-                                <div className="form-group-simple">
-                                    <label>Price (Rs)</label>
-                                    <input
-                                        type="number"
-                                        value={editFormData.salePrice}
-                                        onChange={(e) => setEditFormData({ ...editFormData, salePrice: e.target.value })}
-                                        required
-                                        min="0"
-                                    />
-                                </div>
-                                <div className="form-group-simple">
-                                    <label>Stock</label>
-                                    <input
-                                        type="number"
-                                        value={editFormData.stockCount}
-                                        onChange={(e) => setEditFormData({ ...editFormData, stockCount: e.target.value })}
-                                        required
-                                        min="0"
-                                    />
-                                </div>
-                            </div>
-                            <div className="form-group-simple">
-                                <label>Category</label>
-                                <select
-                                    value={editFormData.category}
-                                    onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
-                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #000' }}
-                                >
-                                    <option value="Snacks">Snacks</option>
-                                    <option value="Drinks">Drinks</option>
-                                    <option value="Stationery">Stationery</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                            <div className="modal-actions-simple">
-                                <button type="button" className="btn-simple secondary" onClick={() => setShowEditModal(false)}>Cancel</button>
-                                <button
-                                    type="submit"
-                                    className="btn-simple primary"
-                                    disabled={uploading}
-                                >
-                                    {uploading ? 'Updating...' : 'Save Changes'}
-                                </button>
-                            </div>
-                        </form>
                     </div>
-                </div>
-            )}
+                )}
 
-            {showAddModal && (
-                <div className="modal-backdrop-simple">
-                    <div className="modal-simple">
-                        <div className="modal-header-simple">
-                            <h2>Add New Product</h2>
-                            <button className="close-btn-simple" onClick={() => setShowAddModal(false)}>&times;</button>
+                {showEditModal && (
+                    <div className="modal-backdrop-simple">
+                        <div className="modal-simple">
+                            <div className="modal-header-simple">
+                                <h2>Edit Product</h2>
+                                <button className="close-btn-simple" onClick={() => setShowEditModal(false)}>&times;</button>
+                            </div>
+                            <form onSubmit={handleUpdateItem}>
+                                <div className="form-group-simple">
+                                    <label>Product Name</label>
+                                    <input
+                                        type="text"
+                                        value={editFormData.itemName}
+                                        onChange={(e) => setEditFormData({ ...editFormData, itemName: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-row-simple">
+                                    <div className="form-group-simple">
+                                        <label>Price (Rs)</label>
+                                        <input
+                                            type="number"
+                                            value={editFormData.salePrice}
+                                            onChange={(e) => setEditFormData({ ...editFormData, salePrice: e.target.value })}
+                                            required
+                                            min="0"
+                                        />
+                                    </div>
+                                    <div className="form-group-simple">
+                                        <label>Stock</label>
+                                        <input
+                                            type="number"
+                                            value={editFormData.stockCount}
+                                            onChange={(e) => setEditFormData({ ...editFormData, stockCount: e.target.value })}
+                                            required
+                                            min="0"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="form-group-simple">
+                                    <label>Category</label>
+                                    <select
+                                        value={editFormData.category}
+                                        onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
+                                        style={{ width: '100%', padding: '0.5rem', border: '1px solid #000' }}
+                                    >
+                                        <option value="Snacks">Snacks</option>
+                                        <option value="Drinks">Drinks</option>
+                                        <option value="Stationery">Stationery</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div className="modal-actions-simple">
+                                    <button type="button" className="btn-simple secondary" onClick={() => setShowEditModal(false)}>Cancel</button>
+                                    <button
+                                        type="submit"
+                                        className="btn-simple primary"
+                                        disabled={uploading}
+                                    >
+                                        {uploading ? 'Updating...' : 'Save Changes'}
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-                        <form onSubmit={handleAddItem}>
-                            <div className="form-group-simple">
-                                <label>Product Name</label>
-                                <input
-                                    type="text"
-                                    value={newItem.itemName}
-                                    onChange={(e) => setNewItem({ ...newItem, itemName: e.target.value })}
-                                    required
-                                />
-                            </div>
-
-                            {/* Improved Image Upload */}
-                            <div className="form-group-simple">
-                                <label>Product Image</label>
-                                <div className="file-input-wrapper">
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleFileChange}
-                                        id="product-image-upload"
-                                        className="hidden-file-input"
-                                    />
-                                    <label htmlFor="product-image-upload" className="file-upload-label">
-                                        {imageFile ? imageFile.name : 'Choose Image (ImgBB)...'}
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div className="form-row-simple">
-                                <div className="form-group-simple">
-                                    <label>Price (Rs)</label>
-                                    <input
-                                        type="number"
-                                        value={newItem.salePrice}
-                                        onChange={(e) => setNewItem({ ...newItem, salePrice: e.target.value })}
-                                        required
-                                        min="0"
-                                    />
-                                </div>
-                                <div className="form-group-simple">
-                                    <label>Stock</label>
-                                    <input
-                                        type="number"
-                                        value={newItem.stockCount}
-                                        onChange={(e) => setNewItem({ ...newItem, stockCount: e.target.value })}
-                                        required
-                                        min="0"
-                                    />
-                                </div>
-                            </div>
-                            <div className="form-group-simple">
-                                <label>Category</label>
-                                <select
-                                    value={newItem.category}
-                                    onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #000' }}
-                                >
-                                    <option value="Snacks">Snacks</option>
-                                    <option value="Drinks">Drinks</option>
-                                    <option value="Stationery">Stationery</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                            <div className="modal-actions-simple">
-                                <button type="button" className="btn-simple secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
-                                <button
-                                    type="submit"
-                                    className="btn-simple primary"
-                                    disabled={uploading}
-                                >
-                                    {uploading ? 'Uploading...' : 'Add Product'}
-                                </button>
-                            </div>
-                        </form>
                     </div>
-                </div>
-            )}
+                )}
+
+                {showAddModal && (
+                    <div className="modal-backdrop-simple">
+                        <div className="modal-simple">
+                            <div className="modal-header-simple">
+                                <h2>Add New Product</h2>
+                                <button className="close-btn-simple" onClick={() => setShowAddModal(false)}>&times;</button>
+                            </div>
+                            <form onSubmit={handleAddItem}>
+                                <div className="form-group-simple">
+                                    <label>Product Name</label>
+                                    <input
+                                        type="text"
+                                        value={newItem.itemName}
+                                        onChange={(e) => setNewItem({ ...newItem, itemName: e.target.value })}
+                                        required
+                                    />
+                                </div>
+
+                                {/* Improved Image Upload */}
+                                <div className="form-group-simple">
+                                    <label>Product Image</label>
+                                    <div className="file-input-wrapper">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleFileChange}
+                                            id="product-image-upload"
+                                            className="hidden-file-input"
+                                        />
+                                        <label htmlFor="product-image-upload" className="file-upload-label">
+                                            {imageFile ? imageFile.name : 'Choose Image (ImgBB)...'}
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="form-row-simple">
+                                    <div className="form-group-simple">
+                                        <label>Price (Rs)</label>
+                                        <input
+                                            type="number"
+                                            value={newItem.salePrice}
+                                            onChange={(e) => setNewItem({ ...newItem, salePrice: e.target.value })}
+                                            required
+                                            min="0"
+                                        />
+                                    </div>
+                                    <div className="form-group-simple">
+                                        <label>Stock</label>
+                                        <input
+                                            type="number"
+                                            value={newItem.stockCount}
+                                            onChange={(e) => setNewItem({ ...newItem, stockCount: e.target.value })}
+                                            required
+                                            min="0"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="form-group-simple">
+                                    <label>Category</label>
+                                    <select
+                                        value={newItem.category}
+                                        onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                                        style={{ width: '100%', padding: '0.5rem', border: '1px solid #000' }}
+                                    >
+                                        <option value="Snacks">Snacks</option>
+                                        <option value="Drinks">Drinks</option>
+                                        <option value="Stationery">Stationery</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div className="modal-actions-simple">
+                                    <button type="button" className="btn-simple secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
+                                    <button
+                                        type="submit"
+                                        className="btn-simple primary"
+                                        disabled={uploading}
+                                    >
+                                        {uploading ? 'Uploading...' : 'Add Product'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+            </main>
         </div>
     );
 };

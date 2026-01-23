@@ -1,17 +1,13 @@
 import React from 'react';
-import EnhancedBackButton from '../../components/EnhancedBackButton';
+import PageHeader from '../../components/PageHeader';
+import '../../styles/StandardLayout.css';
 
-function HostelManagement({ onBack }) {
+function HostelManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
     return (
-        <div className="landing-screen">
-            {onBack && <EnhancedBackButton onBack={onBack} />}
-            <header className="landing-header">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-                    <h2 style={{ margin: 0 }}>Hostel Management</h2>
-                </div>
-            </header>
+        <div className="std-container">
+            <PageHeader title="Hostel Management" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
 
-            <main className="landing-body">
+            <main className="std-body">
                 <div style={{
                     display: 'flex',
                     justifyContent: 'center',

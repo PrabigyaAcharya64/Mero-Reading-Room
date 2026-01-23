@@ -9,7 +9,9 @@ import EnhancedBackButton from '../../components/EnhancedBackButton';
 import CanteenMenu from "./CanteenMenu";
 import CanteenCart from './CanteenCart';
 import ClientOrderHistory from './ClientOrderHistory';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/CanteenLanding.css';
+import '../../styles/StandardLayout.css';
 
 const foodIcon = new URL('../../assets/food.svg', import.meta.url).href;
 const orderIcon = new URL('../../assets/order.svg', import.meta.url).href;
@@ -307,37 +309,40 @@ function CanteenClient({ onBack }) {
 
   // Default: Landing (Inlined)
   return (
-    <div className="canteen-landing">
-      <EnhancedBackButton onBack={onBack} />
-      <div className="canteen-header">
-        <h1 className="header-title" style={{ flex: 1, textAlign: 'center' }}>Canteen</h1>
+    <div className="std-container">
+      <PageHeader title="Canteen" onBack={onBack} />
 
-        <div className="landing-balance" style={{ display: 'none', visibility: 'hidden' }}></div>
-      </div>
+      <main className="std-body">
+        <div className="canteen-header">
+          <h1 className="header-title" style={{ flex: 1, textAlign: 'center', display: 'none' }}>Canteen</h1>
 
-      <div className="canteen-content">
-        <div className="canteen-buttons-wrapper">
-          <button
-            className="canteen-main-button"
-            onClick={() => setCurrentView('menu')}
-          >
-            <div className="button-icon-wrapper">
-              <img src={foodIcon} alt="Menu" style={{ width: 48, height: 48, objectFit: 'contain' }} />
-            </div>
-            <span className="button-text">Menu</span>
-          </button>
-
-          <button
-            className="canteen-main-button"
-            onClick={() => setCurrentView('orders')}
-          >
-            <div className="button-icon-wrapper">
-              <img src={orderIcon} alt="Orders" style={{ width: 48, height: 48, objectFit: 'contain' }} />
-            </div>
-            <span className="button-text">Orders</span>
-          </button>
+          <div className="landing-balance" style={{ display: 'none', visibility: 'hidden' }}></div>
         </div>
-      </div>
+
+        <div className="canteen-content">
+          <div className="canteen-buttons-wrapper">
+            <button
+              className="canteen-main-button"
+              onClick={() => setCurrentView('menu')}
+            >
+              <div className="button-icon-wrapper">
+                <img src={foodIcon} alt="Menu" style={{ width: 48, height: 48, objectFit: 'contain' }} />
+              </div>
+              <span className="button-text">Menu</span>
+            </button>
+
+            <button
+              className="canteen-main-button"
+              onClick={() => setCurrentView('orders')}
+            >
+              <div className="button-icon-wrapper">
+                <img src={orderIcon} alt="Orders" style={{ width: 48, height: 48, objectFit: 'contain' }} />
+              </div>
+              <span className="button-text">Orders</span>
+            </button>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

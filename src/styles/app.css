@@ -280,10 +280,12 @@
   min-height: 100vh;
   background-color: var(--color-background);
   color: var(--color-text-primary);
-  padding: clamp(1.25rem, 4vw, 2rem);
+  /* Increased padding for 'hear little below' and 'left right padding little bigger' */
+  padding: clamp(2rem, 6vw, 3rem) clamp(1.5rem, 5vw, 2.5rem);
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
+  gap: 3rem;
+  /* Increased gap */
 }
 
 .landing-header {
@@ -378,25 +380,33 @@
 }
 
 .landing-balance {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.8rem;
   border: 1px solid var(--color-border);
-  padding: 0.55rem 0.85rem;
+  padding: 0.6rem 1rem;
   background-color: #fff;
+  border-radius: 8px;
+  /* Softer look */
+  height: 48px;
+  /* Fixed height for symmetry */
 }
 
 .landing-balance__label {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.1em;
   color: var(--color-text-secondary);
+  font-weight: 600;
+  padding-top: 2px;
+  /* Optical alignment */
 }
 
 .landing-balance__value {
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 700;
   font-family: var(--brand-font-serif);
+  line-height: 1;
 }
 
 .landing-balance__add {

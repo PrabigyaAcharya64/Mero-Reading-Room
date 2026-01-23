@@ -4,13 +4,13 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 export const firebaseConfig = {
-  apiKey: 'AIzaSyA-vVWn93wisiUS4_KyMmTw1h2o7wkKzDs',
-  authDomain: 'mero-reading-room-app.firebaseapp.com',
-  projectId: 'mero-reading-room-app',
-  storageBucket: 'mero-reading-room-app.firebasestorage.app',
-  messagingSenderId: '949466497845',
-  appId: '1:949466497845:web:3614e312041426d6d6427c',
-  measurementId: 'G-MF3L271KBH',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase app
@@ -55,7 +55,7 @@ try {
 }
 
 export const googleOAuthClientIds = {
-  web: '949466497845-cgo9khl5jbhljl2m4c5v6ef63b1qeqp3.apps.googleusercontent.com',
+  web: import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID,
 };
 
 export { app, auth, db, storage };

@@ -1,15 +1,16 @@
 import React from 'react';
 import PageHeader from '../../components/PageHeader';
+import '../../styles/StandardLayout.css';
 
 const rawIcon = new URL('../../assets/raw.png', import.meta.url).href;
 const dryIcon = new URL('../../assets/dry.svg', import.meta.url).href;
 
 const InventoryLanding = ({ onBack, onNavigate }) => {
     return (
-        <div className="landing-screen">
+        <div className="std-container">
             <PageHeader title="Inventory Management" onBack={onBack} />
 
-            <main className="landing-body">
+            <main className="std-body">
                 <section className="landing-services">
                     <div className="landing-services__grid">
                         <button

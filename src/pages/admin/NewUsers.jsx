@@ -3,25 +3,32 @@ import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, orderBy } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import FullScreenLoader from '../../components/FullScreenLoader';
+import Button from '../../components/Button';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/NewUsers.css';
+import '../../styles/StandardLayout.css';
 
 
 
-function NewUsers({ onBack }) {
+
+const userManagementIcon = new URL('../../assets/usermanagement.svg', import.meta.url).href;
+
+function NewUsers({ onBack, isSidebarOpen, onToggleSidebar }) {
+
   const { user } = useAuth();
   const [pendingUsers, setPendingUsers] = useState([]);
   const [verifiedUsers, setVerifiedUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('pending'); // 'pending' or 'verified'
+  const [activeTab, setActiveTab] = useState('pending');
   const [verifying, setVerifying] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
 
   useEffect(() => {
-    // Reset to page 1 when tab or search changes
+
     setCurrentPage(1);
   }, [activeTab, searchQuery]);
 
@@ -67,10 +74,45 @@ function NewUsers({ onBack }) {
     }
   };
 
+  const sendApprovalEmail = async (toEmail, fullName) => {
+    const BREVO_API_KEY = import.meta.env.VITE_BREVO_API_KEY;
+
+    try {
+      const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "accept": "application/json",
+          "api-key": BREVO_API_KEY,
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          templateId: 2, // Your confirmed Template ID
+          to: [{ email: toEmail, name: fullName }],
+          params: {
+            FULLNAME: fullName, // Use {{params.FULLNAME}} in your Brevo Editor
+          }
+        })
+      });
+
+      if (response.ok) {
+        alert("Test successful! Email sent using Template #2.");
+      } else {
+        const errorData = await response.json();
+        console.error("Brevo Error:", errorData);
+        alert("Failed: " + errorData.message);
+      }
+    } catch (error) {
+      console.error("Fetch Error:", error);
+    }
+  };
+
   const handleVerify = async (userId) => {
     try {
       setVerifying(userId);
       const userDocRef = doc(db, 'users', userId);
+
+      // Find user data to get email and name
+      const userToVerify = pendingUsers.find(u => u.id === userId);
 
       // Use setDoc with merge to ensure the update works even if document structure is different
       await updateDoc(userDocRef, {
@@ -79,6 +121,14 @@ function NewUsers({ onBack }) {
         verifiedBy: user?.uid || 'admin',
         updatedAt: new Date().toISOString(),
       });
+
+      // Send Approval Email
+      if (userToVerify && userToVerify.email && userToVerify.name) {
+        await sendApprovalEmail(userToVerify.email, userToVerify.name);
+      } else {
+        console.warn("Could not send email: User email or name missing", userToVerify);
+        alert("User verified, but failed to send email: Email or Name missing.");
+      }
 
       // Reload users
       await loadUsers();
@@ -147,25 +197,34 @@ function NewUsers({ onBack }) {
   };
 
   return (
-    <div className="nu-container">
-      <PageHeader title="Verification" onBack={onBack} />
+    <div className="std-container">
+      <PageHeader
+        title="User Management"
+        icon={userManagementIcon}
+        onBack={onBack}
+        isSidebarOpen={isSidebarOpen}
+        onToggleSidebar={onToggleSidebar}
+        badgeCount={pendingUsers.length}
+      />
 
-      <main className="nu-body">
+      <main className="std-body">
         <div className="nu-tabs">
-          <button
-            type="button"
-            className={`nu-tab ${activeTab === 'pending' ? 'active' : ''}`}
+          <Button
+            className={`nu-tab-btn ${activeTab === 'pending' ? 'active' : ''}`}
+            variant="ghost" // Using ghost to apply custom custom styling via CSS
             onClick={() => setActiveTab('pending')}
           >
-            Pending ({pendingUsers.length})
-          </button>
-          <button
-            type="button"
-            className={`nu-tab ${activeTab === 'verified' ? 'active' : ''}`}
+            Pending
+            {pendingUsers.length > 0 && <span className="nu-badge pending">{pendingUsers.length}</span>}
+          </Button>
+          <Button
+            className={`nu-tab-btn ${activeTab === 'verified' ? 'active' : ''}`}
+            variant="ghost"
             onClick={() => setActiveTab('verified')}
           >
-            Verified ({verifiedUsers.length})
-          </button>
+            Verified
+            <span className="nu-badge verified">{verifiedUsers.length}</span>
+          </Button>
         </div>
 
         {/* Search bar - only visible in verified tab */}
@@ -181,12 +240,9 @@ function NewUsers({ onBack }) {
           </div>
         )}
 
-        {loading ? (
-          <div className="nu-empty">
-            <LoadingSpinner size="40" stroke="3" color="#666" />
-            <p style={{ marginTop: '15px' }}>Loading users...</p>
-          </div>
-        ) : displayUsers.length === 0 ? (
+        {loading && <FullScreenLoader text="Loading users..." />}
+
+        {!loading && displayUsers.length === 0 ? (
           <div className="nu-empty">
             <p>
               {activeTab === 'pending'
@@ -263,23 +319,26 @@ function NewUsers({ onBack }) {
 
                   {/* Action Buttons */}
                   {activeTab === 'pending' && (
-                    <div className="nu-card__actions">
-                      <button
-                        type="button"
-                        className="nu-btn nu-btn--verify"
+                    <div className="nu-card__actions" style={{ gap: '10px' }}>
+                      <Button
+                        variant="primary"
+                        size="sm"
                         onClick={() => handleVerify(userData.id)}
-                        disabled={verifying === userData.id}
+                        loading={verifying === userData.id}
+                        disabled={verifying !== null && verifying !== userData.id}
+                        style={{ backgroundColor: '#2e7d32', borderColor: '#2e7d32' }}
                       >
-                        {verifying === userData.id ? <LoadingSpinner size="16" stroke="2" color="white" /> : '✓ Verify'}
-                      </button>
-                      <button
-                        type="button"
-                        className="nu-btn nu-btn--reject"
+                        ✓ Verify
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
                         onClick={() => handleReject(userData.id)}
-                        disabled={verifying === userData.id}
+                        loading={verifying === userData.id}
+                        disabled={verifying !== null && verifying !== userData.id}
                       >
-                        {verifying === userData.id ? <LoadingSpinner size="16" stroke="2" color="white" /> : '✗ Reject'}
-                      </button>
+                        ✗ Reject
+                      </Button>
                     </div>
                   )}
                 </div>

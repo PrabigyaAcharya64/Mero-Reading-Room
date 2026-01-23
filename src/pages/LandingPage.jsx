@@ -17,6 +17,7 @@ import hostelIcon from '../assets/hostel.svg';
 import foodIcon from '../assets/food.svg';
 import contactIcon from '../assets/contact.svg';
 import adminIcon from '../assets/usermanagement.svg';
+import '../styles/StandardLayout.css';
 
 function LandingPage({ onBack }) {
   const { user, signOutUser, userBalance } = useAuth();
@@ -203,7 +204,7 @@ function LandingPage({ onBack }) {
   }
 
   return (
-    <div className="landing-screen">
+    <div className="std-container">
       <header className="landing-header">
         <p className="landing-greeting">
           Hey <span>{displayName}</span>!
@@ -228,7 +229,7 @@ function LandingPage({ onBack }) {
       </header>
 
 
-      <main className="landing-body">
+      <main className="std-body">
         <section className="landing-services">
           <h2 style={{ textAlign: 'center' }}>Quick Services</h2>
           <div className="landing-services__grid">

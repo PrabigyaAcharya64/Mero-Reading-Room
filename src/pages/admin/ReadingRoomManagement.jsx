@@ -69,7 +69,7 @@ const ELEMENT_CONFIG = {
     window: { width: 60, height: 60 }
 };
 
-function ReadingRoomManagement({ onBack }) {
+function ReadingRoomManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
     const { user } = useAuth();
 
     const [rooms, setRooms] = useState([]);
@@ -530,7 +530,7 @@ function ReadingRoomManagement({ onBack }) {
 
     return (
         <div className="rrm-container">
-            <PageHeader title="Reading Room Management" onBack={onBack} />
+            <PageHeader title="Reading Room Management" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
 
             <main className="rrm-body">
                 <h1 className="rrm-page-title">Reading Room Management</h1>

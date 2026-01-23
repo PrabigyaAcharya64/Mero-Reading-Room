@@ -11,6 +11,7 @@ import PageHeader from '../../components/PageHeader';
 import InventoryLanding from '../inventory/InventoryLanding';
 import RawInventory from '../inventory/RawInventory';
 import DryInventory from '../inventory/DryInventory';
+import '../../styles/StandardLayout.css';
 
 const foodIcon = new URL('../../assets/food.svg', import.meta.url).href;
 const reportIcon = new URL('../../assets/reports.svg', import.meta.url).href;
@@ -18,7 +19,7 @@ const inventoryIcon = new URL('../../assets/inventory.svg', import.meta.url).hre
 const orderIcon = new URL('../../assets/order.svg', import.meta.url).href;
 const orderPlaceIcon = new URL('../../assets/order_place.svg', import.meta.url).href;
 
-function CanteenAdminLanding({ onBack }) {
+function CanteenAdminLanding({ onBack, isSidebarOpen, onToggleSidebar }) {
   const { user, userRole } = useAuth();
   const [currentView, setCurrentView] = useState('landing');
   const [newOrdersCount, setNewOrdersCount] = useState(0);
@@ -68,10 +69,10 @@ function CanteenAdminLanding({ onBack }) {
   }
 
   return (
-    <div className="landing-screen">
-      <PageHeader title="Canteen Administration" onBack={onBack} />
+    <div className="std-container">
+      <PageHeader title="Canteen Administration" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
 
-      <main className="landing-body">
+      <main className="std-body">
         <section className="landing-services">
           <div className="landing-services__grid">
 

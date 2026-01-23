@@ -3,8 +3,9 @@ import { useAuth } from '../../auth/AuthProvider';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import '../../styles/ClientOrderHistory.css';
-import EnhancedBackButton from '../../components/EnhancedBackButton';
+import '../../styles/StandardLayout.css';
 import PageHeader from '../../components/PageHeader';
+import Button from '../../components/Button';
 
 
 
@@ -99,56 +100,37 @@ function ClientOrderHistory({ onBack }) {
     : orders.filter(order => order.status === filterStatus);
 
   return (
-    <div className="landing-screen">
+    <div className="std-container">
       <PageHeader title="My Orders" onBack={onBack} />
 
-      <main className="landing-body" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+      <main className="std-body" style={{ padding: '0px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
         <section>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
             <h2>My Orders ({filteredOrders.length})</h2>
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button
+              <Button
+                size="sm"
+                variant={filterStatus === 'all' ? 'primary' : 'secondary'}
                 onClick={() => setFilterStatus('all')}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: filterStatus === 'all' ? '#4a4' : '#666',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
               >
                 All
-              </button>
-              <button
+              </Button>
+              <Button
+                size="sm"
+                variant={filterStatus === 'pending' ? 'primary' : 'secondary'}
                 onClick={() => setFilterStatus('pending')}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: filterStatus === 'pending' ? '#ff9800' : '#666',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
+                style={filterStatus === 'pending' ? { backgroundColor: '#ff9800', borderColor: '#ff9800' } : {}}
               >
                 Pending
-              </button>
-              <button
+              </Button>
+              <Button
+                size="sm"
+                variant={filterStatus === 'completed' ? 'primary' : 'secondary'}
                 onClick={() => setFilterStatus('completed')}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: filterStatus === 'completed' ? '#4caf50' : '#666',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
+                style={filterStatus === 'completed' ? { backgroundColor: '#4caf50', borderColor: '#4caf50' } : {}}
               >
                 Completed
-              </button>
+              </Button>
             </div>
           </div>
 

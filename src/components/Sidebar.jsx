@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     LogOut,
     Bell
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider';
+import { db } from '../lib/firebase';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 
 const profileIcon = new URL('../assets/profile.svg', import.meta.url).href;
 const contactIcon = new URL('../assets/contact.svg', import.meta.url).href;
@@ -14,18 +16,55 @@ const canteenIcon = new URL('../assets/canteen.svg', import.meta.url).href;
 const readingRoomIcon = new URL('../assets/readingroom.svg', import.meta.url).href;
 const orderPlaceIcon = new URL('../assets/order_place.svg', import.meta.url).href;
 const inventoryIcon = new URL('../assets/inventory.svg', import.meta.url).href;
-const idCardIcon = new URL('../assets/idcard.svg', import.meta.url).href; // Added based on original menuItems
+const idCardIcon = new URL('../assets/idcard.svg', import.meta.url).href;
 
 function Sidebar({ currentView, onNavigate, isOpen, onClose }) {
     const { signOutUser } = useAuth();
+    const [unreadMessages, setUnreadMessages] = useState(0);
+    const [pendingUsers, setPendingUsers] = useState(0);
+
+    // Fetch Counts
+    useEffect(() => {
+        // 1. Unread Messages
+        const msgQ = query(collection(db, 'messages'), where('read', '==', false));
+        const unsubMsg = onSnapshot(msgQ, (snap) => {
+            setUnreadMessages(snap.size);
+        }, (err) => console.error("Error fetching unread messages:", err));
+
+
+        const userQ = query(collection(db, 'users'), orderBy('submittedAt', 'desc'));
+
+        const unsubUser = onSnapshot(userQ, (snap) => {
+            const count = snap.docs.filter(doc => {
+                const data = doc.data();
+                return data.mrrNumber && data.submittedAt && data.verified !== true;
+            }).length;
+            setPendingUsers(count);
+        }, (err) => console.error("Error fetching pending users:", err));
+
+        return () => {
+            unsubMsg();
+            unsubUser();
+        };
+    }, []);
 
     const menuItems = [
         { id: 'dashboard', label: 'Overview', icon: profileIcon },
-        { id: 'user-management', label: 'User Management', icon: userManagementIcon },
+        {
+            id: 'user-management',
+            label: 'User Management',
+            icon: userManagementIcon,
+            badge: pendingUsers > 0 ? pendingUsers : null
+        },
         { id: 'hostel', label: 'Hostel', icon: hostelIcon },
         { id: 'canteen', label: 'Canteen', icon: canteenIcon },
         { id: 'reading-rooms', label: 'Reading Rooms', icon: readingRoomIcon },
-        { id: 'messages', label: 'Messages', icon: contactIcon },
+        {
+            id: 'messages',
+            label: 'Messages',
+            icon: contactIcon,
+            badge: unreadMessages > 0 ? unreadMessages : null
+        },
         { id: 'create-announcement', label: 'Announcements', icon: null, isLucide: true, lucideIcon: Bell },
     ];
 
@@ -48,15 +87,6 @@ function Sidebar({ currentView, onNavigate, isOpen, onClose }) {
 
             {/* Menu */}
             <div style={{ flex: 1, padding: '24px 16px', overflowY: 'auto' }}>
-                <p style={{
-                    fontSize: '12px',
-                    textTransform: 'uppercase',
-                    color: '#9ca3af',
-                    fontWeight: '600',
-                    marginBottom: '16px',
-                    letterSpacing: '0.05em'
-                }}>Main Menu</p>
-
                 <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     {menuItems.map((item) => {
                         const isActive = currentView === item.id;
@@ -108,7 +138,23 @@ function Sidebar({ currentView, onNavigate, isOpen, onClose }) {
                                         }}
                                     />
                                 )}
-                                {item.label}
+                                <span style={{ flex: 1 }}>{item.label}</span>
+
+                                {item.badge && (
+                                    <span style={{
+                                        backgroundColor: '#ef4444',
+                                        color: 'white',
+                                        fontSize: '11px',
+                                        fontWeight: 'bold',
+                                        padding: '2px 8px',
+                                        borderRadius: '12px',
+                                        minWidth: '20px',
+                                        textAlign: 'center',
+                                        lineHeight: '1.4'
+                                    }}>
+                                        {item.badge}
+                                    </span>
+                                )}
                             </button>
                         );
                     })}

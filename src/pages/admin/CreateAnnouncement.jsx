@@ -5,8 +5,9 @@ import { useAuth } from '../../auth/AuthProvider';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
+import '../../styles/StandardLayout.css';
 
-function CreateAnnouncement({ onBack }) {
+function CreateAnnouncement({ onBack, isSidebarOpen, onToggleSidebar }) {
     const { user } = useAuth();
     const [text, setText] = useState('');
     const [durationValue, setDurationValue] = useState(24);
@@ -49,18 +50,11 @@ function CreateAnnouncement({ onBack }) {
     };
 
     return (
-        <div className="landing-screen">
-            <PageHeader title="New Announcement" onBack={onBack} />
+        <div className="std-container">
+            <PageHeader title="New Announcement" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
 
-            <main className="landing-body">
+            <main className="std-body">
                 <div className="auth-card" style={{ maxWidth: '600px', margin: '0 auto' }}>
-                    <div className="auth-header">
-                        <h2 className="auth-header__headline">Create Announcement</h2>
-                        <p className="auth-header__subtext">
-                            This announcement will be visible to all users for the specified duration.
-                        </p>
-                    </div>
-
                     {success ? (
                         <div className="auth-feedback" style={{ backgroundColor: '#e6f4ea', borderColor: '#1e8e3e' }}>
                             Announcement created successfully!

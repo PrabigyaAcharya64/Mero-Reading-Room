@@ -4,12 +4,15 @@ import { collection, query, where, onSnapshot, updateDoc, doc, serverTimestamp, 
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import FullScreenLoader from '../../components/FullScreenLoader';
+import Button from '../../components/Button';
 import '../../styles/NewOrders.css';
+import '../../styles/StandardLayout.css';
 
 // Sound effect for new orders
 // const NEW_ORDER_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
 
-function NewOrders({ onBack }) {
+function NewOrders({ onBack, isSidebarOpen, onToggleSidebar }) {
     const [newOrders, setNewOrders] = useState([]);
     const [preparingOrders, setPreparingOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -134,15 +137,13 @@ function NewOrders({ onBack }) {
     };
 
     return (
-        <div className="no-container">
-            <PageHeader title="New Orders" onBack={onBack} />
+        <div className="std-container">
+            <PageHeader title="New Orders" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
 
-            <main className="no-body">
-                {loading ? (
-                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-                        <LoadingSpinner size="40" stroke="3" color="#666" />
-                    </div>
-                ) : (
+            <main className="std-body">
+                {loading && <FullScreenLoader text="Checking for new orders..." />}
+
+                {!loading && (
                     <div className="no-grid">
 
                         {/* New Orders Column */}
@@ -190,12 +191,15 @@ function NewOrders({ onBack }) {
                                                     <span className="no-total-label">Total</span>
                                                     <span className="no-total-amount">Rs. {order.total}</span>
                                                 </div>
-                                                <button
+                                                <Button
                                                     onClick={() => handleAcceptOrder(order.id)}
-                                                    className="no-action-btn no-btn-accept"
+                                                    variant="primary"
+                                                    fullWidth
+                                                    className="no-action-btn"
+                                                    style={{ backgroundColor: '#4caf50', borderColor: '#4caf50' }}
                                                 >
                                                     Accept Order
-                                                </button>
+                                                </Button>
                                             </div>
                                         </div>
                                     ))
@@ -243,12 +247,14 @@ function NewOrders({ onBack }) {
                                                     <span className="no-total-label">Status</span>
                                                     <span style={{ color: '#e37400', fontWeight: 'bold' }}>Preparing...</span>
                                                 </div>
-                                                <button
+                                                <Button
                                                     onClick={() => handleCompleteOrder(order.id)}
-                                                    className="no-action-btn no-btn-complete"
+                                                    variant="primary"
+                                                    fullWidth
+                                                    className="no-action-btn"
                                                 >
                                                     Complete
-                                                </button>
+                                                </Button>
                                             </div>
                                         </div>
                                     ))

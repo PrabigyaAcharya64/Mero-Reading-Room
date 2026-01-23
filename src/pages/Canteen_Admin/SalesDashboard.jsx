@@ -3,13 +3,16 @@ import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, query, getDocs, orderBy, onSnapshot, limit } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import FullScreenLoader from '../../components/FullScreenLoader';
+import Button from '../../components/Button';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/SalesDashboard.css';
+import '../../styles/StandardLayout.css';
 
 
 
-function SalesDashboard({ onBack }) {
+function SalesDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
   const { user } = useAuth();
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -118,10 +121,10 @@ function SalesDashboard({ onBack }) {
   const salesHistory = Object.values(salesByDate).sort((a, b) => b.date.localeCompare(a.date));
 
   return (
-    <div className="sd-container">
-      <PageHeader title="Sales Dashboard" onBack={onBack} />
+    <div className="std-container">
+      <PageHeader title="Sales Dashboard" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
 
-      <main className="sd-body">
+      <main className="std-body">
         <section>
           {/* Summary Cards */}
           <div className="sd-stats-grid">
@@ -163,26 +166,25 @@ function SalesDashboard({ onBack }) {
               onChange={(e) => setSelectedDate(e.target.value)}
               className="sd-date-input"
             />
-            <button
+            <Button
               onClick={() => setSelectedDate('')}
-              className="sd-btn sd-btn-secondary"
+              variant="secondary"
+              className="sd-btn"
             >
               Show All
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
-              className="sd-btn sd-btn-primary"
+              variant="primary"
+              className="sd-btn"
             >
               Today
-            </button>
+            </Button>
           </div>
 
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '3rem' }}>
-              <LoadingSpinner size="40" stroke="3" color="#666" />
-              <p style={{ marginTop: '1rem', color: 'var(--color-text-secondary)' }}>Loading sales data...</p>
-            </div>
-          ) : selectedDate ? (
+          {loading && <FullScreenLoader text="Loading sales data..." />}
+
+          {!loading && selectedDate ? (
             // Show detailed sales for selected date
             <div>
               <div className="sd-section-header-group">
@@ -349,7 +351,7 @@ function SalesDashboard({ onBack }) {
                 </div>
               )}
             </div>
-          ) : (
+          ) : !loading && (
             // Show sales history grouped by date
             <div>
               <h2 className="sd-section-title">Sales History</h2>

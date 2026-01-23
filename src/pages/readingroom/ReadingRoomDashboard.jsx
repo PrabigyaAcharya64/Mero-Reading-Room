@@ -1,72 +1,73 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
-import { doc, getDoc, collection, onSnapshot, query, where } from 'firebase/firestore';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import EnhancedBackButton from '../../components/EnhancedBackButton';
+import { doc, getDoc, onSnapshot, collection, query, where } from 'firebase/firestore';
+import PageHeader from '../../components/PageHeader';
+import FullScreenLoader from '../../components/FullScreenLoader';
+import '../../styles/StandardLayout.css';
 
 
 
 // SVG Icon Components
 const SeatIcon = ({ occupied, isMySeat, size = 40 }) => (
-  <svg viewBox="0 0 50 50" width={size} height={size}>
-    <path
-      d="M10 35 L10 40 Q10 42 12 42 L18 42 L18 38 L32 38 L32 42 L38 42 Q40 42 40 40 L40 35 Z"
-      fill={isMySeat ? "#1976d2" : occupied ? "#e0e0e0" : "#fff"}
-      stroke={isMySeat ? "#1565c0" : "#ccc"}
-      strokeWidth="1"
-    />
-    <path
-      d="M8 25 Q8 20 12 20 L38 20 Q42 20 42 25 L42 35 L8 35 Z"
-      fill={isMySeat ? "#2196f3" : occupied ? "#eeeeee" : "#fff"}
-      stroke={isMySeat ? "#1565c0" : "#ccc"}
-      strokeWidth="1"
-    />
-    <rect
-      x="7"
-      y="20"
-      width="3"
-      height="15"
-      rx="1.5"
-      fill={isMySeat ? "#1565c0" : occupied ? "#bdbdbd" : "#ccc"}
-    />
-    <rect
-      x="40"
-      y="20"
-      width="3"
-      height="15"
-      rx="1.5"
-      fill={isMySeat ? "#1565c0" : occupied ? "#bdbdbd" : "#ccc"}
-    />
-  </svg>
+    <svg viewBox="0 0 50 50" width={size} height={size}>
+        <path
+            d="M10 35 L10 40 Q10 42 12 42 L18 42 L18 38 L32 38 L32 42 L38 42 Q40 42 40 40 L40 35 Z"
+            fill={isMySeat ? "#1976d2" : occupied ? "#e0e0e0" : "#fff"}
+            stroke={isMySeat ? "#1565c0" : "#ccc"}
+            strokeWidth="1"
+        />
+        <path
+            d="M8 25 Q8 20 12 20 L38 20 Q42 20 42 25 L42 35 L8 35 Z"
+            fill={isMySeat ? "#2196f3" : occupied ? "#eeeeee" : "#fff"}
+            stroke={isMySeat ? "#1565c0" : "#ccc"}
+            strokeWidth="1"
+        />
+        <rect
+            x="7"
+            y="20"
+            width="3"
+            height="15"
+            rx="1.5"
+            fill={isMySeat ? "#1565c0" : occupied ? "#bdbdbd" : "#ccc"}
+        />
+        <rect
+            x="40"
+            y="20"
+            width="3"
+            height="15"
+            rx="1.5"
+            fill={isMySeat ? "#1565c0" : occupied ? "#bdbdbd" : "#ccc"}
+        />
+    </svg>
 );
 
 const DoorIcon = ({ size = 40 }) => (
-  <svg viewBox="0 0 40 60" width={size} height={size * 1.5}>
-    <rect x="8" y="5" width="24" height="50" rx="2" fill="#d7ccc8" stroke="#8d6e63" strokeWidth="1.5" />
-    <rect x="10" y="8" width="20" height="44" rx="1" fill="#efebe9" stroke="#a1887f" strokeWidth="1" />
-    <circle cx="26" cy="30" r="2" fill="#5d4037" />
-  </svg>
+    <svg viewBox="0 0 40 60" width={size} height={size * 1.5}>
+        <rect x="8" y="5" width="24" height="50" rx="2" fill="#d7ccc8" stroke="#8d6e63" strokeWidth="1.5" />
+        <rect x="10" y="8" width="20" height="44" rx="1" fill="#efebe9" stroke="#a1887f" strokeWidth="1" />
+        <circle cx="26" cy="30" r="2" fill="#5d4037" />
+    </svg>
 );
 
 const WindowIcon = ({ size = 40 }) => (
-  <svg viewBox="0 0 50 50" width={size} height={size}>
-    <rect x="8" y="8" width="34" height="34" rx="2" fill="#e1f5fe" stroke="#b3e5fc" strokeWidth="2" />
-    <line x1="25" y1="8" x2="25" y2="42" stroke="#b3e5fc" strokeWidth="2" />
-    <line x1="8" y1="25" x2="42" y2="25" stroke="#b3e5fc" strokeWidth="2" />
-    <rect x="6" y="6" width="38" height="38" rx="2" fill="none" stroke="#81d4fa" strokeWidth="2.5" />
-  </svg>
+    <svg viewBox="0 0 50 50" width={size} height={size}>
+        <rect x="8" y="8" width="34" height="34" rx="2" fill="#e1f5fe" stroke="#b3e5fc" strokeWidth="2" />
+        <line x1="25" y1="8" x2="25" y2="42" stroke="#b3e5fc" strokeWidth="2" />
+        <line x1="8" y1="25" x2="42" y2="25" stroke="#b3e5fc" strokeWidth="2" />
+        <rect x="6" y="6" width="38" height="38" rx="2" fill="none" stroke="#81d4fa" strokeWidth="2.5" />
+    </svg>
 );
 
 const ToiletIcon = ({ size = 40 }) => (
-  <svg viewBox="0 0 50 50" width={size} height={size}>
-    <rect x="10" y="10" width="30" height="30" rx="4" fill="#f5f5f5" stroke="#bdbdbd" strokeWidth="2" />
-    <circle cx="25" cy="20" r="4" fill="#757575" />
-    <path d="M25 25 L25 35 M20 30 L30 30" stroke="#757575" strokeWidth="2" strokeLinecap="round" />
-  </svg>
+    <svg viewBox="0 0 50 50" width={size} height={size}>
+        <rect x="10" y="10" width="30" height="30" rx="4" fill="#f5f5f5" stroke="#bdbdbd" strokeWidth="2" />
+        <circle cx="25" cy="20" r="4" fill="#757575" />
+        <path d="M25 25 L25 35 M20 30 L30 30" stroke="#757575" strokeWidth="2" strokeLinecap="round" />
+    </svg>
 );
 
-function ReadingRoomDashboard({ onBack }) {
+function ReadingRoomDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [userData, setUserData] = useState(null);
@@ -80,7 +81,7 @@ function ReadingRoomDashboard({ onBack }) {
             if (snap.exists()) {
                 const data = snap.data();
                 setUserData(data);
-                
+
                 if (!data.currentSeat) {
                     setLoading(false);
                 }
@@ -94,7 +95,7 @@ function ReadingRoomDashboard({ onBack }) {
         const roomId = userData?.currentSeat?.roomId;
         if (!roomId) return;
 
-        let unsubAssignments = () => {};
+        let unsubAssignments = () => { };
 
         const loadRoomData = async () => {
             try {
@@ -124,11 +125,7 @@ function ReadingRoomDashboard({ onBack }) {
 
 
     if (loading) {
-        return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#fff' }}>
-                <LoadingSpinner size="40" stroke="3" color="#333" />
-            </div>
-        );
+        return <FullScreenLoader text="Loading dashboard..." />;
     }
 
     const expiryDate = userData?.nextPaymentDue?.toDate ? userData.nextPaymentDue.toDate() : new Date(userData.nextPaymentDue);
@@ -161,14 +158,10 @@ function ReadingRoomDashboard({ onBack }) {
     const daysLeft = Math.ceil((expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
 
     return (
-        <div className="landing-screen">
-            {onBack && <EnhancedBackButton onBack={onBack} />}
-            <header className="subpage-header">
-                <h1 className="subpage-header__title">Reading Room</h1>
-                <div className="subpage-header__spacer"></div>
-            </header>
+        <div className="std-container">
+            <PageHeader title="Reading Room" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
 
-            <main className="landing-body">
+            <main className="std-body">
                 <div style={{
                     maxWidth: '900px',
                     margin: '0 auto',
@@ -290,7 +283,7 @@ function ReadingRoomDashboard({ onBack }) {
                                                         {element.label}
                                                     </text>
                                                     {isMySeat && (
-                                                        <circle cx={element.width/2} cy={-5} r="4" fill="#1976d2">
+                                                        <circle cx={element.width / 2} cy={-5} r="4" fill="#1976d2">
                                                             <animate attributeName="opacity" values="1;0;1" dur="2s" repeatCount="indefinite" />
                                                         </circle>
                                                     )}

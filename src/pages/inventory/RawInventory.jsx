@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, doc, updateDoc, increment, addDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import PageHeader from '../../components/PageHeader';
+import FullScreenLoader from '../../components/FullScreenLoader';
 import '../../styles/RawInventory.css';
+import '../../styles/StandardLayout.css';
 
 const RawInventory = ({ onBack }) => {
     const [inventoryItems, setInventoryItems] = useState([]);
@@ -71,15 +73,11 @@ const RawInventory = ({ onBack }) => {
     };
 
     if (loading) {
-        return (
-            <div className="inventory-loading">
-                <p>Loading...</p>
-            </div>
-        );
+        return <FullScreenLoader text="Loading raw inventory..." />;
     }
 
     return (
-        <div className="raw-inventory-page">
+        <div className="std-container">
             <PageHeader title="Raw Inventory" onBack={onBack} rightElement={
                 <button
                     className="add-item-btn-simple"
@@ -89,129 +87,132 @@ const RawInventory = ({ onBack }) => {
                 </button>
             } />
 
-            <div className="inventory-table-container simple-container">
-                <table className="inventory-table-simple">
-                    <thead>
-                        <tr>
-                            <th>Item Name</th>
-                            <th>Status</th>
-                            <th>Current Qty</th>
-                            <th>Unit Price</th>
-                            <th>Last Restocked</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {inventoryItems.map((item) => {
-                            const threshold = item.lowStockThreshold || 5;
-                            const isLowStock = item.currentQty <= threshold;
-                            return (
-                                <tr key={item.id} className={`inventory-row-simple ${isLowStock ? 'row-alert' : ''}`}>
-                                    <td className="item-name-cell">
-                                        {item.itemName}
-                                    </td>
-                                    <td>
-                                        {isLowStock ? (
-                                            <span className="status-badge-simple danger">LOW STOCK</span>
-                                        ) : (
-                                            <span className="status-badge-simple success">OK</span>
-                                        )}
-                                    </td>
-                                    <td className="qty-cell">
-                                        <span className={`qty-value-simple ${isLowStock ? 'text-danger' : ''}`}>
-                                            {item.currentQty}
-                                        </span>
-                                    </td>
-                                    <td>Rs. {item.unitPrice}</td>
-                                    <td>{item.lastPurchased || '-'}</td>
-                                    <td>
-                                        <div className="action-buttons-simple">
-                                            <button
-                                                className="consume-btn-simple"
-                                                onClick={() => handleConsume(item.id, item.currentQty)}
-                                                disabled={item.currentQty <= 0}
-                                            >
-                                                Consumed (-1)
-                                            </button>
-                                            <button
-                                                className="delete-icon-btn"
-                                                onClick={() => handleDelete(item.id, item.itemName)}
-                                                title="Delete"
-                                            >
-                                                &times;
-                                            </button>
-                                        </div>
+            <main className="std-body">
+
+                <div className="inventory-table-container simple-container">
+                    <table className="inventory-table-simple">
+                        <thead>
+                            <tr>
+                                <th>Item Name</th>
+                                <th>Status</th>
+                                <th>Current Qty</th>
+                                <th>Unit Price</th>
+                                <th>Last Restocked</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {inventoryItems.map((item) => {
+                                const threshold = item.lowStockThreshold || 5;
+                                const isLowStock = item.currentQty <= threshold;
+                                return (
+                                    <tr key={item.id} className={`inventory-row-simple ${isLowStock ? 'row-alert' : ''}`}>
+                                        <td className="item-name-cell">
+                                            {item.itemName}
+                                        </td>
+                                        <td>
+                                            {isLowStock ? (
+                                                <span className="status-badge-simple danger">LOW STOCK</span>
+                                            ) : (
+                                                <span className="status-badge-simple success">OK</span>
+                                            )}
+                                        </td>
+                                        <td className="qty-cell">
+                                            <span className={`qty-value-simple ${isLowStock ? 'text-danger' : ''}`}>
+                                                {item.currentQty}
+                                            </span>
+                                        </td>
+                                        <td>Rs. {item.unitPrice}</td>
+                                        <td>{item.lastPurchased || '-'}</td>
+                                        <td>
+                                            <div className="action-buttons-simple">
+                                                <button
+                                                    className="consume-btn-simple"
+                                                    onClick={() => handleConsume(item.id, item.currentQty)}
+                                                    disabled={item.currentQty <= 0}
+                                                >
+                                                    Consumed (-1)
+                                                </button>
+                                                <button
+                                                    className="delete-icon-btn"
+                                                    onClick={() => handleDelete(item.id, item.itemName)}
+                                                    title="Delete"
+                                                >
+                                                    &times;
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                            {inventoryItems.length === 0 && (
+                                <tr>
+                                    <td colSpan="6" className="empty-state-simple">
+                                        No items found.
                                     </td>
                                 </tr>
-                            );
-                        })}
-                        {inventoryItems.length === 0 && (
-                            <tr>
-                                <td colSpan="6" className="empty-state-simple">
-                                    No items found.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-
-            {showAddModal && (
-                <div className="modal-backdrop-simple">
-                    <div className="modal-simple">
-                        <div className="modal-header-simple">
-                            <h2>Add New Material</h2>
-                            <button className="close-btn-simple" onClick={() => setShowAddModal(false)}>&times;</button>
-                        </div>
-                        <form onSubmit={handleAddItem}>
-                            <div className="form-group-simple">
-                                <label>Item Name</label>
-                                <input
-                                    type="text"
-                                    value={newItem.itemName}
-                                    onChange={(e) => setNewItem({ ...newItem, itemName: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            <div className="form-row-simple">
-                                <div className="form-group-simple">
-                                    <label>Quantity</label>
-                                    <input
-                                        type="number"
-                                        value={newItem.currentQty}
-                                        onChange={(e) => setNewItem({ ...newItem, currentQty: e.target.value })}
-                                        required
-                                        min="0"
-                                    />
-                                </div>
-                                <div className="form-group-simple">
-                                    <label>Price (Rs)</label>
-                                    <input
-                                        type="number"
-                                        value={newItem.unitPrice}
-                                        onChange={(e) => setNewItem({ ...newItem, unitPrice: e.target.value })}
-                                        required
-                                        min="0"
-                                    />
-                                </div>
-                            </div>
-                            <div className="form-group-simple">
-                                <label>Low Stock Threshold</label>
-                                <input
-                                    type="number"
-                                    value={newItem.lowStockThreshold}
-                                    onChange={(e) => setNewItem({ ...newItem, lowStockThreshold: e.target.value })}
-                                    min="1"
-                                />
-                            </div>
-                            <div className="modal-actions-simple">
-                                <button type="button" className="btn-simple secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
-                                <button type="submit" className="btn-simple primary">Add Item</button>
-                            </div>
-                        </form>
-                    </div>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
-            )}
+
+                {showAddModal && (
+                    <div className="modal-backdrop-simple">
+                        <div className="modal-simple">
+                            <div className="modal-header-simple">
+                                <h2>Add New Material</h2>
+                                <button className="close-btn-simple" onClick={() => setShowAddModal(false)}>&times;</button>
+                            </div>
+                            <form onSubmit={handleAddItem}>
+                                <div className="form-group-simple">
+                                    <label>Item Name</label>
+                                    <input
+                                        type="text"
+                                        value={newItem.itemName}
+                                        onChange={(e) => setNewItem({ ...newItem, itemName: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-row-simple">
+                                    <div className="form-group-simple">
+                                        <label>Quantity</label>
+                                        <input
+                                            type="number"
+                                            value={newItem.currentQty}
+                                            onChange={(e) => setNewItem({ ...newItem, currentQty: e.target.value })}
+                                            required
+                                            min="0"
+                                        />
+                                    </div>
+                                    <div className="form-group-simple">
+                                        <label>Price (Rs)</label>
+                                        <input
+                                            type="number"
+                                            value={newItem.unitPrice}
+                                            onChange={(e) => setNewItem({ ...newItem, unitPrice: e.target.value })}
+                                            required
+                                            min="0"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="form-group-simple">
+                                    <label>Low Stock Threshold</label>
+                                    <input
+                                        type="number"
+                                        value={newItem.lowStockThreshold}
+                                        onChange={(e) => setNewItem({ ...newItem, lowStockThreshold: e.target.value })}
+                                        min="1"
+                                    />
+                                </div>
+                                <div className="modal-actions-simple">
+                                    <button type="button" className="btn-simple secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
+                                    <button type="submit" className="btn-simple primary">Add Item</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+            </main>
         </div>
     );
 };

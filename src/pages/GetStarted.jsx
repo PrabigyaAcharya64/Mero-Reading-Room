@@ -1,4 +1,5 @@
 import '../styles/GetStarted.css';
+import Button from '../components/Button';
 
 const illustration = new URL('../assets/bwink_edu_08_single_02.jpg', import.meta.url).href;
 
@@ -25,30 +26,32 @@ function GetStarted({ onGetStarted, onLogIn }) {
         </header>
 
         <div className="gs-image-container">
-          <img 
-            className="gs-image" 
-            src={illustration} 
-            alt="Two readers sharing a moment outdoors in a cozy atmosphere" 
+          <img
+            className="gs-image"
+            src={illustration}
+            alt="Two readers sharing a moment outdoors in a cozy atmosphere"
           />
         </div>
 
-        <div className="gs-actions">
-          <button 
-            type="button" 
-            className="gs-btn-primary" 
+        <div className="gs-actions" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <Button
+            variant="primary"
             onClick={onGetStarted}
             aria-label="Get started with Mero Reading Room"
+            fullWidth
+            className="gs-btn-primary"
           >
             Get Started
-          </button>
-          <button 
-            type="button" 
-            className="gs-btn-secondary" 
+          </Button>
+          <Button
+            variant="outline"
             onClick={onLogIn}
             aria-label="Log in to your account"
+            fullWidth
+            className="gs-btn-secondary"
           >
             Log In
-          </button>
+          </Button>
         </div>
       </div>
     </section>

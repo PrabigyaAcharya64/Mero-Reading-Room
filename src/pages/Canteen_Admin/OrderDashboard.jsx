@@ -3,11 +3,14 @@ import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, setDoc, getDoc, where } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import FullScreenLoader from '../../components/FullScreenLoader';
+import Button from '../../components/Button';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/OrderDashboard.css';
+import '../../styles/StandardLayout.css';
 
-function OrderDashboard({ onBack }) {
+function OrderDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
   const { user, userRole } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -113,10 +116,10 @@ function OrderDashboard({ onBack }) {
   };
 
   return (
-    <div className="od-container">
-      <PageHeader title="Orders History" onBack={onBack} />
+    <div className="std-container">
+      <PageHeader title="Orders History" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
 
-      <main className="od-body">
+      <main className="std-body">
         <section>
           <div className="od-toolbar">
             <h2 className="od-section-title">History ({filteredOrders.length})</h2>
@@ -137,27 +140,30 @@ function OrderDashboard({ onBack }) {
                 }}
               />
               {['completed', 'cancelled'].map((status) => (
-                <button
+                <Button
                   key={status}
                   onClick={() => setFilterStatus(status)}
-                  className={`od-filter-btn ${status} ${filterStatus === status ? 'active' : ''}`}
+                  variant={filterStatus === status ? 'primary' : 'outline'}
+                  className={`od-filter-btn ${status}`}
+                  style={{
+                    backgroundColor: filterStatus === status ? (status === 'completed' ? '#4caf50' : '#f44336') : 'transparent',
+                    borderColor: filterStatus === status ? 'transparent' : '#ddd',
+                    color: filterStatus === status ? 'white' : '#666'
+                  }}
                 >
                   {status.charAt(0).toUpperCase() + status.slice(1)}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
 
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px' }}>
-              <LoadingSpinner size="40" stroke="3" color="#666" />
-              <p style={{ marginTop: '15px', color: '#666' }}>Loading orders...</p>
-            </div>
-          ) : filteredOrders.length === 0 ? (
+          {loading && <FullScreenLoader text="Loading orders history..." />}
+
+          {!loading && filteredOrders.length === 0 ? (
             <div className="od-empty">
               No orders found.
             </div>
-          ) : (
+          ) : !loading && (
             <div className="od-grid">
               {currentOrders.map((order) => (
                 <div key={order.id} className="od-card">
@@ -234,25 +240,25 @@ function OrderDashboard({ onBack }) {
           {/* Pagination Controls */}
           {filteredOrders.length > itemsPerPage && (
             <div className="od-pagination">
-              <button
+              <Button
                 onClick={() => paginate(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="od-page-btn"
+                variant="outline"
               >
                 Previous
-              </button>
+              </Button>
 
               <span className="od-page-info">
                 Page {currentPage} of {totalPages}
               </span>
 
-              <button
+              <Button
                 onClick={() => paginate(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="od-page-btn"
+                variant="outline"
               >
                 Next
-              </button>
+              </Button>
             </div>
           )}
         </section>

@@ -4,6 +4,8 @@ import CanteenClient from './CanteenClient';
 import ClientOrderHistory from './ClientOrderHistory';
 import IDCard from '../IDCard';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
+import PageHeader from '../../components/PageHeader';
+import '../../styles/StandardLayout.css';
 
 const profileIcon = new URL('../../assets/profile.svg', import.meta.url).href;
 const foodIcon = new URL('../../assets/food.svg', import.meta.url).href;
@@ -27,28 +29,20 @@ function CanteenClientLanding({ onBack }) {
   }
 
   return (
-    <div className="landing-screen">
-      <header className="subpage-header">
-        <div className="subpage-header__left" style={{ flex: '0 0 auto', gap: '12px' }}>
-          {onBack && <EnhancedBackButton onBack={onBack} />}
+    <div className="std-container">
+      <PageHeader title="Canteen" onBack={onBack} rightElement={
+        <button
+          type="button"
+          className="landing-profile"
+          aria-label="Profile"
+          onClick={() => setCurrentView('idcard')}
+          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+        >
+          <img src={profileIcon} alt="" style={{ width: '24px', height: '24px' }} />
+        </button>
+      } />
 
-        </div>
-
-        <h1 className="subpage-header__title">Canteen</h1>
-
-        <div className="subpage-header__spacer" style={{ flex: '0 0 40px', justifyContent: 'flex-end', display: 'flex' }}>
-          <button
-            type="button"
-            className="landing-profile"
-            aria-label="Profile"
-            onClick={() => setCurrentView('idcard')}
-          >
-            <img src={profileIcon} alt="" />
-          </button>
-        </div>
-      </header>
-
-      <main className="landing-body">
+      <main className="std-body">
 
         <section className="landing-services">
           <h2 style={{ textAlign: 'center' }}>Canteen Services</h2>

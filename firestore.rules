@@ -319,9 +319,39 @@ service cloud.firestore {
 
 
     match /dailySales/{date} {
-
       allow read, write: if isStaff();
+    }
 
+    match /transactions/{id} {
+      // Allow users to see their own transactions, staff to see all
+      allow read: if loggedIn() && (isStaff() || resource.data.userId == request.auth.uid);
+      
+      // Allow users to create transaction records for themselves (e.g. purchasing a subscription)
+      allow create: if loggedIn() 
+        && request.resource.data.userId == request.auth.uid;
+      
+      // Allow users to update their own transactions ONLY for invoice metadata fields
+      allow update: if loggedIn() && (
+        isAdmin()
+        || (
+          resource.data.userId == request.auth.uid
+          // Only allow updating invoice-related fields
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['invoiceSent', 'invoiceId', 'invoiceSentAt'])
+        )
+      );
+        
+      allow delete: if isAdmin();
+    }
+
+    match /invoices/{id} {
+      // Allow users to read their own invoices, staff to read all
+      allow read: if loggedIn() && (isStaff() || resource.data.userId == request.auth.uid);
+      
+      // Allow users to create invoices for themselves
+      allow create: if loggedIn() 
+        && request.resource.data.userId == request.auth.uid;
+      
+      allow update, delete: if isAdmin();
     }
 
 
@@ -344,7 +374,19 @@ service cloud.firestore {
       
       // REMOVED: Client-side stock decrementing (it is too vulnerable)
       // Only staff can update stock counts after verifying payment/order
-      allow write: if isStaff();
+      allow update: if loggedIn() && (
+        isStaff() || (
+          // Client Stock Decrement Logic
+          // 1. Only stockCount is changed
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stockCount'])
+          // 2. Stock is being REDUCED (not increased)
+          && request.resource.data.stockCount < resource.data.stockCount
+          // 3. Stock cannot go negative
+          && request.resource.data.stockCount >= 0
+        )
+      );
+
+      allow create, delete: if isStaff();
     }
 
 

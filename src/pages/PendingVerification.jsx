@@ -1,4 +1,5 @@
 import { useAuth } from '../auth/AuthProvider';
+import Button from '../components/Button';
 
 function PendingVerification() {
   const { logout } = useAuth();
@@ -34,14 +35,14 @@ function PendingVerification() {
             </p>
           </div>
 
-          <button
+          <Button
             type="button"
-            className="cta-button cta-button--primary"
+            variant="primary"
             style={{ marginTop: '26px' }}
             onClick={() => logout()}
           >
             Return to Login
-          </button>
+          </Button>
         </div>
       </div>
     </div>

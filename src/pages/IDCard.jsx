@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthProvider';
 import { db } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import Button from '../components/Button';
+import FullScreenLoader from '../components/FullScreenLoader';
 import EnhancedBackButton from '../components/EnhancedBackButton';
 import PageHeader from '../components/PageHeader';
 import '../styles/IDCard.css';
+import '../styles/StandardLayout.css';
 
 const logoUrl = new URL('../assets/logo.png', import.meta.url).href;
 
@@ -116,13 +119,7 @@ function IDCard({ onBack }) {
   };
 
   if (loading) {
-    return (
-      <div className="profile-container">
-        <div className="app-loader">
-          <p>Loading your profile...</p>
-        </div>
-      </div>
-    );
+    return <FullScreenLoader text="Loading your profile..." />;
   }
 
   if (!userData) {
@@ -141,10 +138,10 @@ function IDCard({ onBack }) {
   }
 
   return (
-    <div className="profile-container">
+    <div className="std-container">
       <PageHeader title="My Profile" onBack={onBack} />
 
-      <main className="profile-main">
+      <main className="std-body">
         <div className="id-card-preview-wrapper">
           <div id="id-card" className="id-card">
             {/* LEFT SIDE BAR */}
@@ -204,17 +201,24 @@ function IDCard({ onBack }) {
         </div>
 
         <div className="profile-actions">
-          <button
-            className="profile-btn profile-btn--download"
+          <Button
+            variant="primary"
             onClick={downloadIDCard}
+            loading={downloading}
             disabled={downloading}
+            fullWidth
           >
-            {downloading ? 'Generating...' : 'Download ID Card'}
-          </button>
+            Download ID Card
+          </Button>
 
-          <button className="profile-btn profile-btn--signout" onClick={handleSignOut}>
+          <Button
+            variant="danger"
+            onClick={handleSignOut}
+            fullWidth
+            style={{ marginTop: '1rem' }}
+          >
             Sign Out
-          </button>
+          </Button>
 
           <p className="profile-info-text">
             Your ID card is used for entry and verification at Mero Reading Room.

@@ -262,10 +262,11 @@
 /* Details View */
 .details-banner {
     padding: 1.25rem;
-    background-color: var(--discussion-black);
-    color: var(--discussion-white);
+    background-color: var(--discussion-white);
+    color: var(--discussion-black);
     margin-bottom: 1.875rem;
     text-align: center;
+    border: 1px solid var(--discussion-border);
 }
 
 .details-banner h3 {

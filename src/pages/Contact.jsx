@@ -4,6 +4,7 @@ import { addDoc, collection, serverTimestamp, doc, getDoc } from 'firebase/fires
 import { db } from '../lib/firebase';
 import { useAuth } from '../auth/AuthProvider';
 import EnhancedBackButton from '../components/EnhancedBackButton';
+import Button from '../components/Button';
 
 function Contact({ onBack }) {
     const { user } = useAuth();
@@ -124,9 +125,14 @@ function Contact({ onBack }) {
 
                             {error && <div className="auth-feedback" style={{ borderColor: '#d93025', color: '#d93025' }}>{error}</div>}
 
-                            <button type="submit" className="cta-button cta-button--primary" disabled={submitting}>
-                                {submitting ? 'Sending...' : 'Send Message'}
-                            </button>
+                            <Button
+                                type="submit"
+                                variant="primary"
+                                loading={submitting}
+                                disabled={submitting}
+                            >
+                                Send Message
+                            </Button>
                         </form>
                     )}
                 </div>

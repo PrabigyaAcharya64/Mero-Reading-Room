@@ -5,16 +5,19 @@ import { collection, addDoc, getDocs, doc, setDoc, getDoc, query, where, deleteD
 import { validateMenuItemName, validatePrice, validateDescription, validateCategory } from '../../utils/validation';
 import { getBusinessDate } from '../../utils/dateUtils';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import FullScreenLoader from '../../components/FullScreenLoader';
+import Button from '../../components/Button';
 
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/MenuManagement.css';
+import '../../styles/StandardLayout.css';
 
-const IMGBB_API_KEY = 'f3836c3667cc5c73c64e1aa4f0849566';
+const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY;
 
 
 
-function MenuManagement({ onBack }) {
+function MenuManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
   const { user } = useAuth();
 
   const [menuItems, setMenuItems] = useState([]);
@@ -29,11 +32,16 @@ function MenuManagement({ onBack }) {
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    loadMenuItems();
-    loadTodaysMenu();
+    const initData = async () => {
+      setPageLoading(true);
+      await Promise.all([loadMenuItems(), loadTodaysMenu()]);
+      setPageLoading(false);
+    };
+    initData();
   }, []);
 
   // Update selected items when today's menu changes
@@ -444,10 +452,12 @@ function MenuManagement({ onBack }) {
 
 
   return (
-    <div className="mm-container">
-      <PageHeader title="Menu Management" onBack={onBack} />
+    <div className="std-container">
+      <PageHeader title="Menu Management" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
 
-      <main className="mm-body">
+      {pageLoading && <FullScreenLoader text="Loading menu..." />}
+
+      <main className="std-body mm-grid-layout">
         {/* Left Column: Form */}
         <div className="mm-form-section">
           <h2 className="mm-section-title">Add Menu Item</h2>
@@ -539,9 +549,15 @@ function MenuManagement({ onBack }) {
               )}
             </div>
 
-            <button type="submit" className="mm-btn mm-btn-primary" disabled={loading}>
-              {loading ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'Add Menu Item'}
-            </button>
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              loading={loading}
+              className="mm-btn" // Keep existing class if it adds specific margins/styles, but Button handles base styles
+            >
+              Add Menu Item
+            </Button>
           </form>
 
           {message && (
@@ -565,27 +581,28 @@ function MenuManagement({ onBack }) {
             </div>
 
             <div className="mm-actions">
-              <button
+              <Button
                 onClick={handleSelectAll}
-                className="mm-btn mm-btn-secondary"
+                variant="secondary"
                 disabled={loading || menuItems.length === 0}
               >
                 Select All
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleDeselectAll}
-                className="mm-btn mm-btn-secondary"
+                variant="secondary"
                 disabled={loading || selectedItems.length === 0}
               >
                 Deselect All
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleSetTodaysMenu}
-                className="mm-btn mm-btn-primary"
+                variant="primary"
+                loading={loading}
                 disabled={loading || selectedItems.length === 0}
               >
-                {loading ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : "Set Today's Special"}
-              </button>
+                Set Today's Special
+              </Button>
             </div>
           </div>
 
@@ -634,21 +651,22 @@ function MenuManagement({ onBack }) {
                   </div>
 
                   <div className="mm-card-actions">
-                    <button
+                    <Button
                       type="button"
                       onClick={() => handleToggleFixed(item.id, item.isFixed)}
-                      className={`mm-btn ${item.isFixed ? 'mm-btn-success' : 'mm-btn-secondary'}`}
-                      style={{ width: '100%', marginBottom: '0.5rem' }}
+                      variant={item.isFixed ? 'primary' : 'secondary'}
+                      fullWidth
+                      style={{ marginBottom: '0.5rem', backgroundColor: item.isFixed ? '#28a745' : undefined, borderColor: item.isFixed ? '#28a745' : undefined, color: item.isFixed ? '#fff' : undefined }}
                     >
                       {item.isFixed ? '★ Fixed Item' : '☆ Mark Fix Item'}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => handleDeleteMenuItem(item.id)}
-                      className="mm-btn mm-btn-danger"
-                      style={{ width: '100%' }}
+                      variant="danger"
+                      fullWidth
                     >
                       Delete
-                    </button>
+                    </Button>
                   </div>
                 </div>
               );
@@ -687,13 +705,14 @@ function MenuManagement({ onBack }) {
                       रु {item.price != null ? Number(item.price).toFixed(2) : '0.00'}
                     </div>
                     <div className="mm-card-actions">
-                      <button
+                      <Button
                         onClick={() => handleRemoveFromMenu(item.id)}
-                        className="mm-btn mm-btn-remove"
-                        disabled={loading}
+                        variant="danger"
+                        loading={loading}
+                        fullWidth
                       >
-                        {loading ? <LoadingSpinner size="16" stroke="2" color="currentColor" /> : 'Remove from Special'}
-                      </button>
+                        Remove from Special
+                      </Button>
                     </div>
                   </div>
                 ))}

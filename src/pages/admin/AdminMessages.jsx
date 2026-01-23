@@ -5,8 +5,9 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/AdminMessages.css';
+import '../../styles/StandardLayout.css';
 
-function AdminMessages({ onBack }) {
+function AdminMessages({ onBack, isSidebarOpen, onToggleSidebar }) {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedMessage, setSelectedMessage] = useState(null);
@@ -88,10 +89,10 @@ function AdminMessages({ onBack }) {
     };
 
     return (
-        <div className="am-container">
-            <PageHeader title="Messages" onBack={onBack} />
+        <div className="std-container">
+            <PageHeader title="Messages" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
 
-            <main className="am-body">
+            <main className="std-body">
                 <div className="am-grid">
 
                     {/* Message List */}

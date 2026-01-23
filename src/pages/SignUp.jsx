@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { auth } from '../lib/firebase';
 import { validatePassword, validateEmail, validateName } from '../utils/validation';
 import LoadingSpinner from '../components/LoadingSpinner';
+import Button from '../components/Button';
 import '../styles/Auth.css';
 
 function SignUp({ onSwitch, onComplete }) {
@@ -145,12 +146,12 @@ function SignUp({ onSwitch, onComplete }) {
               required
               autoComplete="new-password"
             />
-            <button 
-                type="button" 
-                className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
+            <button
+              type="button"
+              className="password-toggle"
+              onClick={() => setShowPassword(!showPassword)}
             >
-                {showPassword ? '👁️' : '👁️‍🗨️'}
+              {showPassword ? '👁️' : '👁️‍🗨️'}
             </button>
           </div>
           {passwordStrength && !passwordStrength.valid && form.password.length > 0 && (
@@ -173,48 +174,56 @@ function SignUp({ onSwitch, onComplete }) {
               required
               autoComplete="new-password"
             />
-            <button 
-                type="button" 
-                className="password-toggle"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            <button
+              type="button"
+              className="password-toggle"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
             >
-                {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
+              {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
             </button>
           </div>
           {form.confirmPassword && !passwordsMatch && (
             <span className="validation-text error">Passwords do not match.</span>
           )}
           {form.confirmPassword && passwordsMatch && (
-             <span className="validation-text success">✓ Passwords match</span>
+            <span className="validation-text success">✓ Passwords match</span>
           )}
         </div>
 
         <div className="anim-delay-5">
-            <button type="submit" className="primary-btn" disabled={submitting}>
-            {submitting ? <LoadingSpinner size="20" stroke="2.5" color="white" /> : 'CREATE ACCOUNT'}
-            </button>
+          <Button
+            type="submit"
+            variant="primary"
+            fullWidth
+            loading={submitting}
+            disabled={submitting}
+          >
+            CREATE ACCOUNT
+          </Button>
         </div>
 
         <div className="google-btn-container anim-delay-6">
-            <button
+          <Button
             type="button"
-            className="secondary-btn"
+            variant="secondary"
+            fullWidth
             onClick={handleGoogle}
             disabled={submitting}
-            style={{borderColor: '#ddd', color: '#555'}}
-            >
-             Sign up with Google
-            </button>
+            style={{ borderColor: '#ddd', color: '#555' }}
+          >
+            Sign up with Google
+          </Button>
         </div>
 
         <div className="anim-delay-6">
-            <button
+          <Button
             type="button"
-            className="secondary-btn"
+            variant="ghost"
+            fullWidth
             onClick={onSwitch}
-            >
+          >
             BACK TO LOGIN
-            </button>
+          </Button>
         </div>
       </form>
 
