@@ -7,6 +7,10 @@ export default defineConfig({
   define: {
     'global': 'window',
   },
+  resolve: {
+    mainFields: ['browser', 'module', 'main', 'jsnext:main', 'jsnext'],
+    dedupe: ['firebase', '@firebase/app', '@firebase/firestore']
+  },
   optimizeDeps: {
     include: [
       'firebase/app',
