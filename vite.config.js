@@ -12,6 +12,10 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 2000,
+    commonjsOptions: {
+      include: [/firebase/, /@firebase/, /node_modules/],
+      transformMixedEsModules: true
+    },
     rollupOptions: {
       output: {
         manualChunks(id) {
