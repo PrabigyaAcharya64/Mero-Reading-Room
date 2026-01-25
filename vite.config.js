@@ -6,16 +6,18 @@ export default defineConfig({
   define: {
     'global': 'window',
   },
+  optimizeDeps: {
+    exclude: ['@firebase/firestore', '@firebase/auth', '@firebase/storage', '@firebase/functions', 'firebase']
+  },
+  ssr: {
+    noExternal: ['@firebase/firestore', '@firebase/auth', '@firebase/storage', '@firebase/functions', 'firebase']
+  },
   server: {
     port: 5173,
     open: false
   },
   build: {
     chunkSizeWarningLimit: 2000,
-    commonjsOptions: {
-      include: [/firebase/, /@firebase/, /node_modules/],
-      transformMixedEsModules: true
-    },
     rollupOptions: {
       output: {
         manualChunks(id) {
