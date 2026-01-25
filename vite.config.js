@@ -9,9 +9,6 @@ export default defineConfig({
   resolve: {
     dedupe: ['firebase', '@firebase/app', '@firebase/firestore']
   },
-  optimizeDeps: {
-    exclude: ['firebase', '@firebase/firestore', '@firebase/auth']
-  },
   server: {
     port: 5173,
     open: false
