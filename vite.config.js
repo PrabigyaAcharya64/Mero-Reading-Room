@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+import path from 'path';
+
 export default defineConfig({
   plugins: [react()],
   define: {
@@ -8,10 +10,10 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@firebase/firestore': 'node_modules/@firebase/firestore/dist/index.esm2017.js',
-      '@firebase/auth': 'node_modules/@firebase/auth/dist/esm2017/index.js',
-      '@firebase/storage': 'node_modules/@firebase/storage/dist/index.esm2017.js',
-      '@firebase/functions': 'node_modules/@firebase/functions/dist/index.esm2017.js',
+      '@firebase/firestore': path.resolve(__dirname, 'node_modules/@firebase/firestore/dist/index.esm2017.js'),
+      '@firebase/auth': path.resolve(__dirname, 'node_modules/@firebase/auth/dist/esm2017/index.js'),
+      '@firebase/storage': path.resolve(__dirname, 'node_modules/@firebase/storage/dist/index.esm2017.js'),
+      '@firebase/functions': path.resolve(__dirname, 'node_modules/@firebase/functions/dist/index.esm2017.js'),
     }
   },
   server: {
