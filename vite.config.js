@@ -10,22 +10,14 @@ export default defineConfig({
     dedupe: ['firebase', '@firebase/app', '@firebase/firestore']
   },
   optimizeDeps: {
-    include: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage', 'firebase/functions'],
-    esbuildOptions: {
-      target: 'esnext'
-    }
+    exclude: ['firebase', '@firebase/firestore', '@firebase/auth']
   },
   server: {
     port: 5173,
     open: false
   },
   build: {
-    target: 'esnext',
     chunkSizeWarningLimit: 2000,
-    commonjsOptions: {
-      include: [/node_modules/],
-      transformMixedEsModules: true
-    },
     rollupOptions: {
       output: {
         manualChunks(id) {
