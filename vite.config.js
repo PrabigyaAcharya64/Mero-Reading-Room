@@ -20,10 +20,7 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            // Keep Firebase packages together to prevent module resolution errors
-            if (id.includes('firebase') || id.includes('@firebase')) {
-              return 'firebase-vendor';
-            }
+            // Let Vite handle Firebase automatically - don't force chunking
             if (id.includes('@react-pdf/renderer')) {
               return 'pdf-renderer';
             }
