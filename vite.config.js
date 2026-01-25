@@ -6,9 +6,6 @@ export default defineConfig({
   define: {
     'global': 'window',
   },
-  resolve: {
-    dedupe: ['firebase', '@firebase/app', '@firebase/firestore']
-  },
   server: {
     port: 5173,
     open: false
