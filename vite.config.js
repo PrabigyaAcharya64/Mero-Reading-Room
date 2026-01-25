@@ -16,13 +16,13 @@ export default defineConfig({
       'firebase/firestore',
       'firebase/storage',
       'firebase/functions',
-      'scheduler',
     ],
     esbuildOptions: {
       supported: {
         bigint: true
       }
-    }
+    },
+    exclude: ['scheduler']
   },
   server: {
     port: 5173,
@@ -30,11 +30,8 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 2000,
-    commonjsOptions: {
-      include: [/node_modules/],
-      transformMixedEsModules: true,
-    },
     rollupOptions: {
+      external: ['scheduler/cjs/scheduler.production.js'],
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
