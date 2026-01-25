@@ -305,7 +305,7 @@ const InvoiceDocument = ({ userData, transactionData, invoiceNumber }) => {
                 {/* Footer */}
                 <View style={styles.footer}>
                     <Text style={styles.footerTitle}>Notes:</Text>
-                    <Text>This is a computer-generated invoice. No signature is required.</Text>
+                    <Text>This is a computer-generated invoice.</Text>
                     <Text>Thank you for choosing Mero Reading Room. We appreciate your support.</Text>
                 </View>
             </Page>

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, setDoc, getDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../../lib/firebase';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
@@ -213,12 +215,6 @@ function ReadingRoomManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
         setLoading(true);
 
         try {
-            // Import dynamically to avoid circular dependencies if any, or just standard import
-            // For now assuming standard import works.
-            // Ideally we should import httpsCallable at the top.
-            const { httpsCallable } = await import('firebase/functions');
-            const { functions } = await import('../../lib/firebase');
-
             const assignSeatFn = httpsCallable(functions, 'assignSeat');
 
             // Prepare data

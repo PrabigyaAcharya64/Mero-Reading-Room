@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
-import { doc, getDoc, addDoc, collection } from 'firebase/firestore';
+import { doc, getDoc, addDoc, collection, setDoc } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import FullScreenLoader from '../../components/FullScreenLoader';
 import Button from '../../components/Button';
@@ -128,7 +128,6 @@ function ReadingRoomEnrollment({ onBack, onComplete }) {
             });
 
             // Mark registration as completed in User profile
-            const { setDoc, doc } = await import('firebase/firestore'); // Ensure imports are available or use existing
             await setDoc(doc(db, 'users', user.uid), {
                 registrationCompleted: true,
                 updatedAt: new Date().toISOString()
