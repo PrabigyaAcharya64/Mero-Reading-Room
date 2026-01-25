@@ -1,0 +1,106 @@
+{
+  "project_info": {
+    "project_number": "949466497845",
+    "project_id": "mero-reading-room-app",
+    "storage_bucket": "mero-reading-room-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:949466497845:android:7952c6290322176bd6427c",
+        "android_client_info": {
+          "package_name": "com.meroreadingroom"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "949466497845-jd825m278kvhf1ef5td125v3cq49i1gh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.meroreadingroom",
+            "certificate_hash": "0533f1e9aa2a8dfdab539a8d73a651d9db902d44"
+          }
+        },
+        {
+          "client_id": "949466497845-cgo9khl5jbhljl2m4c5v6ef63b1qeqp3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDH7WBf55j5IErNCW9buxTSFdpF3mwa9KM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "949466497845-cgo9khl5jbhljl2m4c5v6ef63b1qeqp3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "949466497845-mccphso97bjbfi7epeij1b558b89iau6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.mycompany.meroreadingroom"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:949466497845:android:1d4a3ec14fc37eccd6427c",
+        "android_client_info": {
+          "package_name": "com.mycompany.meroreadingroom"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "949466497845-4b1eqsee3baidh54ofjgaaip49b1ru5a.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mycompany.meroreadingroom",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "949466497845-ab9fvavr1kojhi559d0jevnihf90h50s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mycompany.meroreadingroom",
+            "certificate_hash": "0533f1e9aa2a8dfdab539a8d73a651d9db902d44"
+          }
+        },
+        {
+          "client_id": "949466497845-cgo9khl5jbhljl2m4c5v6ef63b1qeqp3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDH7WBf55j5IErNCW9buxTSFdpF3mwa9KM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "949466497845-cgo9khl5jbhljl2m4c5v6ef63b1qeqp3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "949466497845-mccphso97bjbfi7epeij1b558b89iau6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.mycompany.meroreadingroom"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

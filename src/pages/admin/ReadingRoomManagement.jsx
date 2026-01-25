@@ -210,94 +210,37 @@ function ReadingRoomManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
 
     const handleAssignStudent = async (userId, seatId) => {
         if (!selectedRoom) return;
+        setLoading(true);
 
         try {
-            const room = rooms.find(r => r.id === selectedRoom);
-            const student = verifiedUsers.find(u => u.id === userId);
-            const elements = room.elements || [];
-            const seat = elements.find(e => e.id === seatId);
+            // Import dynamically to avoid circular dependencies if any, or just standard import
+            // For now assuming standard import works.
+            // Ideally we should import httpsCallable at the top.
+            const { httpsCallable } = await import('firebase/functions');
+            const { functions } = await import('../../lib/firebase');
 
-            if (!student || !seat) return;
+            const assignSeatFn = httpsCallable(functions, 'assignSeat');
 
-            const existingAssignment = seatAssignments.find(a => a.userId === userId);
-            let preservedPaymentDue = null;
-            let preservedLastPayment = null;
-
-            if (existingAssignment) {
-                if (!confirm(`${student.name} is already assigned to ${existingAssignment.seatLabel} in ${existingAssignment.roomName}. Move them here?`)) {
-                    return;
-                }
-                // Fetch current user data to preserve payment dates
-                const userDocRef = doc(db, 'users', userId);
-                const userDocSnap = await getDoc(userDocRef);
-
-                if (userDocSnap.exists()) {
-                    const currentUserData = userDocSnap.data();
-                    preservedPaymentDue = currentUserData.nextPaymentDue;
-                    preservedLastPayment = currentUserData.lastPaymentDate;
-                }
-
-                // Delete old assignment
-                await deleteDoc(doc(db, 'seatAssignments', existingAssignment.id));
-            }
-
-            // Create new seat assignment
-            await addDoc(collection(db, 'seatAssignments'), {
-                userId: userId,
-                userName: student.name,
-                userMrrNumber: student.mrrNumber,
-                roomId: selectedRoom,
-                roomName: room.name,
-                seatId: seatId,
-                seatLabel: seat.label,
-                assignedAt: new Date().toISOString(),
-                assignedBy: user?.uid || 'admin'
+            // Prepare data
+            const result = await assignSeatFn({
+                userId,
+                seatId,
+                roomId: selectedRoom
             });
 
-            // Determine payment dates: preserve if reassigning, create new if first assignment
-            const nextPaymentDue = preservedPaymentDue || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-            const lastPaymentDate = preservedLastPayment || new Date().toISOString();
+            console.log('Assignment result:', result.data);
+            setMessage(`Seat assigned successfully!`);
 
-            console.log('Updating user document with:', {
-                registrationCompleted: true,
-                enrollmentCompleted: true,
-                currentSeat: {
-                    roomId: selectedRoom,
-                    roomName: room.name,
-                    seatId: seatId,
-                    seatLabel: seat.label
-                },
-                nextPaymentDue: nextPaymentDue,
-                lastPaymentDate: lastPaymentDate,
-                selectedRoomType: room.type,
-                isReassignment: !!existingAssignment
-            });
-
-            // Update user document with new seat info but preserve payment dates if reassigning
-            await setDoc(doc(db, 'users', userId), {
-                registrationCompleted: true,
-                enrollmentCompleted: true,
-                currentSeat: {
-                    roomId: selectedRoom,
-                    roomName: room.name,
-                    seatId: seatId,
-                    seatLabel: seat.label
-                },
-                nextPaymentDue: nextPaymentDue,
-                lastPaymentDate: lastPaymentDate,
-                selectedRoomType: room.type
-            }, { merge: true });
-
-            console.log('User document updated successfully for userId:', userId, existingAssignment ? '(reassignment - payment dates preserved)' : '(new assignment)');
-
-            setMessage(`Assigned ${student.name} to ${seat.label}${existingAssignment ? ' (payment dates preserved)' : ''}`);
+            // Refresh data
             loadSeatAssignments();
             setAssignmentMode(false);
             setSelectedStudent(null);
             setSearchQuery('');
         } catch (error) {
             console.error('Error assigning student:', error);
-            setMessage('Error assigning student');
+            setMessage(`Error assigning student: ${error.message}`);
+        } finally {
+            setLoading(false);
         }
     };
 

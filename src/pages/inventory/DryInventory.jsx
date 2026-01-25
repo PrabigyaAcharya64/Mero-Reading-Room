@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, doc, setDoc, updateDoc, addDoc, deleteDoc, serverTimestamp, where, getDocs } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { db, functions } from '../../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
 import PageHeader from '../../components/PageHeader';
 import FullScreenLoader from '../../components/FullScreenLoader';
 import '../../styles/DryInventory.css';
 import '../../styles/StandardLayout.css';
-
-const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY;
 
 const DryInventory = ({ onBack }) => {
     const [inventoryItems, setInventoryItems] = useState([]);
@@ -161,7 +160,7 @@ const DryInventory = ({ onBack }) => {
         }
     };
 
-    // --- Image Upload Logic (ImgBB) ---
+    // --- Image Upload Logic (Cloud Function) ---
     const handleFileChange = (e) => {
         if (e.target.files[0]) {
             setImageFile(e.target.files[0]);
@@ -185,27 +184,18 @@ const DryInventory = ({ onBack }) => {
 
             const base64Image = await base64Promise;
 
-            const formData = new FormData();
-            formData.append('image', base64Image);
-            // key is appended in URL for ImgBB when using base64 in some examples, 
-            // but MenuManagement uses URL param for key and FormData for image.
+            // Call Cloud Function instead of direct API call
+            const uploadImageFn = httpsCallable(functions, 'uploadImage');
+            const result = await uploadImageFn({ base64Image });
 
-            const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-                method: 'POST',
-                body: formData
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                return data.data.url;
+            if (result.data.success) {
+                return result.data.url;
             } else {
-                console.error("ImgBB upload error:", data);
-                alert(`Upload failed: ${data.error?.message || 'Unknown error'}`);
+                alert('Upload failed. Please try again.');
                 return null;
             }
         } catch (error) {
-            console.error("Error uploading to ImgBB:", error);
+            console.error("Error uploading image:", error);
             alert("Error uploading image. Please try again.");
             return null;
         }

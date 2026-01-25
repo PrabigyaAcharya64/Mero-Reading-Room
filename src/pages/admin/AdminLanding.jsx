@@ -4,29 +4,38 @@ import { Menu, X } from 'lucide-react';
 import UserManagement from './UserManagement';
 import HostelManagement from './HostelManagement';
 import NewUsers from './NewUsers';
+import AllMembersView from './AllMembersView';
 import CanteenAdminLanding from '../Canteen_Admin/CanteenAdminLanding';
 import AdminMessages from './AdminMessages';
 import CreateAnnouncement from './CreateAnnouncement';
 import ReadingRoomManagement from '../readingroom/ReadingRoomManagement';
+import AdminBalanceLoad from './AdminBalanceLoad';
 import Sidebar from '../../components/Sidebar';
 import Dashboard from './Dashboard';
 import { collection, query, where, onSnapshot, deleteDoc, doc, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import '../../styles/StandardLayout.css';
 
-function AdminLanding() {
+function AdminLanding({ onNavigateRoot }) {
   const { user, signOutUser } = useAuth();
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Admin';
-  // Default to false (closed) on mobile, true on desktop? 
-  // User requested "hamburger button optes the side bar", implying default closed or user controlled.
-  // "if a option is clicked close the side bar".
-  // Let's default to closed for "full page" experience initially or responsive?
-  // I'll default to closed to ensure "page completely" is the first impression if they want that.
-  // Or better, checking window width. But for simplicity, I'll default false (Closed).
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Default to open for dashboard
   const [currentView, setCurrentView] = useState('dashboard');
 
   const [unreadCount, setUnreadCount] = useState(0);
+  // ... (keep other states)
+
+  // Navigate and manage sidebar state
+  const handleNavigate = (view, data = null) => {
+    setCurrentView(view);
+
+    // Keep sidebar open on dashboard, close on other pages
+    if (view === 'dashboard') {
+      setIsSidebarOpen(true);
+    } else {
+      setIsSidebarOpen(false);
+    }
+  };
   const [newOrdersCount, setNewOrdersCount] = useState(0);
   const [announcements, setAnnouncements] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -85,19 +94,6 @@ function AdminLanding() {
     }
   };
 
-  // Navigate and manage sidebar state
-  const handleNavigate = (view) => {
-    setCurrentView(view);
-    // Keep sidebar open on dashboard, close on other pages
-    if (view === 'dashboard') {
-      setIsSidebarOpen(true);
-    } else {
-      setIsSidebarOpen(false);
-    }
-  };
-
-  // ... (keep helper functions)
-
   const renderContent = () => {
     switch (currentView) {
       case 'dashboard':
@@ -108,6 +104,8 @@ function AdminLanding() {
         return <HostelManagement isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
       case 'new-users':
         return <NewUsers onBack={() => handleNavigate('user-management')} />;
+      case 'all-members':
+        return <AllMembersView onBack={() => handleNavigate('user-management')} isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
       case 'canteen':
         return <CanteenAdminLanding isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
       case 'messages':
@@ -116,6 +114,8 @@ function AdminLanding() {
         return <CreateAnnouncement isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
       case 'reading-rooms':
         return <ReadingRoomManagement isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
+      case 'balance-requests':
+        return <AdminBalanceLoad isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
       default:
         return <Dashboard onNavigate={handleNavigate} isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
     }

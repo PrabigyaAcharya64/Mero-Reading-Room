@@ -11,8 +11,8 @@ service firebase.storage {
     match /menu-items/{fileName} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated() 
-        && request.resource.size < 5 * 1024 * 1024  // Max 5MB
-        && request.resource.contentType.matches('image/.*');  // Only images
+        && request.resource.size < 5 * 1024 * 1024  
+        && request.resource.contentType.matches('image/.*'); 
       allow delete: if isAuthenticated();
     }
 
@@ -23,6 +23,16 @@ service firebase.storage {
         && request.resource.size < 5 * 1024 * 1024  // Max 5MB
         && request.resource.contentType.matches('image/.*');  // Only images
       allow delete: if isAuthenticated();
+    }
+    
+    // Receipts
+    match /receipts/{userId}/{fileName} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || request.auth.token.role == 'admin'); 
+      // Allow users to upload their own receipts
+      allow write: if isAuthenticated() 
+        && request.auth.uid == userId
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
     }
     
     // Default: deny all other access

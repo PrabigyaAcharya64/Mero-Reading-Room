@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
-import { db } from '../../lib/firebase';
-import { doc, getDoc, setDoc, collection, getDocs, addDoc, query, where } from 'firebase/firestore';
+import { db, functions } from '../../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { doc, getDoc } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
 import { generateAndSendInvoice } from './ReadingRoomInvoice';
 import '../../styles/StandardLayout.css';
 
 function ReadingRoomBuy({ onBack, selectedOption, onComplete, isSidebarOpen, onToggleSidebar }) {
-    const { user, userBalance, deductBalance } = useAuth();
+    const { user, userBalance } = useAuth();
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
     const [userData, setUserData] = useState(null);
@@ -46,110 +47,29 @@ function ReadingRoomBuy({ onBack, selectedOption, onComplete, isSidebarOpen, onT
         setError('');
 
         try {
-            // 1. Find an available seat
-            const roomsRef = collection(db, 'readingRooms');
-            const roomsSnapshot = await getDocs(roomsRef);
-            const rooms = roomsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Call the Cloud Function to process purchase
+            const processPurchase = httpsCallable(functions, 'processReadingRoomPurchase');
+            const result = await processPurchase({
+                roomType: selectedOption.roomType,
+                registrationFee: selectedOption.registrationFee,
+                monthlyFee: selectedOption.monthlyFee
+            });
 
-            // Filter rooms by type (AC/Non-AC)
-            const eligibleRooms = rooms.filter(room => room.type === selectedOption.roomType);
-
-            if (eligibleRooms.length === 0) {
-                throw new Error(`No ${selectedOption.roomType === 'ac' ? 'AC' : 'Non-AC'} rooms available.`);
-            }
-
-            // Get all current assignments to check occupancy
-            const assignmentsRef = collection(db, 'seatAssignments');
-            const assignmentsSnapshot = await getDocs(assignmentsRef);
-            const assignments = assignmentsSnapshot.docs.map(doc => doc.data());
-            const occupiedSeatIds = new Set(assignments.map(a => a.seatId));
-
-            let assignedSeat = null;
-            let assignedRoom = null;
-
-            // Find first available seat
-            for (const room of eligibleRooms) {
-                const elements = room.elements || room.seats || [];
-                const seats = elements.filter(e => !e.type || e.type === 'seat');
-
-                const availableSeat = seats.find(seat => !occupiedSeatIds.has(seat.id));
-
-                if (availableSeat) {
-                    assignedSeat = availableSeat;
-                    assignedRoom = room;
-                    break;
-                }
-            }
-
-            if (!assignedSeat) {
-                throw new Error(`No seats available in ${selectedOption.roomType === 'ac' ? 'AC' : 'Non-AC'} rooms.`);
-            }
-
-            // 2. Deduct balance
-            const success = await deductBalance(totalAmount);
+            const { success, transactionId, needsEnrollment } = result.data;
 
             if (!success) {
-                throw new Error('Transaction failed. Please try again.');
+                throw new Error('Purchase failed. Please try again.');
             }
 
-            // 3. Create seat assignment
-            await addDoc(collection(db, 'seatAssignments'), {
-                userId: user.uid,
-                userName: userData?.name || user.displayName || 'User',
-                userMrrNumber: userData?.mrrNumber || 'N/A',
-                roomId: assignedRoom.id,
-                roomName: assignedRoom.name,
-                seatId: assignedSeat.id,
-                seatLabel: assignedSeat.label,
-                assignedAt: new Date().toISOString(),
-                assignedBy: 'system',
-                status: 'active'
-            });
-
-            // 3.5 Record Transaction in 'transactions' collection for Dashboard
-            const transactionRef = await addDoc(collection(db, 'transactions'), {
-                type: 'reading_room',
-                amount: totalAmount,
-                details: `${selectedOption.roomType === 'ac' ? 'AC' : 'Non-AC'} Room Fee`,
-                userId: user.uid,
-                userName: userData?.name || user.displayName || 'User',
-                date: new Date().toISOString(), // ISO string for consistency
-                createdAt: new Date().toISOString(),
-                roomType: selectedOption.roomType,
-                month: new Date().toLocaleString('default', { month: 'short' }) // e.g., "Jan"
-            });
-
-            // 4. Update user document with payment info (BUT NOT registration completion yet)
-            await setDoc(doc(db, 'users', user.uid), {
-                selectedRoomType: selectedOption.roomType,
-                // registrationCompleted: true, // REMOVED: This is now handled by Enrollment Form
-                lastPaymentDate: new Date().toISOString(),
-                nextPaymentDue: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
-                updatedAt: new Date().toISOString(),
-                currentSeat: {
-                    roomId: assignedRoom.id,
-                    roomName: assignedRoom.name,
-                    seatId: assignedSeat.id,
-                    seatLabel: assignedSeat.label
-                }
-            }, { merge: true });
-
-            // 5. Generate and send invoice via email
+            // Generate and send invoice
             try {
-                const invoiceResult = await generateAndSendInvoice(user.uid, transactionRef.id);
-                if (invoiceResult.success) {
-                    console.log('Invoice sent successfully:', invoiceResult.message);
-                } else {
-                    console.error('Failed to send invoice:', invoiceResult.error);
-                    // Don't fail the entire payment if invoice fails
-                }
+                const invoiceResult = await generateAndSendInvoice(user.uid, transactionId);
+                // Removed console log for production
             } catch (invoiceError) {
                 console.error('Invoice generation error:', invoiceError);
-                // Continue with payment flow even if invoice fails
             }
 
-            // Redirect based on whether enrollment is needed
-            const needsEnrollment = !userData?.registrationCompleted;
+            // Redirect based on enrollment status
             onComplete(needsEnrollment);
         } catch (err) {
             console.error('Error processing payment:', err);

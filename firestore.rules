@@ -22,19 +22,13 @@ service cloud.firestore {
 
 
     function role() {
-
-
-      // Role Check: Reads user document (Standard method)
-
-      return loggedIn() &&
-
-        exists(/databases/$(database)/documents/users/$(request.auth.uid))
-
-        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
-
-        : 'client';
-
-
+      // 1. Check Custom Claim (Fastest, Cheapest)
+      return loggedIn() && 'role' in request.auth.token 
+        ? request.auth.token.role 
+        // 2. Fallback: Check User Document in Firestore (Costs 1 Read)
+        : (loggedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+            : 'client');
     }
 
 
@@ -60,35 +54,30 @@ service cloud.firestore {
 
 
     function hasActiveAccess() {
-
       return isStaff()
-
-        // Ghost User Fix: Removed !exists check. Access now requires a valid user profile.
-
-        // || !exists(/databases/$(database)/documents/users/$(request.auth.uid))
-
-        || !('nextPaymentDue' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data)
-
-        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.nextPaymentDue == null
-
-        || (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.nextPaymentDue is string)
-
-        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.nextPaymentDue >= request.time;
-
+        || (
+          loggedIn()
+          && 'nextPaymentDue' in request.auth.token
+          // Compare Unix Timestamp (seconds) from Claim with Request Time
+          && request.auth.token.nextPaymentDue > (request.time.toMillis() / 1000)
+        );
     }
 
 
-    function isModifyingProtectedFields() {
-
-      let affected = request.resource.data.diff(resource.data).affectedKeys();
-
-
-      return affected.hasAny(['role', 'verified'])
-        // Security: Prevent increasing balance (must use Admin/Payment flow)
-        || (affected.hasAny(['balance']) && request.resource.data.balance > resource.data.balance);
-
+    function isOwner(userId) {
+      return loggedIn() && request.auth.uid == userId;
     }
 
+    function isModifyingSensitiveFields() {
+      // Prevent user from modifying balance, role, verified status, etc directly
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['balance', 'role', 'verified', 'nextPaymentDue', 'enrollmentCompleted', 'currentSeat']);
+    }
+
+
+    function isSettingSensitiveFields() {
+      return request.resource.data.keys().hasAny(['balance', 'role', 'verified', 'nextPaymentDue', 'enrollmentCompleted', 'currentSeat']);
+    }
 
     /* ======================
 
@@ -97,48 +86,27 @@ service cloud.firestore {
        ====================== */
 
 
-    match /users/{uid} {
+    // --- USERS COLLECTION ---
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isStaff();
+      
+      // Allow creating own profile (e.g. on signup), but ensure sensitive fields aren't preset maliciously
+      // Though ideally onUserCreated handles this.
+      allow create: if isOwner(userId) && !isSettingSensitiveFields();
 
-      allow get: if loggedIn();
+      // Allow updating: Own profile, BUT prevent modifying sensitive fields
+      allow update: if isOwner(userId) && !isModifyingSensitiveFields();
 
-
-      // Allow listing users if staff OR if query is limited (e.g. for search)
-
-      allow list: if loggedIn() && (
-
-        isStaff()
-
-        || (request.query.limit <= 10 && request.query.filters.mrrNumber != null) // Data Scraping Fix: Require specific filter
-
-      );
-
-
-      allow create: if loggedIn()
-
-        && request.auth.uid == uid
-
-        && request.resource.data.get('role', 'client') == 'client';
+      // Staff can update everything
+      allow update, delete: if isStaff();
+    }
 
 
-      allow update: if loggedIn() && (
+    match /users/{uid}/private_data/{docId} {
 
-        isAdmin()
+      allow read: if loggedIn() && (uid == request.auth.uid || isStaff());
 
-        || (request.auth.uid == uid && !isModifyingProtectedFields())
-
-      );
-
-
-      allow delete: if isAdmin();
-
-
-      match /private_data/{docId} {
-
-        allow read: if loggedIn() && (uid == request.auth.uid || isStaff());
-
-        allow write: if loggedIn() && uid == request.auth.uid;
-
-      }
+      allow write: if loggedIn() && uid == request.auth.uid;
 
     }
 
@@ -183,17 +151,16 @@ service cloud.firestore {
        ====================== */
 
 
+    // --- ORDERS COLLECTION ---
     match /orders/{orderId} {
+      // Allow reading own orders
       allow list: if loggedIn() && (isStaff() || resource.data.userId == request.auth.uid);
       allow get: if loggedIn() && (isStaff() || resource.data.userId == request.auth.uid);
 
-      allow create: if loggedIn()
-        && request.resource.data.userId == request.auth.uid
-        && hasActiveAccess()
-        // Force the initial status to be 'pending'
-        && request.resource.data.status == 'pending'
-        && request.resource.data.total > 0;
+      // CREATE: BLOCKED for clients. Must use processCanteenOrder Cloud Function.
+      allow create: if false; 
 
+      // UPDATE: Staff can update status. Users can ONLY request cancellation.
       allow update: if loggedIn() && (
         isStaff() // Staff can change status to 'completed' or 'delivered'
         || (
@@ -222,13 +189,8 @@ service cloud.firestore {
         && (isStaff() || resource.data.userId == request.auth.uid);
 
 
-      allow create: if loggedIn()
-
-        && request.resource.data.userId == request.auth.uid
-
-        // Data Integrity
-
-        && request.resource.data.amount > 0;
+      // CREATE: BLOCKED for clients. Integrity check.
+      allow create: if false; 
 
 
       allow update, delete: if isAdmin();
@@ -305,9 +267,11 @@ service cloud.firestore {
 
     match /readingRoomEnrollments/{id} {
 
-      allow read: if loggedIn()
-
-        && (isStaff() || resource.data.userId == request.auth.uid);
+      // Allow staff to read all enrollments
+      allow read: if isStaff();
+      
+      // Allow users to read their own enrollments
+      allow read: if loggedIn() && resource.data.userId == request.auth.uid;
 
       allow create: if loggedIn()
 
@@ -326,9 +290,8 @@ service cloud.firestore {
       // Allow users to see their own transactions, staff to see all
       allow read: if loggedIn() && (isStaff() || resource.data.userId == request.auth.uid);
       
-      // Allow users to create transaction records for themselves (e.g. purchasing a subscription)
-      allow create: if loggedIn() 
-        && request.resource.data.userId == request.auth.uid;
+      // CREATE: BLOCKED for clients. Integrity check.
+      allow create: if false; 
       
       // Allow users to update their own transactions ONLY for invoice metadata fields
       allow update: if loggedIn() && (
@@ -343,13 +306,28 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    match /balanceRequests/{requestId} {
+      allow read: if loggedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      
+      // CREATE: Allow users to create requests, BUT enforce status must be 'pending'
+      // and they cannot spoof the userId or approved fields
+      allow create: if loggedIn() 
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && !('approvedBy' in request.resource.data)
+        && !('approvedAt' in request.resource.data);
+        
+      // Only admin can update status
+      allow update: if isAdmin(); 
+      allow delete: if isAdmin();
+    }
+
     match /invoices/{id} {
       // Allow users to read their own invoices, staff to read all
       allow read: if loggedIn() && (isStaff() || resource.data.userId == request.auth.uid);
       
-      // Allow users to create invoices for themselves
-      allow create: if loggedIn() 
-        && request.resource.data.userId == request.auth.uid;
+      // CREATE: BLOCKED for clients. Must use Cloud Function for integrity.
+      allow create: if false;
       
       allow update, delete: if isAdmin();
     }
@@ -371,22 +349,8 @@ service cloud.firestore {
 
     match /canteen_items/{id} {
       allow read: if loggedIn();
-      
-      // REMOVED: Client-side stock decrementing (it is too vulnerable)
-      // Only staff can update stock counts after verifying payment/order
-      allow update: if loggedIn() && (
-        isStaff() || (
-          // Client Stock Decrement Logic
-          // 1. Only stockCount is changed
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stockCount'])
-          // 2. Stock is being REDUCED (not increased)
-          && request.resource.data.stockCount < resource.data.stockCount
-          // 3. Stock cannot go negative
-          && request.resource.data.stockCount >= 0
-        )
-      );
-
-      allow create, delete: if isStaff();
+      // Server-side only for updates to prevent stock manipulation
+      allow update, create, delete: if isStaff();
     }
 
 

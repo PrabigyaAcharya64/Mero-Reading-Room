@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
+import { LogOut } from 'lucide-react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import MenuManagement from './MenuManagement';
@@ -20,7 +21,7 @@ const orderIcon = new URL('../../assets/order.svg', import.meta.url).href;
 const orderPlaceIcon = new URL('../../assets/order_place.svg', import.meta.url).href;
 
 function CanteenAdminLanding({ onBack, isSidebarOpen, onToggleSidebar }) {
-  const { user, userRole } = useAuth();
+  const { user, userRole, signOutUser } = useAuth();
   const [currentView, setCurrentView] = useState('landing');
   const [newOrdersCount, setNewOrdersCount] = useState(0);
   const previousOrderCount = useRef(0);
@@ -70,7 +71,22 @@ function CanteenAdminLanding({ onBack, isSidebarOpen, onToggleSidebar }) {
 
   return (
     <div className="std-container">
-      <PageHeader title="Canteen Administration" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
+      <PageHeader
+        title="Canteen Administration"
+        onBack={onBack}
+        isSidebarOpen={isSidebarOpen}
+        onToggleSidebar={onToggleSidebar}
+        rightElement={
+          <button
+            onClick={signOutUser}
+            className="std-header-back-btn"
+            style={{ color: '#ef4444', borderColor: '#ef4444' }}
+            title="Sign Out"
+          >
+            <LogOut size={20} />
+          </button>
+        }
+      />
 
       <main className="std-body">
         <section className="landing-services">

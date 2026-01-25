@@ -1,0 +1,452 @@
+/* LoadBalance.css - Styles for Add Money Flow */
+
+.lb-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: #f9fafb;
+}
+
+/* Header Section (Step 1) */
+.lb-header {
+    background-color: #000;
+    color: #fff;
+    padding: 1.5rem;
+    padding-bottom: 3rem;
+    border-bottom-left-radius: 2.5rem;
+    border-bottom-right-radius: 2.5rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    position: relative;
+    z-index: 10;
+}
+
+.lb-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+}
+
+.lb-back-btn {
+    padding: 0.5rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.lb-back-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.lb-nav-title {
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.lb-balance-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.lb-balance-label {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.lb-balance-value {
+    font-size: 1.875rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Content Section (Step 1) */
+.lb-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    margin-top: -2rem;
+    position: relative;
+    z-index: 20;
+}
+
+.lb-amount-card {
+    background-color: #fff;
+    border-radius: 1.5rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    border: 1px solid #f3f4f6;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.lb-amount-label {
+    color: #9ca3af;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.lb-amount-input {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #111827;
+    display: flex;
+    align-items: baseline;
+}
+
+.lb-currency {
+    font-size: 1.875rem;
+    margin-right: 0.5rem;
+    color: #9ca3af;
+    font-weight: 500;
+}
+
+/* Keypad */
+.lb-keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    column-gap: 2rem;
+    row-gap: 1.5rem;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+}
+
+.lb-key {
+    height: 4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: #111827;
+    border-radius: 9999px;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    user-select: none;
+}
+
+.lb-key:hover {
+    background-color: #f3f4f6;
+}
+
+.lb-key:active {
+    background-color: #e5e7eb;
+}
+
+/* Action Button */
+.lb-action-btn {
+    width: 100%;
+    background-color: #000;
+    color: #fff;
+    padding: 1rem;
+    border-radius: 1rem;
+    font-weight: 700;
+    font-size: 1.125rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: transform 0.2s;
+    margin-bottom: 1.5rem;
+}
+
+.lb-action-btn:hover {
+    transform: scale(1.02);
+}
+
+.lb-action-btn:active {
+    transform: scale(0.98);
+}
+
+/* Step 2 Header */
+.lb-header-s2 {
+    background-color: #fff;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+
+.lb-back-btn-s2 {
+    padding: 0.5rem;
+    margin-left: -0.5rem;
+    border-radius: 9999px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s;
+}
+
+.lb-back-btn-s2:hover {
+    background-color: #f3f4f6;
+}
+
+.lb-title-s2 {
+    margin-left: 0.75rem;
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: #111827;
+}
+
+/* Step 2 Content */
+.lb-content-scroll {
+    padding: 1.5rem;
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 8rem;
+}
+
+.lb-payment-card {
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: 1.5rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    border: 1px solid #f3f4f6;
+    margin-bottom: 1.5rem;
+}
+
+.lb-payment-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.lb-qr-icon {
+    width: 3rem;
+    height: 3rem;
+    background-color: #f0fdf4;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #16a34a;
+}
+
+.lb-payment-title {
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+
+.lb-payment-subtitle {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin: 0;
+}
+
+.lb-details-box {
+    background-color: #f9fafb;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    border: 1px solid #f3f4f6;
+}
+
+.lb-details-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}
+
+.lb-label-sm {
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.lb-badge {
+    font-size: 0.75rem;
+    color: #2563eb;
+    font-weight: 500;
+    background-color: #eff6ff;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.lb-id-value {
+    font-size: 1.25rem;
+    font-family: monospace;
+    font-weight: 700;
+    color: #111827;
+    letter-spacing: 0.025em;
+    user-select: all;
+    margin: 0;
+}
+
+.lb-summary-row {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+.lb-summary-val {
+    font-weight: 700;
+    color: #111827;
+    font-size: 1.125rem;
+}
+
+/* Form Fields */
+.lb-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.lb-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    margin-left: 0.25rem;
+}
+
+.lb-input {
+    width: 100%;
+    background-color: #fff;
+    padding: 1rem 1.25rem;
+    border-radius: 1rem;
+    border: 1px solid #e5e7eb;
+    color: #111827;
+    font-weight: 500;
+    font-size: 1rem;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.lb-input:focus {
+    border-color: #000;
+    box-shadow: 0 0 0 1px #000;
+}
+
+.lb-upload-box {
+    background-color: #fff;
+    border: 2px dashed #e5e7eb;
+    border-radius: 1.5rem;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.lb-upload-box:hover {
+    border-color: #d1d5db;
+    background-color: rgba(249, 250, 251, 0.5);
+}
+
+.lb-icon-circle {
+    width: 3.5rem;
+    height: 3.5rem;
+    background-color: #f9fafb;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+    color: #9ca3af;
+    transition: transform 0.2s;
+}
+
+.lb-upload-box:hover .lb-icon-circle {
+    transform: scale(1.1);
+    color: #4b5563;
+}
+
+.lb-upload-text {
+    font-weight: 500;
+    color: #4b5563;
+    margin: 0;
+}
+
+.lb-preview-container {
+    position: relative;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    border: 1px solid #f3f4f6;
+}
+
+.lb-preview-img {
+    width: 100%;
+    height: 14rem;
+    object-fit: cover;
+}
+
+.lb-preview-overlay {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.lb-preview-container:hover .lb-preview-overlay {
+    opacity: 1;
+}
+
+.lb-remove-btn {
+    background-color: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-weight: 500;
+    font-size: 0.875rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.lb-remove-btn:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Footer Step 2 */
+.lb-footer-s2 {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #fff;
+    padding: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    z-index: 20;
+}
+
+.lb-footer-inner {
+    max-width: 28rem;
+    margin: 0 auto;
+}

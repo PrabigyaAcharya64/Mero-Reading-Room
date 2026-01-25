@@ -12,9 +12,7 @@ import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/MenuManagement.css';
 import '../../styles/StandardLayout.css';
-
-const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY;
-
+import { uploadImageSecurely } from '../../utils/imageUpload';
 
 
 function MenuManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
@@ -213,59 +211,11 @@ function MenuManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
 
       let photoURL = null;
 
-      // Upload photo to imgBB if provided
+      // Upload photo to ImgBB via Cloud Function if provided
       if (photoFile) {
-        try {
-          // Convert file to base64
-          const reader = new FileReader();
-          const base64Promise = new Promise((resolve, reject) => {
-            reader.onloadend = () => {
-              const base64String = reader.result.split(',')[1]; // Remove data:image/...;base64, prefix
-              resolve(base64String);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(photoFile);
-          });
-
-          const base64Image = await base64Promise;
-
-          // Upload to imgBB using FormData
-          const uploadFormData = new FormData();
-          uploadFormData.append('image', base64Image);
-
-          const uploadTimeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Upload timeout')), 30000)
-          );
-
-          const uploadResponse = await Promise.race([
-            fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-              method: 'POST',
-              body: uploadFormData
-            }),
-            uploadTimeoutPromise
-          ]);
-
-          if (!uploadResponse.ok) {
-            throw new Error(`Upload failed with status: ${uploadResponse.status}`);
-          }
-
-          const result = await uploadResponse.json();
-
-          if (result.success && result.data) {
-            photoURL = result.data.url; // Use the direct image URL
-          } else {
-            throw new Error(result.error?.message || 'Upload failed');
-          }
-        } catch (error) {
-          console.error('Error uploading photo to imgBB:', error);
-          if (error?.message?.includes('timeout')) {
-            setMessage('Photo upload timed out. Please try again.');
-            setLoading(false);
-            return;
-          } else {
-            setMessage(`Error uploading photo: ${error?.message || 'Unknown error'}. Menu item will be saved without photo.`);
-            // Continue without photo
-          }
+        photoURL = await uploadImageSecurely(photoFile);
+        if (!photoURL) {
+          setMessage('Error uploading photo. Menu item will be saved without photo.');
         }
       }
 

@@ -16,7 +16,7 @@
     overflow-y: auto;
     background-color: var(--discussion-white);
     padding: 1rem;
-    /* Equivalent to 16px-20px */
+    
     box-sizing: border-box;
 }
 

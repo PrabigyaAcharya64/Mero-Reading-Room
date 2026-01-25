@@ -74,45 +74,10 @@ function NewUsers({ onBack, isSidebarOpen, onToggleSidebar }) {
     }
   };
 
-  const sendApprovalEmail = async (toEmail, fullName) => {
-    const BREVO_API_KEY = import.meta.env.VITE_BREVO_API_KEY;
-
-    try {
-      const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-        method: "POST",
-        headers: {
-          "accept": "application/json",
-          "api-key": BREVO_API_KEY,
-          "content-type": "application/json"
-        },
-        body: JSON.stringify({
-          templateId: 2, // Your confirmed Template ID
-          to: [{ email: toEmail, name: fullName }],
-          params: {
-            FULLNAME: fullName, // Use {{params.FULLNAME}} in your Brevo Editor
-          }
-        })
-      });
-
-      if (response.ok) {
-        alert("Test successful! Email sent using Template #2.");
-      } else {
-        const errorData = await response.json();
-        console.error("Brevo Error:", errorData);
-        alert("Failed: " + errorData.message);
-      }
-    } catch (error) {
-      console.error("Fetch Error:", error);
-    }
-  };
-
   const handleVerify = async (userId) => {
     try {
       setVerifying(userId);
       const userDocRef = doc(db, 'users', userId);
-
-      // Find user data to get email and name
-      const userToVerify = pendingUsers.find(u => u.id === userId);
 
       // Use setDoc with merge to ensure the update works even if document structure is different
       await updateDoc(userDocRef, {
@@ -122,13 +87,7 @@ function NewUsers({ onBack, isSidebarOpen, onToggleSidebar }) {
         updatedAt: new Date().toISOString(),
       });
 
-      // Send Approval Email
-      if (userToVerify && userToVerify.email && userToVerify.name) {
-        await sendApprovalEmail(userToVerify.email, userToVerify.name);
-      } else {
-        console.warn("Could not send email: User email or name missing", userToVerify);
-        alert("User verified, but failed to send email: Email or Name missing.");
-      }
+      // Email is now sent via Cloud Function (onUserVerified trigger)
 
       // Reload users
       await loadUsers();

@@ -11,6 +11,9 @@ import ReadingRoomBuy from './readingroom/ReadingRoomBuy';
 import ReadingRoomEnrollment from './readingroom/ReadingRoomEnrollment';
 import ReadingRoomDashboard from './readingroom/ReadingRoomDashboard';
 import Discussion from './discussion/Discussion';
+import LoadBalance from './balance/LoadBalance';
+import Confirmation from './balance/Confirmation';
+import Statement from './balance/Statement';
 import profileIcon from '../assets/profile.svg';
 import readingRoomIcon from '../assets/readingroom.svg';
 import hostelIcon from '../assets/hostel.svg';
@@ -18,6 +21,7 @@ import foodIcon from '../assets/food.svg';
 import contactIcon from '../assets/contact.svg';
 import adminIcon from '../assets/usermanagement.svg';
 import '../styles/StandardLayout.css';
+import { History as HistoryIcon } from 'lucide-react'; // Using lucide for reliable icon
 
 function LandingPage({ onBack }) {
   const { user, signOutUser, userBalance } = useAuth();
@@ -203,6 +207,26 @@ function LandingPage({ onBack }) {
     return <Discussion onBack={() => setCurrentView('landing')} />;
   }
 
+  // Show Load Balance
+  if (currentView === 'load-balance') {
+    return (
+      <LoadBalance
+        onBack={() => setCurrentView('landing')}
+        onComplete={() => setCurrentView('balance-confirmation')}
+      />
+    );
+  }
+
+  // Show Confirmation
+  if (currentView === 'balance-confirmation') {
+    return <Confirmation onHome={() => setCurrentView('landing')} />;
+  }
+
+  // Show Statement
+  if (currentView === 'statement') {
+    return <Statement onBack={() => setCurrentView('landing')} />;
+  }
+
   return (
     <div className="std-container">
       <header className="landing-header">
@@ -212,8 +236,21 @@ function LandingPage({ onBack }) {
         <div className="landing-status">
           <div className="landing-balance" aria-label="Current balance">
             <div className="landing-balance__label">Balance</div>
-            <div className="landing-balance__value">रु {(userBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-            <button type="button" className="landing-balance__add" aria-label="Add to balance">
+            <div
+              className="landing-balance__value"
+              onClick={() => setCurrentView('statement')}
+              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+              title="View History"
+            >
+              रु {(userBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <HistoryIcon size={14} className="text-gray-400" />
+            </div>
+            <button
+              type="button"
+              className="landing-balance__add"
+              aria-label="Add to balance"
+              onClick={() => setCurrentView('load-balance')}
+            >
               +
             </button>
           </div>

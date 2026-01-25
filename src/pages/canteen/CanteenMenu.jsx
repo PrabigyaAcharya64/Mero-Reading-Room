@@ -10,7 +10,7 @@ const CanteenMenu = ({
   onBack,
   onNavigate,
   todaysMenu,
-  fixedMenu = [], // Default to empty array
+  fixedMenu = [], 
   cart,
   addToCart,
   userBalance

@@ -9,8 +9,7 @@ import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/StandardLayout.css';
 import logo from "../../assets/logo.png";
-
-const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY;
+import { uploadImageSecurely } from '../../utils/imageUpload';
 
 function ReadingRoomEnrollment({ onBack, onComplete }) {
     const { user } = useAuth();
@@ -94,27 +93,7 @@ function ReadingRoomEnrollment({ onBack, onComplete }) {
 
     const uploadSignature = async () => {
         if (!signatureFile) return null;
-
-        try {
-            const formData = new FormData();
-            formData.append('image', signatureFile);
-            formData.append('key', IMGBB_API_KEY);
-
-            const response = await fetch('https://api.imgbb.com/1/upload', {
-                method: 'POST',
-                body: formData,
-            });
-
-            const data = await response.json();
-            if (data.success) {
-                return data.data.url;
-            } else {
-                throw new Error('Signature upload failed');
-            }
-        } catch (error) {
-            console.error('Error uploading signature:', error);
-            throw new Error('Failed to upload signature. Please try again.');
-        }
+        return await uploadImageSecurely(signatureFile);
     };
 
     const handleSubmit = async (e) => {

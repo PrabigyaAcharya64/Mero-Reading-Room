@@ -19,11 +19,17 @@ export function NavigationRoot() {
     const urlParams = new URLSearchParams(window.location.search);
     const initialMode = urlParams.get('pending') === 'true' ? 'pending-verification' : 'intro';
 
+    const [selectedUser, setSelectedUser] = useState(null);
     const [mode, setMode] = useState(initialMode);
     const [needsAdditionalDetails, setNeedsAdditionalDetails] = useState(false);
     const [isVerified, setIsVerified] = useState(null);
     const [checkingVerification, setCheckingVerification] = useState(false);
     const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+
+    const handleRootNavigate = (newMode, userData = null) => {
+        if (userData) setSelectedUser(userData);
+        setMode(newMode);
+    };
 
     useEffect(() => {
         // Set initial load complete after a short delay to ensure smooth transitions
@@ -34,7 +40,7 @@ export function NavigationRoot() {
         return () => clearTimeout(timer);
     }, []);
 
-    // Handle browser back button
+    // ... (Keep existing back button handling)
     useEffect(() => {
         // Push initial state to history
         window.history.pushState({ page: 'app' }, '', window.location.href);
@@ -46,8 +52,6 @@ export function NavigationRoot() {
             // Push state again to keep user in the app
             window.history.pushState({ page: 'app' }, '', window.location.href);
 
-            // Optionally, you can add logic here to navigate within the app
-            // For example, if you're on a sub-page, go back to the main page
             console.log('Back button pressed - staying in app');
         };
 
@@ -134,7 +138,7 @@ export function NavigationRoot() {
         }
 
         // User is verified, proceed to app
-        return <AppStack userRole={userRole} />;
+        return <AppStack userRole={userRole} onNavigateRoot={handleRootNavigate} />;
     }
 
     return <AuthStack mode={mode} onChangeMode={setMode} />;
@@ -174,10 +178,10 @@ export function AuthStack({ mode, onChangeMode }) {
     );
 }
 
-export function AppStack({ userRole }) {
+export function AppStack({ userRole, onNavigateRoot }) {
     // Redirect based on user role
     if (userRole === 'admin') {
-        return <AdminLanding />;
+        return <AdminLanding onNavigateRoot={onNavigateRoot} />;
     }
 
     if (userRole === 'canteen') {

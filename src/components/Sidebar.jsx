@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
     LogOut,
-    Bell
+    Bell,
+    CreditCard
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider';
 import { db } from '../lib/firebase';
@@ -66,6 +67,7 @@ function Sidebar({ currentView, onNavigate, isOpen, onClose }) {
             badge: unreadMessages > 0 ? unreadMessages : null
         },
         { id: 'create-announcement', label: 'Announcements', icon: null, isLucide: true, lucideIcon: Bell },
+        { id: 'balance-requests', label: 'Balance Requests', icon: null, isLucide: true, lucideIcon: CreditCard },
     ];
 
     return (

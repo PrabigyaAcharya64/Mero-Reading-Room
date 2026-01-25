@@ -1,11 +1,7 @@
-import { db } from '../../lib/firebase';
+import { db, functions } from '../../lib/firebase';
 import { collection, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import { Document, Page, Text, View, StyleSheet, Image, pdf } from '@react-pdf/renderer';
-
-// ============================================
-// Brevo API Configuration
-// ============================================
-const BREVO_API_KEY = import.meta.env.VITE_BREVO_API_KEY;
 
 // ============================================
 // Business Details
@@ -210,9 +206,7 @@ const styles = StyleSheet.create({
     },
 });
 
-// ============================================
-// Invoice PDF Document Component
-// ============================================
+
 const InvoiceDocument = ({ userData, transactionData, invoiceNumber }) => {
     const invoiceDate = new Date().toLocaleDateString('en-US', {
         year: 'numeric',
@@ -319,9 +313,7 @@ const InvoiceDocument = ({ userData, transactionData, invoiceNumber }) => {
     );
 };
 
-// ============================================
-// Generate PDF as Base64
-// ============================================
+
 async function generatePDFBase64(userData, transactionData, invoiceNumber) {
     try {
         const blob = await pdf(
@@ -348,88 +340,28 @@ async function generatePDFBase64(userData, transactionData, invoiceNumber) {
     }
 }
 
-// ============================================
-// Send Invoice Email via Brevo
-// ============================================
-async function sendInvoiceEmail(userData, transactionData, invoiceBase64, invoiceNumber) {
+
+async function sendInvoiceEmail(userData, transactionData, invoiceBase64, invoiceNumber, transactionId) {
     try {
-        const packageName = transactionData.details ||
-            `${transactionData.roomType === 'ac' ? 'AC' : 'Non-AC'} Reading Room Package`;
+        // Call Cloud Function to send email securely and SAVE the invoice
+        const sendEmailFn = httpsCallable(functions, 'sendInvoiceEmail');
 
-        const emailBody = `
-      <div style="font-family: system-ui, -apple-system, sans-serif; background-color: #f9f9f9; padding: 50px 20px;">
-        <div style="max-width: 600px; margin: auto; background: #ffffff; padding: 40px; border: 1px solid #eeeeee; border-radius: 8px;">
-          <div style="margin-bottom: 40px; text-align: center;">
-            <img src="${businessDetails.logo}" alt="Mero Reading Room" style="height: 50px; width: auto;" />
-          </div>
-          <h2 style="font-size: 24px; font-weight: 700; color: #000000; margin-bottom: 10px;">Purchase Successful</h2>
-          <p style="font-size: 16px; color: #444444; line-height: 1.6;">
-            Hi <strong>${userData.name}</strong>, thank you for your purchase! We've received your payment for the <strong>${packageName}</strong>.
-          </p>
-          
-          <div style="background-color: #fcfcfc; border: 1px solid #eeeeee; padding: 20px; border-radius: 4px; margin: 30px 0;">
-            <table style="width: 100%; font-size: 14px;">
-              <tr>
-                <td style="color: #666666; padding-bottom: 8px;">Invoice Number</td>
-                <td style="text-align: right; font-weight: 600;">${invoiceNumber}</td>
-              </tr>
-              <tr>
-                <td style="color: #666666;">Amount Paid</td>
-                <td style="text-align: right; font-weight: 600;">${businessDetails.currency} ${transactionData.amount.toFixed(2)}</td>
-              </tr>
-            </table>
-          </div>
-          <p style="font-size: 16px; color: #444444;">
-            Your official invoice is attached to this email as a PDF for your records.
-          </p>
-          <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #eeeeee;">
-            <p style="font-size: 14px; color: #888888; margin-bottom: 4px;">Questions?</p>
-            <p style="font-size: 14px; color: #000000; font-weight: 500;">
-              Contact us at <a href="mailto:${businessDetails.email}" style="color: #000; text-decoration: underline;">${businessDetails.email}</a> or call <strong>${businessDetails.phone}</strong>.
-            </p>
-          </div>
-        </div>
-        <p style="text-align: center; font-size: 12px; color: #999999; margin-top: 20px;">
-          © ${new Date().getFullYear()} Mero Reading Room. Mid Baneshwor, Kathmandu.
-        </p>
-      </div>
-    `;
-
-        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'api-key': BREVO_API_KEY
+        const result = await sendEmailFn({
+            userData: {
+                name: userData.name,
+                email: userData.email
             },
-            body: JSON.stringify({
-                sender: {
-                    name: businessDetails.name,
-                    email: 'headmrr@gmail.com'  // Verified sender in Brevo
-                },
-                to: [
-                    {
-                        email: userData.email,
-                        name: userData.name
-                    }
-                ],
-                subject: `Invoice ${invoiceNumber} - Mero Reading Room`,
-                htmlContent: emailBody,
-                attachment: [
-                    {
-                        name: `Invoice-${invoiceNumber}.pdf`,
-                        content: invoiceBase64
-                    }
-                ]
-            })
+            invoiceData: {
+                invoiceNumber: invoiceNumber,
+                amount: transactionData.amount,
+                details: transactionData.details,
+                roomType: transactionData.roomType
+            },
+            pdfBase64: invoiceBase64,
+            transactionId: transactionId // MUST pass this now
         });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(`Brevo API Error: ${error.message}`);
-        }
-
-        return await response.json();
+        return result.data;
     } catch (error) {
         console.error('Email sending error:', error);
         throw error;
@@ -439,43 +371,14 @@ async function sendInvoiceEmail(userData, transactionData, invoiceBase64, invoic
 // ============================================
 // Save Invoice to Firebase
 // ============================================
-async function saveInvoiceToFirebase(userId, transactionId, invoiceNumber) {
-    try {
-        const invoiceRef = await addDoc(collection(db, 'invoices'), {
-            userId: userId,
-            transactionId: transactionId,
-            invoiceNumber: invoiceNumber,
-            createdAt: new Date().toISOString(),
-            sentAt: new Date().toISOString(),
-            status: 'sent'
-        });
+// Note: saveInvoiceToFirebase removed as it's now handled by Cloud Function for security.
 
-        // Update transaction document to mark invoice as sent
-        if (transactionId) {
-            const transactionDocRef = doc(db, 'transactions', transactionId);
-            await updateDoc(transactionDocRef, {
-                invoiceSent: true,
-                invoiceId: invoiceRef.id,
-                invoiceSentAt: new Date().toISOString()
-            });
-        }
-
-        return invoiceRef.id;
-    } catch (error) {
-        console.error('Error saving invoice to Firebase:', error);
-        throw error;
-    }
-}
 
 // ============================================
 // Main Function: Generate and Send Invoice
 // ============================================
 export async function generateAndSendInvoice(userId, transactionId) {
     try {
-        console.log('Starting invoice generation process...');
-        console.log('User ID:', userId);
-        console.log('Transaction ID:', transactionId);
-
         // 1. Fetch user data from Firebase
         const userDocRef = doc(db, 'users', userId);
         const userSnap = await getDoc(userDocRef);
@@ -485,7 +388,6 @@ export async function generateAndSendInvoice(userId, transactionId) {
         }
 
         const userData = userSnap.data();
-        console.log('User data fetched:', userData.name);
 
         // 2. Fetch transaction data from Firebase
         const transactionDocRef = doc(db, 'transactions', transactionId);
@@ -496,29 +398,20 @@ export async function generateAndSendInvoice(userId, transactionId) {
         }
 
         const transactionData = transactionSnap.data();
-        console.log('Transaction data fetched:', transactionData);
 
         // 3. Generate invoice number
         const invoiceNumber = `INV-${Date.now()}`;
-        console.log('Invoice number generated:', invoiceNumber);
 
         // 4. Generate PDF as Base64
         const pdfBase64 = await generatePDFBase64(userData, transactionData, invoiceNumber);
-        console.log('PDF generated and converted to Base64');
 
-        // 5. Send email via Brevo
-        await sendInvoiceEmail(userData, transactionData, pdfBase64, invoiceNumber);
-        console.log('Email sent successfully');
+        // 5. Send email via Brevo and Save to Firestore (Server-side)
+        const emailResult = await sendInvoiceEmail(userData, transactionData, pdfBase64, invoiceNumber, transactionId);
 
-        // 6. Save to Firebase
-        const invoiceId = await saveInvoiceToFirebase(userId, transactionId, invoiceNumber);
-        console.log('Invoice saved to Firebase with ID:', invoiceId);
-
-        console.log('Invoice generated and sent successfully!');
         return {
             success: true,
             invoiceNumber: invoiceNumber,
-            invoiceId: invoiceId,
+            invoiceId: emailResult.invoiceId,
             message: 'Invoice sent to ' + userData.email
         };
 

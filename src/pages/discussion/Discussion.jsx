@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { db } from '../../lib/firebase';
+import { db, functions } from '../../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
 import { doc, runTransaction, onSnapshot, collection, query, where, getDocs, getDoc, updateDoc, arrayUnion, deleteDoc, setDoc } from 'firebase/firestore';
 import { useAuth } from '../../auth/AuthProvider';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -23,20 +24,36 @@ const Discussion = ({ onBack }) => {
         const verifyMembership = async () => {
             if (!user) return;
             try {
-                const userDoc = await getDoc(doc(db, 'users', user.uid));
-                if (userDoc.exists()) {
-                    const userData = userDoc.data();
-                    const isExpired = userData.nextPaymentDue && new Date(userData.nextPaymentDue) < new Date();
-                    const hasActiveSeat = userData.registrationCompleted && userData.currentSeat && !isExpired;
+                // Call the centralized eligibility Cloud Function
+                const verifyEligibility = httpsCallable(functions, 'verifyDiscussionEligibility');
+                const result = await verifyEligibility({ userId: user.uid });
+                const { eligible, reason } = result.data;
 
-                    if (!hasActiveSeat) {
-                        // Redirect back if not active member
-                        if (onBack) onBack();
+                if (!eligible) {
+                    console.log("Ineligible for discussion room:", reason);
+                    if (reason) {
+                        alert(reason);
                     }
+                    if (onBack) onBack();
                 }
             } catch (error) {
-                console.error("Error verifying membership:", error);
-                if (onBack) onBack();
+                console.error("Error verifying membership via Cloud Function:", error);
+                // Fallback to minimal client-side check if function fails
+                try {
+                    const userDoc = await getDoc(doc(db, 'users', user.uid));
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data();
+                        const isExpired = userData.nextPaymentDue && new Date(userData.nextPaymentDue) < new Date();
+                        const hasActiveSeat = userData.registrationCompleted && userData.currentSeat && !isExpired;
+
+                        if (!hasActiveSeat) {
+                            if (onBack) onBack();
+                        }
+                    }
+                } catch (fallbackError) {
+                    console.error("Fallback verification failed:", fallbackError);
+                    if (onBack) onBack();
+                }
             }
         };
         verifyMembership();

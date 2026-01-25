@@ -1,14 +1,13 @@
 import { useAuth } from '../auth/AuthProvider';
-import { useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
 
 function PendingVerification() {
-  const { logout } = useAuth();
-  const navigate = useNavigate();
+  const { signOutUser } = useAuth();
 
   const handleReturnToLogin = async () => {
-    await logout();
-    navigate('/login');
+    await signOutUser();
+    // Reload the page to return to login screen
+    window.location.href = '/';
   };
 
   return (

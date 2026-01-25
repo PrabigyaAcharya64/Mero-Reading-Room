@@ -1,5 +1,15 @@
 # Dependencies
-node_modules
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Production
+dist/
+dist-ssr/
+build/
 
 # macOS metadata files
 .DS_Store
@@ -7,19 +17,31 @@ node_modules
 .AppleDouble
 .LSOverride
 
-# Build outputs
-dist
-dist-ssr
-*.local
+# Mobile (Capacitor)
+# We track google-services.json and GoogleService-Info.plist for collaboration
+# but ignore the actual platform build artifacts
+# !google-services.json
+# !GoogleService-Info.plist
 
-# Editor directories
-.vscode/*
+# Editor/IDE
+.vscode/
 !.vscode/extensions.json
-.idea
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
-# Environment files
+# Environment / Secrets
+# .env files are usually ignored but we've moved public keys to code
 .env
 .env.local
 .env.*.local
- firestore.rules
- google-services.json
+.env.production
+.env.development
+
+# Firebase (We TRACK these now for your friend)
+# firestore.rules
+# storage.rules
+# firestore.indexes.json

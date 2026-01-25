@@ -128,7 +128,12 @@ function ReadingRoomDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
         return <FullScreenLoader text="Loading dashboard..." />;
     }
 
-    const expiryDate = userData?.nextPaymentDue?.toDate ? userData.nextPaymentDue.toDate() : new Date(userData.nextPaymentDue);
+    const nextDue = userData?.nextPaymentDue;
+    const expiryDate = nextDue?.toDate
+        ? nextDue.toDate()
+        : typeof nextDue === 'number'
+            ? new Date(nextDue * 1000)
+            : new Date(nextDue);
     const isExpired = expiryDate < new Date();
     const hasNoMembership = !userData?.currentSeat || isExpired;
 
