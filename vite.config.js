@@ -16,7 +16,12 @@ export default defineConfig({
       'firebase/auth',
       'firebase/firestore',
       'firebase/storage',
-      'firebase/functions'
+      'firebase/functions',
+      '@firebase/app',
+      '@firebase/auth',
+      '@firebase/firestore',
+      '@firebase/storage',
+      '@firebase/functions'
     ]
   },
   server: {
