@@ -6,11 +6,13 @@ export default defineConfig({
   define: {
     'global': 'window',
   },
-  optimizeDeps: {
-    exclude: ['@firebase/firestore', '@firebase/auth', '@firebase/storage', '@firebase/functions', 'firebase']
-  },
-  ssr: {
-    noExternal: ['@firebase/firestore', '@firebase/auth', '@firebase/storage', '@firebase/functions', 'firebase']
+  resolve: {
+    alias: {
+      '@firebase/firestore': 'node_modules/@firebase/firestore/dist/index.esm2017.js',
+      '@firebase/auth': 'node_modules/@firebase/auth/dist/esm2017/index.js',
+      '@firebase/storage': 'node_modules/@firebase/storage/dist/index.esm2017.js',
+      '@firebase/functions': 'node_modules/@firebase/functions/dist/index.esm2017.js',
+    }
   },
   server: {
     port: 5173,
