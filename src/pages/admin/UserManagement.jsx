@@ -6,7 +6,7 @@ import { db } from '../../lib/firebase';
 import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
 
 const newUserIcon = new URL('../../assets/newuser.svg', import.meta.url).href;
-const usersIcon = new URL('../../assets/users.svg', import.meta.url).href;
+const usersIcon = new URL(/* @vite-ignore */ '../../assets/users.svg', import.meta.url).href;
 
 function UserManagement({ onBack, onNavigate, isSidebarOpen, onToggleSidebar }) {
     const [pendingCount, setPendingCount] = useState(0);

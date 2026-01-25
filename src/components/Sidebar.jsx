@@ -17,7 +17,7 @@ const canteenIcon = new URL('../assets/canteen.svg', import.meta.url).href;
 const readingRoomIcon = new URL('../assets/readingroom.svg', import.meta.url).href;
 const orderPlaceIcon = new URL('../assets/order_place.svg', import.meta.url).href;
 const inventoryIcon = new URL('../assets/inventory.svg', import.meta.url).href;
-const idCardIcon = new URL('../assets/idcard.svg', import.meta.url).href;
+const idCardIcon = new URL(/* @vite-ignore */ '../assets/idcard.svg', import.meta.url).href;
 
 function Sidebar({ currentView, onNavigate, isOpen, onClose }) {
     const { signOutUser } = useAuth();

@@ -21,7 +21,8 @@ export default defineConfig({
       supported: {
         bigint: true
       }
-    }
+    },
+    exclude: ['scheduler']
   },
   server: {
     port: 5173,
