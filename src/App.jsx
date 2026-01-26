@@ -3,7 +3,7 @@ import { NavigationRoot } from './navigation';
 import FullScreenLoader from './components/FullScreenLoader';
 
 function AppShell() {
-    const { loading } = useAuth();
+    const { loading } = useAuth() ;
 
     if (loading) {
         return <FullScreenLoader text="Loading your account..." />;
