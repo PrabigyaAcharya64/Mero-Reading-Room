@@ -80,8 +80,9 @@ function CreateAnnouncement({ onBack, isSidebarOpen, onToggleSidebar }) {
                                     style={{
                                         width: '100%',
                                         border: '1px solid var(--color-border)',
+                                        borderRadius: 'var(--radius-md)',
                                         padding: '0.85rem 1rem',
-                                        fontFamily: 'var(--brand-font-body)',
+                                        fontFamily: 'var(--font-system)',
                                         fontSize: '1rem',
                                         resize: 'vertical'
                                     }}
@@ -102,20 +103,22 @@ function CreateAnnouncement({ onBack, isSidebarOpen, onToggleSidebar }) {
                                             border: '1px solid var(--color-border)',
                                             padding: '0.85rem 1rem',
                                             fontSize: '1rem',
-                                            fontFamily: 'var(--brand-font-body)'
+                                            fontFamily: 'var(--font-system)',
+                                            borderRadius: 'var(--radius-md)',
+                                            backgroundColor: '#fff'
                                         }}
                                     />
                                     <select
                                         value={durationUnit}
                                         onChange={(e) => setDurationUnit(e.target.value)}
+                                        className="ios-select"
                                         style={{
                                             width: '100%',
-                                            border: '1px solid var(--color-border)',
-                                            padding: '0.85rem 1rem',
+                                            padding: '0.85rem 2.5rem 0.85rem 1rem',
                                             fontSize: '1rem',
-                                            fontFamily: 'var(--brand-font-body)',
-                                            backgroundColor: 'var(--color-surface)',
-                                            borderRadius: 0
+                                            fontFamily: 'var(--font-system)',
+                                            borderRadius: 'var(--radius-md)',
+                                            backgroundColor: 'var(--color-surface)'
                                         }}
                                     >
                                         <option value="hours">Hours</option>

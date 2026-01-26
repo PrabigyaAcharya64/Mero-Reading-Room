@@ -1,51 +1,50 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, query, getDocs, orderBy, onSnapshot, limit } from 'firebase/firestore';
-import LoadingSpinner from '../../components/LoadingSpinner';
 import FullScreenLoader from '../../components/FullScreenLoader';
 import Button from '../../components/Button';
-import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
+import { TrendingUp, Banknote, ShoppingCart, Calendar, Search, MapPin, ReceiptText, ChevronLeft, ChevronRight } from 'lucide-react';
 import '../../styles/SalesDashboard.css';
 import '../../styles/StandardLayout.css';
 
-
-
 function SalesDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
-  const { user } = useAuth();
+  const { userRole } = useAuth();
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [todaysSales, setTodaysSales] = useState(0);
-  const [todaysOrders, setTodaysOrders] = useState(0);
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [viewSales, setViewSales] = useState(0);
+  const [viewOrdersCount, setViewOrdersCount] = useState(0);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     loadSales();
   }, [selectedDate]);
 
   useEffect(() => {
-    // Listen to all orders for real-time updates (simpler query without index)
     const ordersRef = collection(db, 'orders');
     const q = query(ordersRef, orderBy('createdAt', 'desc'), limit(1000));
-
-    const unsubscribe = onSnapshot(q, () => {
-      loadSales();
-    });
-
+    const unsubscribe = onSnapshot(q, () => loadSales());
     return () => unsubscribe();
-  }, [selectedDate]);
+  }, []);
+
+  useEffect(() => {
+    setCurrentPage(1); // Reset pagination on date or search change
+  }, [selectedDate, searchQuery]);
 
   const loadSales = async () => {
     setLoading(true);
     try {
-
       const ordersRef = collection(db, 'orders');
-
       const q = query(ordersRef, orderBy('createdAt', 'desc'), limit(1000));
       const snapshot = await getDocs(q);
+      
       const completedOrders = snapshot.docs
         .filter(doc => doc.data().status === 'completed')
         .map(doc => {
@@ -55,40 +54,25 @@ function SalesDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
 
           try {
             if (dateToParse) {
-              const dateObj = new Date(dateToParse);
-              if (!isNaN(dateObj.getTime())) {
-                dateStr = dateObj.toISOString().split('T')[0];
-              }
+              const dateObj = valToDate(dateToParse);
+              if (dateObj) dateStr = dateObj.toISOString().split('T')[0];
             }
-          } catch (e) {
-            console.error('Error parsing date for order', doc.id, e);
-          }
+          } catch (e) { console.error(e); }
 
-          if (!dateStr) {
-            dateStr = new Date().toISOString().split('T')[0];
-          }
+          if (!dateStr) dateStr = new Date().toISOString().split('T')[0];
 
-          return {
-            id: doc.id,
-            ...data,
-            orderDate: dateStr
-          };
+          return { id: doc.id, ...data, orderDate: dateStr };
         });
 
-      // Filter by selected date
-      const filteredSales = selectedDate
+      // Stats calculation for the context (selected date or all time)
+      const filteredForStats = selectedDate
         ? completedOrders.filter(order => order.orderDate === selectedDate)
         : completedOrders;
 
-      setSales(filteredSales);
+      setViewSales(filteredForStats.reduce((sum, order) => sum + (order.total || 0), 0));
+      setViewOrdersCount(filteredForStats.length);
 
-      // Calculate today's totals
-      const today = new Date().toISOString().split('T')[0];
-      const todaysOrdersData = completedOrders.filter(order => order.orderDate === today);
-      const todaysTotal = todaysOrdersData.reduce((sum, order) => sum + (order.total || 0), 0);
-
-      setTodaysSales(todaysTotal);
-      setTodaysOrders(todaysOrdersData.length);
+      setSales(filteredForStats);
     } catch (error) {
       console.error('Error loading sales:', error);
     } finally {
@@ -96,61 +80,35 @@ function SalesDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
     }
   };
 
-
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return 'Invalid Date';
-
-      return date.toLocaleString('en-IN', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch (e) {
-      return 'Invalid Date';
-    }
+  const valToDate = (val) => {
+    if (!val) return null;
+    if (val.seconds) return new Date(val.seconds * 1000);
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? null : d;
   };
 
   const formatDateDisplay = (dateString) => {
-    if (!dateString) return 'N/A';
-    try {
-      // Split YYYY-MM-DD and create date locally to avoid timezone shifts
-      const parts = dateString.split('-');
-      if (parts.length !== 3) {
-        const d = new Date(dateString);
-        if (isNaN(d.getTime())) return 'Invalid Date';
-        return d.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
-      }
-
-      const date = new Date(parts[0], parts[1] - 1, parts[2]);
-      if (isNaN(date.getTime())) return 'Invalid Date';
-
-      return date.toLocaleDateString('en-IN', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-    } catch (e) {
-      return 'Invalid Date';
-    }
+    if (!dateString) return 'All Records';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
-  // Group sales by date for history view
+  const formatTime = (val) => {
+    const date = valToDate(val);
+    return date ? date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+  };
+
+  const filteredSalesData = sales.filter(s => 
+    s.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (s.userName && s.userName.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const totalPages = Math.ceil(filteredSalesData.length / itemsPerPage);
+  const currentOrders = filteredSalesData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   const salesByDate = sales.reduce((acc, sale) => {
     const date = sale.orderDate;
-    if (!acc[date]) {
-      acc[date] = {
-        date,
-        orders: [],
-        total: 0,
-        count: 0
-      };
-    }
+    if (!acc[date]) acc[date] = { date, orders: [], total: 0, count: 0 };
     acc[date].orders.push(sale);
     acc[date].total += sale.total || 0;
     acc[date].count += 1;
@@ -161,269 +119,203 @@ function SalesDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
 
   return (
     <div className="std-container">
-      <PageHeader title="Sales Dashboard" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
+      <PageHeader title="Sales Insights" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
 
-      <main className="std-body">
+      <main className="sd-body">
         <section>
-          {/* Summary Cards */}
+          {/* Dashboard Summary Cards - Now Contextual */}
           <div className="sd-stats-grid">
-            {(!selectedDate || selectedDate === new Date().toISOString().split('T')[0]) ? (
-              <>
-                <div className="sd-stat-card green">
-                  <div>
-                    <p className="sd-stat-label">Today's Total Sales</p>
-                    <p className="sd-stat-value">
-                      रु {todaysSales.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                  </div>
-                </div>
-                <div className="sd-stat-card blue">
-                  <div>
-                    <p className="sd-stat-label">Today's Total Orders</p>
-                    <p className="sd-stat-value">{todaysOrders}</p>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="sd-stat-card orange">
-                <div>
-                  <p className="sd-stat-label">Sales for {formatDateDisplay(selectedDate)}</p>
-                  <p className="sd-stat-value">
-                    रु {sales.reduce((sum, sale) => sum + (sale.total || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                </div>
+            <div className="sd-stat-card green">
+              <div>
+                <label className="sd-stat-label">{selectedDate ? 'Selected Day Revenue' : 'Total Revenue'}</label>
+                <p className="sd-stat-value">रु {viewSales.toLocaleString('en-IN', { minimumFractionDigits: 0 })}</p>
               </div>
-            )}
+              <Banknote size={48} className="sd-stat-icon-bg" />
+            </div>
+            <div className="sd-stat-card blue">
+              <div>
+                <label className="sd-stat-label">{selectedDate ? 'Selected Day Orders' : 'Total Orders'}</label>
+                <p className="sd-stat-value">{viewOrdersCount}</p>
+              </div>
+              <ShoppingCart size={48} className="sd-stat-icon-bg" />
+            </div>
+            <div className="sd-stat-card orange">
+              <div>
+                <label className="sd-stat-label">Performance</label>
+                <p className="sd-stat-value">Stable</p>
+              </div>
+              <TrendingUp size={48} className="sd-stat-icon-bg" />
+            </div>
           </div>
 
-          {/* Date Filter */}
+          {/* Filter Bar */}
           <div className="sd-filter-section">
-            <label className="sd-filter-label">Filter by Date:</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Calendar size={18} className="text-blue-500" />
+              <label className="sd-filter-label">Historical View</label>
+            </div>
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               className="sd-date-input"
             />
-            <Button
-              onClick={() => setSelectedDate('')}
-              variant="secondary"
-              className="sd-btn"
-            >
-              Show All
-            </Button>
-            <Button
-              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
-              variant="primary"
-              className="sd-btn"
-            >
-              Today
-            </Button>
+            <div style={{ display: 'flex', gap: '10px', marginLeft: 'auto' }}>
+              <Button onClick={() => setSelectedDate('')} variant="outline" size="sm">Show All</Button>
+              <Button onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])} variant="primary" size="sm">Today</Button>
+            </div>
           </div>
 
-          {loading && <FullScreenLoader text="Loading sales data..." />}
+          {loading && <FullScreenLoader text="Analyzing records..." />}
 
           {!loading && selectedDate ? (
-            // Show detailed sales for selected date
             <div>
-              <div className="sd-section-header-group">
-                <h2 className="sd-section-title" style={{ marginBottom: 0 }}>
-                  Sales for {formatDateDisplay(selectedDate)}
-                </h2>
-                <div className="sd-search-container">
+              <div className="sd-header-controls">
+                <h2 className="od-section-title">{formatDateDisplay(selectedDate)}</h2>
+                <div className="sd-search-wrapper">
+                  <Search size={16} className="sd-search-icon" />
                   <input
                     type="text"
-                    placeholder="Search by Order ID..."
+                    placeholder="Search Order ID..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="sd-search-input"
                   />
                 </div>
               </div>
-              <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.5rem', marginTop: '0.5rem' }}>
-                {sales.filter(s => s.id.toLowerCase().includes(searchQuery.toLowerCase())).length} orders
-              </p>
 
-              {sales.filter(s => s.id.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
-                <div className="sd-empty">
-                  {searchQuery ? 'No orders match your search.' : 'No sales found for this date.'}
+              {currentOrders.length === 0 ? (
+                <div className="abl-empty" style={{ background: 'var(--color-surface)', padding: '60px' }}>
+                  <ShoppingCart size={48} className="text-gray-300" style={{ marginBottom: '16px' }} />
+                  <h3>No Snapshots</h3>
+                  <p>Check your filters or try a different date.</p>
                 </div>
               ) : (
                 <div className="sd-list-grid">
-                  {sales
-                    .filter(sale => sale.id.toLowerCase().includes(searchQuery.toLowerCase()))
-                    .map((sale) => (
-                      <div key={sale.id} className={`sd-card ${selectedOrder?.id === sale.id ? 'active' : ''}`}>
-                        {/* Surface View - Name, Location, Sales */}
-                        <div
-                          className="sd-card-summary"
-                          onClick={() => setSelectedOrder(selectedOrder?.id === sale.id ? null : sale)}
-                        >
-                          <div>
-                            <p className="sd-customer-name">
-                              {sale.userName || sale.userEmail || 'Unknown Customer'}
-                            </p>
-                            <p className="sd-meta-text">
-                              Order #{sale.id.substring(0, 8)} • {formatDate(sale.completedAt || sale.createdAt)}
-                            </p>
+                  {currentOrders.map((sale) => (
+                    <div key={sale.id} className={`sd-card ${selectedOrderId === sale.id ? 'active' : ''}`}>
+                      <div
+                        className="sd-card-summary"
+                        onClick={() => setSelectedOrderId(selectedOrderId === sale.id ? null : sale.id)}
+                      >
+                        <div>
+                          <p className="sd-customer-name">{sale.userName || 'Verified User'}</p>
+                          <p className="sd-meta-text">#{sale.id.substring(0, 10).toUpperCase()} • {formatTime(sale.completedAt || sale.createdAt)}</p>
+                        </div>
+                        <div className="sd-location-badge">
+                          <MapPin size={12} /> {sale.location || 'RR'}
+                        </div>
+                        <p className="sd-amount-text">रु {sale.total?.toFixed(0)}</p>
+                      </div>
+
+                      {selectedOrderId === sale.id && (
+                        <div className="sd-details">
+                          <div className="sd-bill-header">
+                            <h3 className="sd-bill-title">Transaction Receipt</h3>
+                            <div className="sd-info-grid">
+                              <div className="sd-info-item">
+                                <label>Account</label>
+                                <span>{sale.userEmail || 'registered@user.mrr'}</span>
+                              </div>
+                              <div className="sd-info-item">
+                                <label>Service Mode</label>
+                                <span>{sale.location || 'Standard Pickup'}</span>
+                              </div>
+                              <div className="sd-info-item">
+                                <label>Timestamp</label>
+                                <span>{formatDateDisplay(sale.orderDate)} {formatTime(sale.completedAt || sale.createdAt)}</span>
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <p className="sd-meta-text" style={{ fontWeight: 'bold' }}>
-                              Location
-                            </p>
-                            <p className="sd-location-text">
-                              {sale.location || 'Not specified'}
-                            </p>
+
+                          <div style={{ marginBottom: '1.5rem' }}>
+                            <label className="sd-items-list-header"><ReceiptText size={12} style={{ verticalAlign: 'middle', marginRight: '6px' }} /> Breakdown</label>
+                            <table className="sd-table">
+                              <thead>
+                                <tr>
+                                  <th>Item</th>
+                                  <th>Qty</th>
+                                  <th style={{ textAlign: 'right' }}>Total</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {sale.items?.map((item, index) => (
+                                  <tr key={index}>
+                                    <td>{item.name}</td>
+                                    <td>{item.quantity || 1}</td>
+                                    <td style={{ textAlign: 'right', fontWeight: '600' }}>रु {((item.price || 0) * (item.quantity || 1)).toFixed(0)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
                           </div>
-                          <div>
-                            <p className="sd-meta-text" style={{ textAlign: 'right', fontWeight: 'bold' }}>
-                              Total Sales
-                            </p>
-                            <p className="sd-amount-text">
-                              रु {sale.total?.toFixed(2) || '0.00'}
-                            </p>
+
+                          {sale.note && (
+                            <div className="od-note" style={{ background: 'rgba(255, 204, 0, 0.05)', padding: '12px', borderLeft: '3px solid #FFCC00', borderRadius: '4px', marginBottom: '20px' }}>
+                              <label style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#8E6D00', display: 'block', marginBottom: '4px' }}>Customer Note</label>
+                              <p style={{ fontSize: '13px', margin: 0 }}>{sale.note}</p>
+                            </div>
+                          )}
+
+                          <div className="sd-bill-total">
+                            <span className="sd-total-label">Final Remittance</span>
+                            <span className="sd-total-amount">रु {sale.total?.toLocaleString('en-IN')}</span>
                           </div>
                         </div>
-
-                        {/* Expanded Bill Details */}
-                        {selectedOrder?.id === sale.id && (
-                          <div className="sd-details">
-                            <div className="sd-bill-header">
-                              <h3 className="sd-bill-title">
-                                Bill Details
-                              </h3>
-                              <div className="sd-info-grid">
-                                <div className="sd-info-item">
-                                  <p>CUSTOMER NAME</p>
-                                  <p>
-                                    {sale.userName || sale.userEmail || 'Unknown Customer'}
-                                  </p>
-                                </div>
-                                <div className="sd-info-item">
-                                  <p>LOCATION</p>
-                                  <p>
-                                    {sale.location || 'Not specified'}
-                                  </p>
-                                </div>
-                                <div className="sd-info-item">
-                                  <p>ORDER DATE</p>
-                                  <p>
-                                    {formatDate(sale.completedAt || sale.createdAt)}
-                                  </p>
-                                </div>
-                                <div className="sd-info-item">
-                                  <p>ORDER ID</p>
-                                  <p>
-                                    {sale.id}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Items List */}
-                            <div style={{ marginBottom: '1.5rem' }}>
-                              <h4 style={{ margin: '0 0 1rem 0', fontWeight: '700', color: 'var(--color-text-primary)' }}>
-                                Items Purchased
-                              </h4>
-                              <div className="sd-items-container">
-                                <table className="sd-table">
-                                  <thead>
-                                    <tr>
-                                      <th>Item</th>
-                                      <th className="sd-table-center">Quantity</th>
-                                      <th className="sd-table-right">Unit Price</th>
-                                      <th className="sd-table-right">Total</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {sale.items && sale.items.map((item, index) => (
-                                      <tr key={index}>
-                                        <td>{item.name}</td>
-                                        <td className="sd-table-center">{item.quantity || 1}</td>
-                                        <td className="sd-table-right">
-                                          रु {item.price?.toFixed(2) || '0.00'}
-                                        </td>
-                                        <td className="sd-table-right" style={{ fontWeight: 'bold' }}>
-                                          रु {((item.price || 0) * (item.quantity || 1)).toFixed(2)}
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </div>
-
-                            {/* Note if exists */}
-                            {sale.note && (
-                              <div className="sd-bill-note">
-                                <p className="sd-stat-label" style={{ color: '#bfa05aa8' }}>
-                                  NOTE FROM CUSTOMER:
-                                </p>
-                                <p style={{ margin: 0 }}>{sale.note}</p>
-                              </div>
-                            )}
-
-                            {/* Total */}
-                            <div className="sd-bill-total">
-                              <p className="sd-total-label">
-                                GRAND TOTAL
-                              </p>
-                              <p className="sd-total-amount">
-                                रु {sale.total?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  {/* Daily Total */}
-                  <div className="sd-bill-total" style={{ marginTop: '1.5rem', backgroundColor: 'var(--color-background)', border: '2px solid var(--color-primary)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                      <p className="sd-total-label">
-                        Daily Total ({sales.length} orders)
-                      </p>
-                      <p className="sd-total-amount">
-                        रु {sales.reduce((sum, sale) => sum + (sale.total || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
+                      )}
                     </div>
+                  ))}
+                  
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="od-pagination" style={{ margin: '24px 0' }}>
+                      <Button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        variant="ghost"
+                        size="sm"
+                      >
+                        <ChevronLeft size={16} /> Prev
+                      </Button>
+                      <span className="od-page-info">Page {currentPage} of {totalPages}</span>
+                      <Button
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        variant="ghost"
+                        size="sm"
+                      >
+                        Next <ChevronRight size={16} />
+                      </Button>
+                    </div>
+                  )}
+
+                  <div className="sd-bill-total" style={{ borderStyle: 'dashed', borderColor: 'var(--color-border)' }}>
+                     <span className="sd-total-label">Aggregate Collection ({filteredSalesData.length} records)</span>
+                     <span className="sd-total-amount">रु {filteredSalesData.reduce((sum, s) => sum + (s.total || 0), 0).toLocaleString('en-IN')}</span>
                   </div>
                 </div>
               )}
             </div>
           ) : !loading && (
-            // Show sales history grouped by date
             <div>
-              <h2 className="sd-section-title">Sales History</h2>
-              {salesHistory.length === 0 ? (
-                <div className="sd-empty">No sales history found.</div>
-              ) : (
-                <div className="sd-list-grid">
-                  {salesHistory.map((daySales) => (
-                    <div
-                      key={daySales.date}
-                      className="sd-card"
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => setSelectedDate(daySales.date)}
-                    >
-                      <div className="sd-card-summary" style={{ gridTemplateColumns: '1fr 1fr' }}>
-                        <div>
-                          <h3 className="sd-customer-name" style={{ fontSize: '1.25rem' }}>
-                            {formatDateDisplay(daySales.date)}
-                          </h3>
-                          <p className="sd-meta-text">
-                            {daySales.count} {daySales.count === 1 ? 'order' : 'orders'} • Click to view
-                          </p>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <p className="sd-amount-text" style={{ fontSize: '1.5rem', color: 'var(--color-primary)' }}>
-                            रु {daySales.total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </p>
-                        </div>
+              <h2 className="od-section-title" style={{ marginBottom: '24px' }}>Historical Archive</h2>
+              <div className="sd-list-grid">
+                {salesHistory.map((day) => (
+                  <div
+                    key={day.date}
+                    className="sd-card"
+                    onClick={() => setSelectedDate(day.date)}
+                  >
+                    <div className="sd-card-summary" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                      <div>
+                        <h3 className="sd-customer-name">{formatDateDisplay(day.date)}</h3>
+                        <p className="sd-meta-text">{day.count} Operations Totaled</p>
                       </div>
+                      <p className="sd-amount-text" style={{ color: 'var(--color-primary)' }}>रु {day.total.toLocaleString('en-IN')}</p>
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </section>
@@ -433,4 +325,3 @@ function SalesDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
 }
 
 export default SalesDashboard;
-

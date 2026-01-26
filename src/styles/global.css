@@ -1,24 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@400;600&family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,600&display=swap');
+/* Import removed - using system fonts from design-system.css */
 
 :root {
   color-scheme: light;
-  --brand-font-serif: 'Playfair Display', 'Times New Roman', serif;
-  --brand-font-body: 'Source Serif 4', 'Georgia', serif;
-  --brand-font-sans: 'Source Sans 3', 'Arial', sans-serif;
-  --color-background: #ffffff;
-  --color-surface: #ffffff;
-  --color-border: #d9d9d9;
-  --color-text-primary: #000000;
-  --color-text-secondary: #333333;
-  --color-accent: #000000;
-  --color-accent-dark: #111111;
-  --color-muted: #4d4d4d;
-  --layout-max-width: 1120px;
-  --stack-spacing-sm: 0.75rem;
-  --stack-spacing-md: 1.5rem;
-  --stack-spacing-lg: 2.5rem;
-  --transition-default: 180ms ease-in-out;
-  --radius-default: 6px;
+  /* All design tokens now in design-system.css */
 }
 
 *,
@@ -29,11 +13,12 @@
 
 body {
   margin: 0;
-  font-family: var(--brand-font-body);
+  font-family: var(--font-system);
   background-color: var(--color-background);
   color: var(--color-text-primary);
-  line-height: 1.65;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1,
@@ -43,14 +28,29 @@ h4,
 h5,
 h6 {
   margin: 0 0 0.5em;
-  font-family: var(--brand-font-serif);
+  font-family: var(--font-system-display);
   font-weight: 600;
   color: var(--color-text-primary);
-  letter-spacing: 0.04em;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+h2 {
+  font-size: 1.5rem;
+}
+
+h3 {
+  font-size: 1.25rem;
 }
 
 p {
   margin: 0 0 1em;
+  line-height: 1.5;
 }
 
 a {
@@ -65,7 +65,7 @@ a:focus-visible {
 }
 
 button {
-  font-family: var(--brand-font-body);
+  font-family: var(--font-system);
 }
 
 img {
@@ -105,14 +105,14 @@ img {
 }
 
 .surface {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  box-shadow: 0 16px 24px rgba(17, 17, 17, 0.06);
+  background-color: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
 }
 
 .text-muted {
-  color: var(--color-muted);
+  color: var(--color-text-secondary);
 }
 
 .link-underline {

@@ -2,90 +2,95 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--radius-default, 6px);
+    border-radius: var(--radius-md);
     font-weight: 500;
-    transition: all 0.2s ease-in-out;
+    transition: all var(--transition-base);
     cursor: pointer;
     border: 1px solid transparent;
-    gap: 8px;
-    font-family: var(--brand-font-body, inherit);
+    gap: var(--spacing-8);
+    font-family: var(--font-system);
     line-height: 1.2;
+    letter-spacing: -0.01em;
+}
+
+.std-button:active:not(:disabled) {
+    transform: scale(0.98);
 }
 
 .std-button:disabled {
-    opacity: 0.6;
+    opacity: 0.4;
     cursor: not-allowed;
 }
 
 /* Variants */
 .std-button--primary {
-    background-color: var(--color-primary, #007bff);
+    background-color: var(--color-primary);
     color: #ffffff;
-    border-color: var(--color-primary, #007bff);
+    border-color: var(--color-primary);
 }
 
 .std-button--primary:hover:not(:disabled) {
-    background-color: var(--color-primary-dark, #0056b3);
+    background-color: #1a1a1a;
 }
 
 .std-button--secondary {
-    background-color: var(--color-secondary, #f8f9fa);
-    color: var(--color-text-primary, #333);
-    border-color: var(--color-border, #ddd);
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    border-color: var(--color-border);
 }
 
 .std-button--secondary:hover:not(:disabled) {
-    background-color: #e2e6ea;
+    background-color: #E8E8ED;
 }
 
 .std-button--outline {
     background-color: transparent;
-    color: var(--color-primary, #007bff);
-    border-color: var(--color-primary, #007bff);
+    color: var(--color-accent);
+    border-color: var(--color-accent);
 }
 
 .std-button--outline:hover:not(:disabled) {
-    background-color: rgba(0, 123, 255, 0.1);
+    background-color: rgba(0, 122, 255, 0.08);
 }
 
 .std-button--ghost {
     background-color: transparent;
     border-color: transparent;
-    color: var(--color-text-secondary, #666);
+    color: var(--color-text-secondary);
 }
 
 .std-button--ghost:hover:not(:disabled) {
     background-color: rgba(0, 0, 0, 0.05);
-    color: var(--color-text-primary, #333);
+    color: var(--color-text-primary);
 }
 
 .std-button--danger {
-    background-color: #dc3545;
+    background-color: #FF3B30;
     color: white;
-    border-color: #dc3545;
+    border-color: #FF3B30;
 }
 
 .std-button--danger:hover:not(:disabled) {
-    background-color: #c82333;
+    background-color: #FF2D20;
 }
 
-/* Sizes */
+/* Sizes - iOS standard touch targets */
 .std-button--sm {
-    padding: 6px 12px;
+    padding: 8px 16px;
     font-size: 0.875rem;
-    height: 32px;
+    height: 36px;
 }
 
 .std-button--md {
-    padding: 10px 20px;
+    padding: 12px 20px;
     font-size: 1rem;
-    height: 40px;
+    height: 44px;
 }
 
 .std-button--lg {
-    padding: 14px 28px;
-    font-size: 1.125rem;
-    height: 48px;
+    padding: 15px 28px;
+    font-size: 1.0625rem;
+    height: 50px;
 }
 
 .std-button--full {

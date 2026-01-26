@@ -22,15 +22,25 @@ import {
     History
 } from 'lucide-react';
 import FullScreenLoader from '../../components/FullScreenLoader';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/AdminBalanceLoad.css';
 
-export default function AdminBalanceLoad({ isSidebarOpen, onToggleSidebar }) {
+export default function AdminBalanceLoad({ onBack, isSidebarOpen, onToggleSidebar }) {
     const [requests, setRequests] = useState([]);
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('pending');
     const [processingId, setProcessingId] = useState(null);
     const [selectedImage, setSelectedImage] = useState(null);
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
+
+    // Reset page when tab changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeTab]);
 
     // Fetch Pending Requests
     useEffect(() => {
@@ -120,35 +130,35 @@ export default function AdminBalanceLoad({ isSidebarOpen, onToggleSidebar }) {
 
     if (loading) return <FullScreenLoader text="Loading requests..." />;
 
+    const headerActions = (
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div className="abl-tabs">
+                <button
+                    className={`abl-tab-btn ${activeTab === 'pending' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('pending')}
+                >
+                    Pending
+                    {requests.length > 0 && <span className="abl-badge-count">{requests.length}</span>}
+                </button>
+                <button
+                    className={`abl-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('history')}
+                >
+                    History
+                </button>
+            </div>
+        </div>
+    );
+
     return (
         <div className="abl-container">
-            {/* Header */}
-            <div className="abl-header">
-                <h1 className="abl-title">Balance Requests</h1>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <div className="abl-tabs">
-                        <button
-                            className={`abl-tab-btn ${activeTab === 'pending' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('pending')}
-                        >
-                            Pending
-                            {requests.length > 0 && <span className="abl-badge-count">{requests.length}</span>}
-                        </button>
-                        <button
-                            className={`abl-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('history')}
-                        >
-                            History
-                        </button>
-                    </div>
-                    <button
-                        onClick={onToggleSidebar}
-                        className="abl-mobile-btn"
-                    >
-                        <CreditCard size={20} className="text-gray-600" />
-                    </button>
-                </div>
-            </div>
+            <PageHeader
+                title="Balance Requests"
+                onBack={onBack}
+                isSidebarOpen={isSidebarOpen}
+                onToggleSidebar={onToggleSidebar}
+                rightElement={headerActions}
+            />
 
             {activeTab === 'pending' ? (
                 requests.length === 0 ? (
@@ -160,39 +170,26 @@ export default function AdminBalanceLoad({ isSidebarOpen, onToggleSidebar }) {
                         <p className="abl-empty-text">No pending balance requests.</p>
                     </div>
                 ) : (
-                    <div className="abl-grid">
-                        {requests.map((req) => (
-                            <div key={req.id} className="abl-card">
-                                {/* Receipt Preview */}
-                                <div className="abl-receipt">
-                                    <img
-                                        src={req.receiptUrl}
-                                        alt="Receipt"
-                                        className="abl-receipt-img"
-                                    />
-                                    <div className="abl-receipt-overlay">
-                                        <button
-                                            onClick={() => setSelectedImage(req.receiptUrl)}
-                                            className="abl-zoom-btn"
-                                        >
-                                            <ZoomIn size={20} />
-                                        </button>
+                    <>
+                        <div className="abl-grid">
+                            {requests.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((req) => (
+                                <div key={req.id} className="abl-card">
+                                    <div className="abl-receipt">
+                                        <img src={req.receiptUrl} alt="Receipt" className="abl-receipt-img" />
+                                        <div className="abl-receipt-overlay">
+                                            <button onClick={() => setSelectedImage(req.receiptUrl)} className="abl-zoom-btn">
+                                                <ZoomIn size={18} />
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-
-                                {/* Details */}
-                                <div className="abl-content">
-                                    <div>
+                                    <div className="abl-content">
                                         <div className="abl-user-row">
                                             <div>
                                                 <h3 className="abl-user-name">{req.userName}</h3>
                                                 <p className="abl-user-email">{req.userEmail}</p>
                                             </div>
-                                            <div className="abl-status">
-                                                <Clock size={12} /> Pending
-                                            </div>
+                                            <div className="abl-status"><Clock size={10} /> Pending</div>
                                         </div>
-
                                         <div className="abl-info-grid">
                                             <div className="abl-info-box">
                                                 <div className="abl-info-label">Amount</div>
@@ -200,46 +197,31 @@ export default function AdminBalanceLoad({ isSidebarOpen, onToggleSidebar }) {
                                             </div>
                                             <div className="abl-info-box">
                                                 <div className="abl-info-label">Transaction ID</div>
-                                                <div className="abl-info-value abl-txn-id">
-                                                    {req.transactionId}
-                                                </div>
+                                                <div className="abl-info-value abl-txn-id">{req.transactionId}</div>
                                             </div>
                                         </div>
-
-                                        <div className="abl-timestamp">
-                                            Requested: {req.submittedAt?.toDate().toLocaleString()}
+                                        <div className="abl-actions">
+                                            <button onClick={() => handleReject(req)} disabled={processingId === req.id} className="abl-btn abl-btn-reject">
+                                                <X size={14} /> Reject
+                                            </button>
+                                            <button onClick={() => handleApprove(req)} disabled={processingId === req.id} className="abl-btn abl-btn-approve">
+                                                {processingId === req.id ? <div className="abl-spinner"></div> : <Check size={14} />} Approve
+                                            </button>
                                         </div>
                                     </div>
-
-                                    {/* Actions */}
-                                    <div className="abl-actions">
-                                        <button
-                                            onClick={() => handleReject(req)}
-                                            disabled={processingId === req.id}
-                                            className="abl-btn abl-btn-reject"
-                                        >
-                                            <X size={16} /> Reject
-                                        </button>
-                                        <button
-                                            onClick={() => handleApprove(req)}
-                                            disabled={processingId === req.id}
-                                            className="abl-btn abl-btn-approve"
-                                        >
-                                            {processingId === req.id ? (
-                                                <div className="abl-spinner"></div>
-                                            ) : (
-                                                <Check size={16} />
-                                            )}
-                                            Approve
-                                        </button>
-                                    </div>
                                 </div>
+                            ))}
+                        </div>
+                        {requests.length > itemsPerPage && (
+                            <div className="abl-pagination">
+                                <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="abl-page-btn">Prev</button>
+                                <span className="abl-page-info">{currentPage} / {Math.ceil(requests.length / itemsPerPage)}</span>
+                                <button disabled={currentPage === Math.ceil(requests.length / itemsPerPage)} onClick={() => setCurrentPage(p => p + 1)} className="abl-page-btn">Next</button>
                             </div>
-                        ))}
-                    </div>
+                        )}
+                    </>
                 )
             ) : (
-                // History Tab
                 <div className="abl-grid-history">
                     {history.length === 0 ? (
                         <div className="abl-empty">
@@ -247,64 +229,47 @@ export default function AdminBalanceLoad({ isSidebarOpen, onToggleSidebar }) {
                             <p className="abl-empty-text">No past requests found.</p>
                         </div>
                     ) : (
-                        history.map((req) => (
-                            <div key={req.id} className="abl-card-history">
-                                <div className="abl-history-header">
-                                    <div>
-                                        <span className={`abl-status-badge ${req.status}`}>
-                                            {req.status === 'approved' ? <Check size={12} /> : <X size={12} />}
-                                            {req.status}
-                                        </span>
-                                        <span className="abl-history-date">
-                                            {req.submittedAt?.toDate().toLocaleString()}
-                                        </span>
+                        <>
+                            {history.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((req) => (
+                                <div key={req.id} className="abl-card-history">
+                                    <div className="abl-history-header">
+                                        <div>
+                                            <span className={`abl-status-badge ${req.status}`}>
+                                                {req.status === 'approved' ? <Check size={12} /> : <X size={12} />} {req.status}
+                                            </span>
+                                            <span className="abl-history-date">{req.submittedAt?.toDate().toLocaleString()}</span>
+                                        </div>
+                                        <button className="abl-view-receipt-sm" onClick={() => setSelectedImage(req.receiptUrl)}>View Receipt</button>
                                     </div>
-                                    <button
-                                        className="abl-view-receipt-sm"
-                                        onClick={() => setSelectedImage(req.receiptUrl)}
-                                    >
-                                        View Receipt
-                                    </button>
-                                </div>
-                                <div className="abl-history-content">
-                                    <div className="abl-history-user">
-                                        <strong>{req.userName}</strong>
-                                        <span>{req.userEmail}</span>
+                                    <div className="abl-history-content">
+                                        <div className="abl-history-user">
+                                            <strong>{req.userName}</strong>
+                                            <span>{req.userEmail}</span>
+                                        </div>
+                                        <div className="abl-history-amount">रु {req.amount}</div>
                                     </div>
-                                    <div className="abl-history-amount">
-                                        रु {req.amount}
+                                    <div className="abl-history-footer">
+                                        <span>Txn: <span className="abl-mono">{req.transactionId}</span></span>
+                                        {req.rejectionReason && <span className="abl-reject-reason">Reason: {req.rejectionReason}</span>}
                                     </div>
                                 </div>
-                                <div className="abl-history-footer">
-                                    <span>Txn: <span className="abl-mono">{req.transactionId}</span></span>
-                                    {req.rejectionReason && (
-                                        <span className="abl-reject-reason">Reason: {req.rejectionReason}</span>
-                                    )}
+                            ))}
+                            {history.length > itemsPerPage && (
+                                <div className="abl-pagination">
+                                    <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="abl-page-btn">Prev</button>
+                                    <span className="abl-page-info">{currentPage} / {Math.ceil(history.length / itemsPerPage)}</span>
+                                    <button disabled={currentPage === Math.ceil(history.length / itemsPerPage)} onClick={() => setCurrentPage(p => p + 1)} className="abl-page-btn">Next</button>
                                 </div>
-                            </div>
-                        ))
+                            )}
+                        </>
                     )}
                 </div>
             )}
 
-            {/* Image Modal */}
             {selectedImage && (
-                <div
-                    className="abl-modal-overlay"
-                    onClick={() => setSelectedImage(null)}
-                >
-                    <button
-                        onClick={() => setSelectedImage(null)}
-                        className="abl-close-btn"
-                    >
-                        <X size={24} />
-                    </button>
-                    <img
-                        src={selectedImage}
-                        alt="Receipt Full"
-                        className="abl-modal-img"
-                        onClick={(e) => e.stopPropagation()}
-                    />
+                <div className="abl-modal-overlay" onClick={() => setSelectedImage(null)}>
+                    <button onClick={() => setSelectedImage(null)} className="abl-close-btn"><X size={24} /></button>
+                    <img src={selectedImage} alt="Receipt Full" className="abl-modal-img" onClick={(e) => e.stopPropagation()} />
                 </div>
             )}
         </div>

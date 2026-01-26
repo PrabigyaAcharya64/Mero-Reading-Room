@@ -209,13 +209,12 @@ function SignUp({ onSwitch, onComplete }) {
             fullWidth
             onClick={handleGoogle}
             disabled={submitting}
-            style={{ borderColor: '#ddd', color: '#555' }}
           >
             Sign up with Google
           </Button>
         </div>
 
-        <div className="anim-delay-6">
+        <div className="auth-switch-container anim-delay-6">
           <Button
             type="button"
             variant="ghost"

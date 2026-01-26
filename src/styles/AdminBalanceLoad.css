@@ -1,117 +1,87 @@
-/* AdminBalanceLoad.css - Styles for Balance Requests */
+/* AdminBalanceLoad.css - iOS Inspired Professional Design */
 
 .abl-container {
-    padding: 1.5rem;
     background-color: var(--color-background);
     min-height: 100vh;
 }
 
-@media (min-width: 768px) {
-    .abl-container {
-        padding: 2.5rem;
-    }
-}
-
-/* Header */
-.abl-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-}
-
-.abl-title {
-    font-size: 1.875rem;
-    font-weight: 700;
-    color: #111827;
-    margin: 0;
-}
-
-.abl-mobile-btn {
-    display: none;
-    padding: 0.5rem;
-    background-color: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
-    cursor: pointer;
-}
-
-@media (max-width: 768px) {
-    .abl-mobile-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-}
+/* PageHeader handles most layout now, so we refine sub-elements */
 
 /* Empty State */
 .abl-empty {
-    background-color: #fff;
-    border-radius: 0.75rem;
-    padding: 2.5rem;
+    background-color: var(--color-surface-elevated);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-40);
     text-align: center;
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--color-border-subtle);
+    box-shadow: var(--shadow-sm);
+    margin: var(--spacing-24);
 }
 
 .abl-empty-icon {
-    background-color: #f9fafb;
+    background-color: var(--color-surface);
     width: 4rem;
     height: 4rem;
-    border-radius: 9999px;
+    border-radius: var(--radius-full);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 1rem;
+    margin: 0 auto var(--spacing-16);
+    color: var(--color-text-secondary);
 }
 
 .abl-empty-title {
+    font-family: var(--font-system-display);
     font-size: 1.125rem;
-    font-weight: 500;
-    color: #111827;
-    margin: 0 0 0.25rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0 0 var(--spacing-8);
 }
 
 .abl-empty-text {
-    color: #6b7280;
+    font-family: var(--font-system);
+    color: var(--color-text-secondary);
     margin: 0;
 }
 
 /* Request List */
 .abl-grid {
     display: grid;
-    gap: 1.5rem;
+    gap: var(--spacing-12);
+    padding: var(--spacing-20);
 }
 
 .abl-card {
-    background-color: #fff;
-    border-radius: 0.75rem;
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    background-color: var(--color-surface-elevated);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-subtle);
+    box-shadow: var(--shadow-sm);
     overflow: hidden;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    height: auto;
+    transition: all var(--transition-base);
 }
 
-@media (min-width: 768px) {
-    .abl-card {
-        flex-direction: row;
-    }
+.abl-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-border);
 }
 
-/* Receipt Preview */
+/* Receipt Preview - Compact Thumbnail */
 .abl-receipt {
-    width: 100%;
-    height: 12rem;
-    background-color: #f3f4f6;
+    width: 80px;
+    min-width: 80px;
+    height: auto;
+    background-color: var(--color-surface);
     position: relative;
     overflow: hidden;
 }
 
 @media (min-width: 768px) {
     .abl-receipt {
-        width: 12rem;
-        height: auto;
+        width: 100px;
+        min-width: 100px;
     }
 }
 
@@ -124,12 +94,13 @@
 .abl-receipt-overlay {
     position: absolute;
     inset: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: opacity var(--transition-base);
+    backdrop-filter: blur(4px);
 }
 
 .abl-receipt:hover .abl-receipt-overlay {
@@ -137,302 +108,337 @@
 }
 
 .abl-zoom-btn {
-    padding: 0.5rem;
-    background-color: #fff;
-    border-radius: 9999px;
+    padding: var(--spacing-4);
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: var(--radius-full);
     border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.2s;
+    transition: all var(--transition-base);
+    color: var(--color-text-primary);
 }
 
-.abl-zoom-btn:hover {
-    transform: scale(1.1);
-}
-
-/* Card Content */
+/* Card Content - Optimized */
 .abl-content {
     flex: 1;
-    padding: 1.5rem;
+    padding: var(--spacing-12) var(--spacing-16);
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: center;
+    font-family: var(--font-system);
 }
 
 .abl-user-row {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 1rem;
+    align-items: center;
+    margin-bottom: var(--spacing-8);
 }
 
 .abl-user-name {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #111827;
+    font-family: var(--font-system-display);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
     margin: 0;
+    letter-spacing: -0.01em;
 }
 
 .abl-user-email {
-    font-size: 0.875rem;
-    color: #6b7280;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
     margin: 0;
 }
 
 .abl-status {
-    background-color: #eff6ff;
-    color: #1d4ed8;
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
+    background-color: rgba(0, 122, 255, 0.1);
+    color: var(--color-accent);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: 0.625rem;
     font-weight: 600;
     text-transform: uppercase;
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 4px;
+    letter-spacing: 0.02em;
 }
 
-/* Info Grid */
+/* Info Grid - Reorganized for vertical compact */
 .abl-info-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    margin-bottom: 1rem;
+    display: flex;
+    gap: var(--spacing-12);
+    margin-bottom: var(--spacing-12);
 }
 
 .abl-info-box {
-    background-color: #f9fafb;
-    padding: 0.75rem;
-    border-radius: 0.5rem;
+    background-color: var(--color-surface);
+    padding: var(--spacing-8) var(--spacing-12);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-subtle);
+    flex: 1;
 }
 
 .abl-info-label {
-    font-size: 0.75rem;
-    color: #6b7280;
+    font-size: 0.625rem;
+    color: var(--color-text-secondary);
     text-transform: uppercase;
     font-weight: 600;
-    margin-bottom: 0.25rem;
+    margin-bottom: 2px;
+    letter-spacing: 0.05em;
 }
 
 .abl-info-value {
-    font-weight: 700;
-    color: #111827;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    font-family: var(--font-system-display);
 }
 
 .abl-amount {
-    font-size: 1.25rem;
+    font-size: 1rem;
+    color: var(--color-text-primary);
 }
 
 .abl-txn-id {
-    font-size: 1rem;
-    font-family: monospace;
+    font-size: 0.8125rem;
+    font-family: var(--font-system);
     word-break: break-all;
-    color: #374151;
-    font-weight: 500;
+    color: var(--color-text-primary);
 }
 
 .abl-timestamp {
-    font-size: 0.75rem;
-    color: #9ca3af;
+    font-size: 0.6875rem;
+    color: var(--color-text-secondary);
 }
 
 /* Actions */
 .abl-actions {
     display: flex;
-    gap: 0.75rem;
-    margin-top: 1.5rem;
+    gap: var(--spacing-8);
     justify-content: flex-end;
-    border-top: 1px solid #e5e7eb;
-    padding-top: 1rem;
 }
 
 .abl-btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
+    padding: 0 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 600;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 4px;
     cursor: pointer;
     border: none;
-    transition: background-color 0.2s;
+    transition: all var(--transition-base);
+    font-family: var(--font-system);
+    height: 32px;
+}
+
+.abl-btn:active {
+    transform: scale(0.95);
 }
 
 .abl-btn-approve {
-    background-color: #000;
+    background-color: var(--color-primary);
     color: #fff;
 }
 
 .abl-btn-approve:hover {
-    background-color: #1f2937;
+    background-color: #1a1a1a;
 }
 
 .abl-btn-approve:disabled {
-    background-color: #4b5563;
+    opacity: 0.4;
     cursor: not-allowed;
 }
 
 .abl-btn-reject {
-    background-color: #fef2f2;
-    color: #dc2626;
+    background-color: rgba(255, 59, 48, 0.1);
+    color: #FF3B30;
+    border: 1px solid rgba(255, 59, 48, 0.2);
 }
 
 .abl-btn-reject:hover {
-    background-color: #fee2e2;
-}
-
-.abl-btn-reject:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    background-color: rgba(255, 59, 48, 0.2);
 }
 
 .abl-spinner {
     width: 1rem;
     height: 1rem;
-    border: 2px solid rgba(255, 255, 255, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.3);
     border-top-color: #fff;
-    border-radius: 50%;
+    border-radius: var(--radius-full);
     animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
+    to { transform: rotate(360deg); }
 }
 
-/* Modal */
+/* Modal - iOS Style */
 .abl-modal-overlay {
     position: fixed;
     inset: 0;
-    z-index: 50;
-    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 1000;
+    background-color: rgba(0, 0, 0, 0.85);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1rem;
+    padding: var(--spacing-16);
+    backdrop-filter: blur(10px);
+    animation: fadeIn var(--transition-base);
+}
+
+.abl-modal-img {
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    animation: scaleUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes scaleUp {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
 }
 
 .abl-close-btn {
     position: absolute;
-    top: 1rem;
-    right: 1rem;
-    padding: 0.5rem;
-    background-color: rgba(255, 255, 255, 0.1);
+    top: var(--spacing-24);
+    right: var(--spacing-24);
+    width: 44px;
+    height: 44px;
+    background-color: rgba(255, 255, 255, 0.15);
     color: #fff;
-    border-radius: 9999px;
+    border-radius: var(--radius-full);
     border: none;
-    cursor: pointer;
-}
-
-.abl-close-btn:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-}
-
-
-/* Tabs */
-.abl-tabs {
-    display: flex;
-    background-color: #f3f4f6;
-    padding: 0.25rem;
-    border-radius: 0.5rem;
-    gap: 0.25rem;
-}
-
-.abl-tab-btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    border-radius: 0.375rem;
-    border: none;
-    background: transparent;
-    color: #6b7280;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    transition: all 0.2s;
+    justify-content: center;
+    transition: all var(--transition-base);
+}
+
+.abl-close-btn:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+    transform: scale(1.1);
+}
+
+/* Tabs - iOS Segment Control Style */
+.abl-tabs {
+    display: flex;
+    background-color: var(--color-surface);
+    padding: 2px;
+    border-radius: var(--radius-md);
+    gap: 0;
+    border: 1px solid var(--color-border-subtle);
+}
+
+.abl-tab-btn {
+    padding: 6px 16px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    border-radius: calc(var(--radius-md) - 2px);
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-8);
+    transition: all var(--transition-base);
+    font-family: var(--font-system);
 }
 
 .abl-tab-btn.active {
-    background-color: #fff;
-    color: #111827;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    background-color: var(--color-surface-elevated);
+    color: var(--color-text-primary);
+    box-shadow: var(--shadow-sm);
 }
 
 .abl-badge-count {
-    background-color: #ef4444;
+    background-color: #FF3B30;
     color: #fff;
-    font-size: 0.75rem;
-    padding: 0.125rem 0.375rem;
-    border-radius: 9999px;
+    font-size: 0.6875rem;
+    padding: 1px 6px;
+    border-radius: var(--radius-full);
 }
 
 /* History Grid */
 .abl-grid-history {
     display: grid;
-    gap: 1rem;
+    gap: var(--spacing-12);
+    padding: var(--spacing-24);
 }
 
 .abl-card-history {
-    background-color: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.75rem;
-    padding: 1.25rem;
+    background-color: var(--color-surface-elevated);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-16);
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-base);
+}
+
+.abl-card-history:hover {
+    border-color: var(--color-border);
 }
 
 .abl-history-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 0.75rem;
+    margin-bottom: var(--spacing-12);
 }
 
 .abl-status-badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
-    padding: 0.25rem 0.625rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+    font-size: 0.6875rem;
     font-weight: 700;
     text-transform: uppercase;
-    margin-right: 0.75rem;
+    margin-right: var(--spacing-12);
+    letter-spacing: 0.02em;
 }
 
 .abl-status-badge.approved {
-    background-color: #dcfce7;
-    color: #166534;
+    background-color: rgba(52, 199, 89, 0.1);
+    color: #34C759;
 }
 
 .abl-status-badge.rejected {
-    background-color: #fee2e2;
-    color: #991b1b;
+    background-color: rgba(255, 59, 48, 0.1);
+    color: #FF3B30;
 }
 
 .abl-history-date {
-    font-size: 0.875rem;
-    color: #6b7280;
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
 }
 
 .abl-view-receipt-sm {
     font-size: 0.75rem;
-    color: #2563eb;
+    color: var(--color-accent);
     background: none;
     border: none;
     cursor: pointer;
-    text-decoration: underline;
+    font-weight: 600;
     padding: 0;
+}
+
+.abl-view-receipt-sm:hover {
+    text-decoration: underline;
 }
 
 .abl-history-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.75rem;
+    margin-bottom: var(--spacing-12);
 }
 
 .abl-history-user {
@@ -441,37 +447,83 @@
 }
 
 .abl-history-user strong {
-    font-size: 1rem;
-    color: #111827;
+    font-size: 0.9375rem;
+    color: var(--color-text-primary);
+    font-family: var(--font-system-display);
 }
 
 .abl-history-user span {
-    font-size: 0.875rem;
-    color: #6b7280;
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
 }
 
 .abl-history-amount {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: 700;
-    color: #111827;
+    color: var(--color-text-primary);
+    font-family: var(--font-system-display);
 }
 
 .abl-history-footer {
-    padding-top: 0.75rem;
-    border-top: 1px solid #f3f4f6;
+    padding-top: var(--spacing-8);
+    border-top: 1px solid var(--color-border-subtle);
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--color-text-secondary);
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 2px;
 }
 
 .abl-mono {
-    font-family: monospace;
-    color: #4b5563;
+    font-family: var(--font-system);
+    font-weight: 500;
+    color: var(--color-text-primary);
 }
 
 .abl-reject-reason {
-    color: #ef4444;
-    font-style: italic;
+    color: #FF3B30;
+    font-weight: 500;
+}
+
+/* Pagination Controls - iOS Refined */
+.abl-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-16);
+    padding: var(--spacing-24);
+    margin-top: auto;
+}
+
+.abl-page-btn {
+    padding: 8px 16px;
+    background-color: var(--color-surface-elevated);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.abl-page-btn:hover:not(:disabled) {
+    background-color: var(--color-surface);
+    border-color: var(--color-border);
+}
+
+.abl-page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.abl-page-btn:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+.abl-page-info {
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    font-family: var(--font-system);
 }

@@ -1,31 +1,29 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
-import { collection, addDoc, getDocs, doc, setDoc, getDoc, query, where, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, setDoc, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { validateMenuItemName, validatePrice, validateDescription, validateCategory } from '../../utils/validation';
 import { getBusinessDate } from '../../utils/dateUtils';
-import LoadingSpinner from '../../components/LoadingSpinner';
 import FullScreenLoader from '../../components/FullScreenLoader';
 import Button from '../../components/Button';
-
-import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
+import { Plus, Trash2, Star, Check, X, Camera, LayoutGrid, ListChecks } from 'lucide-react';
 import '../../styles/MenuManagement.css';
 import '../../styles/StandardLayout.css';
 import { uploadImageSecurely } from '../../utils/imageUpload';
-
 
 function MenuManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
   const { user } = useAuth();
 
   const [menuItems, setMenuItems] = useState([]);
   const [todaysMenu, setTodaysMenu] = useState([]);
-  const [selectedItems, setSelectedItems] = useState([]); // Array of item IDs
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [isSelectMode, setIsSelectMode] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     price: '',
     description: '',
-    category: 'Breakfast', // Default category
+    category: 'Breakfast',
   });
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -42,26 +40,19 @@ function MenuManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
     initData();
   }, []);
 
-  // Update selected items when today's menu changes
   useEffect(() => {
-    const todaysMenuIds = todaysMenu.map(item => item.id);
-    setSelectedItems(todaysMenuIds);
-  }, [todaysMenu]);
+    // If not in select mode, we don't automatically sync selectedItems with todaysMenu
+    // unless we just loaded them. 
+    if (!isSelectMode) {
+      const todaysMenuIds = todaysMenu.map(item => item.id);
+      setSelectedItems(todaysMenuIds);
+    }
+  }, [todaysMenu, isSelectMode]);
 
   const loadMenuItems = async () => {
     try {
       const menuItemsRef = collection(db, 'menuItems');
-
-      // Add timeout to prevent hanging (increased to 15 seconds for first load)
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timeout')), 15000)
-      );
-
-      const snapshot = await Promise.race([
-        getDocs(menuItemsRef),
-        timeoutPromise
-      ]);
-
+      const snapshot = await getDocs(menuItemsRef);
       if (snapshot && snapshot.docs) {
         const items = snapshot.docs.map((doc) => ({
           id: doc.id,
@@ -72,24 +63,8 @@ function MenuManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
         setMenuItems([]);
       }
     } catch (error) {
-      // Handle different error types
-      if (error?.code === 'permission-denied') {
-        console.error('Permission denied: Firestore security rules are blocking access.');
-        setMessage('Permission denied. Please check Firestore security rules in Firebase Console.');
-        setMenuItems([]);
-      } else if (error?.code === 'unavailable' || error?.code === 'failed-precondition' || error?.message?.includes('offline')) {
-        console.warn('Firestore is offline. Menu items will load when connection is restored.');
-        setMessage('Offline: Menu items will load when connection is restored.');
-        setMenuItems([]);
-      } else if (error?.message?.includes('timeout')) {
-        console.warn('Menu items loading timed out. Please check Firestore configuration.');
-        setMessage('Firestore connection timeout. Please check your network and Firestore configuration.');
-        setMenuItems([]);
-      } else {
-        console.error('Error loading menu items:', error);
-        setMessage(`Error loading menu items: ${error?.message || 'Unknown error'}. Please check Firestore security rules.`);
-        setMenuItems([]);
-      }
+      console.error('Error loading menu items:', error);
+      setMessage(`Error loading menu items: ${error.message}`);
     }
   };
 
@@ -97,144 +72,67 @@ function MenuManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
     try {
       const today = getBusinessDate();
       const todaysMenuRef = doc(db, 'todaysMenu', today);
-
-      // Add timeout to prevent hanging (increased to 15 seconds)
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timeout')), 15000)
-      );
-
-      const todaysMenuDoc = await Promise.race([
-        getDoc(todaysMenuRef),
-        timeoutPromise
-      ]);
-
-      if (todaysMenuDoc && todaysMenuDoc.exists()) {
+      const todaysMenuDoc = await getDoc(todaysMenuRef);
+      if (todaysMenuDoc.exists()) {
         const data = todaysMenuDoc.data();
-        if (data && data.items) {
-          setTodaysMenu(data.items);
-        } else {
-          setTodaysMenu([]);
-        }
+        setTodaysMenu(data.items || []);
       } else {
         setTodaysMenu([]);
       }
     } catch (error) {
-      // Handle different error types
-      if (error?.code === 'permission-denied') {
-        console.error('Permission denied: Firestore security rules are blocking access.');
-        setTodaysMenu([]);
-      } else if (error?.code === 'unavailable' || error?.code === 'failed-precondition' || error?.message?.includes('offline')) {
-        console.warn('Firestore is offline. Menu will load when connection is restored.');
-        setTodaysMenu([]);
-      } else if (error?.message?.includes('timeout')) {
-        console.warn('Today\'s menu loading timed out. Please check Firestore configuration.');
-        setTodaysMenu([]);
-      } else {
-        console.error('Error loading today\'s menu:', error);
-        setTodaysMenu([]);
-      }
+      console.error('Error loading today\'s menu:', error);
     }
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        setMessage('Please select an image file');
-        return;
-      }
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setMessage('Image size should be less than 5MB');
         return;
       }
       setPhotoFile(file);
-      // Create preview
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result);
-      };
+      reader.onloadend = () => setPhotoPreview(reader.result);
       reader.readAsDataURL(file);
     }
   };
 
-  const handleRemovePhoto = () => {
-    setPhotoFile(null);
-    setPhotoPreview(null);
-  };
-
   const handleAddMenuItem = async (e) => {
     e.preventDefault();
-
     setLoading(true);
     setMessage('');
 
-    // Validate all inputs
-    const nameValidation = validateMenuItemName(formData.name);
-    if (!nameValidation.valid) {
-      setMessage(nameValidation.error);
-      setLoading(false);
-      return;
-    }
+    const nameVal = validateMenuItemName(formData.name);
+    const priceVal = validatePrice(formData.price, 0, 10000);
+    const descVal = validateDescription(formData.description, 500);
+    const catVal = validateCategory(formData.category);
 
-    const priceValidation = validatePrice(formData.price, 0, 10000);
-    if (!priceValidation.valid) {
-      setMessage(priceValidation.error);
-      setLoading(false);
-      return;
-    }
-
-    const descriptionValidation = validateDescription(formData.description, 500);
-    if (!descriptionValidation.valid) {
-      setMessage(descriptionValidation.error);
-      setLoading(false);
-      return;
-    }
-
-    const categoryValidation = validateCategory(formData.category);
-    if (!categoryValidation.valid) {
-      setMessage(categoryValidation.error);
+    if (!nameVal.valid || !priceVal.valid || !descVal.valid || !catVal.valid) {
+      setMessage(nameVal.error || priceVal.error || descVal.error || catVal.error);
       setLoading(false);
       return;
     }
 
     try {
-
       let photoURL = null;
-
-      // Upload photo to ImgBB via Cloud Function if provided
       if (photoFile) {
         photoURL = await uploadImageSecurely(photoFile);
-        if (!photoURL) {
-          setMessage('Error uploading photo. Menu item will be saved without photo.');
-        }
       }
 
-      // Add timeout to prevent hanging (increased to 15 seconds)
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timeout')), 15000)
-      );
-
-      await Promise.race([
-        addDoc(collection(db, 'menuItems'), {
-          name: nameValidation.sanitized,
-          price: priceValidation.sanitized,
-          description: descriptionValidation.sanitized,
-          category: categoryValidation.sanitized,
-          photoURL: photoURL,
-          createdAt: new Date().toISOString(),
-        }),
-        timeoutPromise
-      ]);
+      await addDoc(collection(db, 'menuItems'), {
+        name: nameVal.sanitized,
+        price: priceVal.sanitized,
+        description: descVal.sanitized,
+        category: catVal.sanitized,
+        photoURL: photoURL,
+        createdAt: new Date().toISOString(),
+      });
 
       setFormData({ name: '', price: '', description: '', category: 'Breakfast' });
       setPhotoFile(null);
@@ -242,227 +140,89 @@ function MenuManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
       setMessage('Menu item added successfully!');
       loadMenuItems();
     } catch (error) {
-      console.error('Error adding menu item:', error);
-      if (error?.code === 'permission-denied') {
-        setMessage('Permission denied. Please check Firestore security rules. You must be authenticated.');
-      } else if (error?.code === 'unavailable' || error?.code === 'failed-precondition' || error?.message?.includes('offline')) {
-        setMessage('Offline: Menu item will be saved when connection is restored.');
-      } else if (error?.message?.includes('timeout')) {
-        setMessage('Request timed out. Please check your connection and try again.');
-      } else {
-        setMessage(`Error adding menu item: ${error?.message || 'Unknown error'}. Please check Firestore security rules.`);
-      }
+      setMessage(`Error: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteMenuItem = async (itemId) => {
-    if (!confirm('Are you sure you want to delete this menu item?')) {
-      return;
-    }
-
+    if (!confirm('Are you sure you want to delete this menu item?')) return;
     try {
       await deleteDoc(doc(db, 'menuItems', itemId));
-      setMessage('Menu item deleted successfully!');
+      setMessage('Item deleted!');
       loadMenuItems();
     } catch (error) {
-      console.error('Error deleting menu item:', error);
-      setMessage('Error deleting menu item');
+      setMessage('Error deleting item');
     }
   };
 
   const handleToggleSelection = (itemId) => {
-    setSelectedItems(prev => {
-      if (prev.includes(itemId)) {
-        return prev.filter(id => id !== itemId);
-      } else {
-        return [...prev, itemId];
-      }
-    });
+    setSelectedItems(prev => prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]);
   };
 
   const handleToggleFixed = async (itemId, currentStatus) => {
     try {
-      const itemRef = doc(db, 'menuItems', itemId);
-      await updateDoc(itemRef, {
-        isFixed: !currentStatus
-      });
-
-      // Optimistically update local state
-      setMenuItems(prev => prev.map(item =>
-        item.id === itemId ? { ...item, isFixed: !currentStatus } : item
-      ));
-
+      await updateDoc(doc(db, 'menuItems', itemId), { isFixed: !currentStatus });
+      setMenuItems(prev => prev.map(item => item.id === itemId ? { ...item, isFixed: !currentStatus } : item));
     } catch (error) {
-      console.error("Error updating fixed status:", error);
-      setMessage("Failed to update fixed status");
+      setMessage("Failed to update status");
     }
-  };
-
-  const handleSelectAll = () => {
-    setSelectedItems(menuItems.map(item => item.id));
-  };
-
-  const handleDeselectAll = () => {
-    setSelectedItems([]);
   };
 
   const handleSetTodaysMenu = async () => {
-    if (selectedItems.length === 0) {
-      setMessage('Please select at least one menu item to set as today\'s menu.');
-      return;
-    }
-
     setLoading(true);
-    setMessage('');
-
     try {
       const today = getBusinessDate();
-      const todaysMenuRef = doc(db, 'todaysMenu', today);
+      const itemsToSet = menuItems.filter(item => selectedItems.includes(item.id)).map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        description: item.description,
+        category: item.category || 'Breakfast',
+        photoURL: item.photoURL || null,
+      }));
 
-      // Get only selected items
-      const itemsToSet = menuItems
-        .filter(item => selectedItems.includes(item.id))
-        .map(item => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          description: item.description,
-          category: item.category || 'Breakfast', // Default to Breakfast if category is missing
-          photoURL: item.photoURL || null,
-        }));
-
-      // Add timeout to prevent hanging (increased to 15 seconds)
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timeout')), 15000)
-      );
-
-      await Promise.race([
-        setDoc(todaysMenuRef, {
-          date: today,
-          items: itemsToSet,
-          updatedAt: new Date().toISOString(),
-        }),
-        timeoutPromise
-      ]);
+      await setDoc(doc(db, 'todaysMenu', today), {
+        date: today,
+        items: itemsToSet,
+        updatedAt: new Date().toISOString(),
+      });
 
       setTodaysMenu(itemsToSet);
-      setMessage(`Today's menu set successfully with ${itemsToSet.length} item(s)!`);
+      setMessage(`Today's special updated!`);
+      setIsSelectMode(false);
     } catch (error) {
-      console.error('Error setting today\'s menu:', error);
-      if (error?.code === 'permission-denied') {
-        setMessage('Permission denied. Please check Firestore security rules. You must be authenticated.');
-      } else if (error?.code === 'unavailable' || error?.code === 'failed-precondition' || error?.message?.includes('offline')) {
-        setMessage('Offline: Menu will be saved when connection is restored.');
-      } else if (error?.message?.includes('timeout')) {
-        setMessage('Request timed out. Please check your connection and try again.');
-      } else {
-        setMessage(`Error setting today's menu: ${error?.message || 'Unknown error'}. Please check Firestore security rules.`);
-      }
+      setMessage("Error publishing menu");
     } finally {
       setLoading(false);
     }
   };
-
-  const handleRemoveFromMenu = async (itemId) => {
-    setLoading(true);
-    setMessage('');
-
-    try {
-      const today = getBusinessDate();
-      const todaysMenuRef = doc(db, 'todaysMenu', today);
-
-      // Remove the item from today's menu
-      const updatedMenu = todaysMenu.filter(item => item.id !== itemId);
-
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timeout')), 15000)
-      );
-
-      await Promise.race([
-        setDoc(todaysMenuRef, {
-          date: today,
-          items: updatedMenu,
-          updatedAt: new Date().toISOString(),
-        }),
-        timeoutPromise
-      ]);
-
-      setTodaysMenu(updatedMenu);
-      setSelectedItems(prev => prev.filter(id => id !== itemId));
-      setMessage('Item removed from today\'s menu successfully!');
-    } catch (error) {
-      console.error('Error removing item from menu:', error);
-      setMessage('Error removing item from menu');
-    } finally {
-      setLoading(false);
-    }
-  };
-
 
   return (
     <div className="std-container">
       <PageHeader title="Menu Management" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
 
-      {pageLoading && <FullScreenLoader text="Loading menu..." />}
+      {pageLoading && <FullScreenLoader text="Loading Canteen..." />}
 
       <main className="std-body mm-grid-layout">
-        {/* Left Column: Form */}
-        <div className="mm-form-section">
-          <h2 className="mm-section-title">Add Menu Item</h2>
-
+        {/* Sidebar: Add Form */}
+        <aside className="mm-form-section">
+          <h2 className="mm-section-title">Add New Dish</h2>
           <form onSubmit={handleAddMenuItem} className="mm-form">
             <div className="mm-input-group">
               <label className="mm-label">Dish Name</label>
-              <input
-                type="text"
-                name="name"
-                className="mm-input"
-                value={formData.name}
-                onChange={handleInputChange}
-                placeholder="e.g., Dal Bhat"
-                required
-              />
+              <input type="text" name="name" className="mm-input" value={formData.name} onChange={handleInputChange} placeholder="e.g., Dal Bhat" required />
             </div>
 
             <div className="mm-input-group">
               <label className="mm-label">Price (रु)</label>
-              <input
-                type="number"
-                name="price"
-                className="mm-input"
-                value={formData.price}
-                onChange={handleInputChange}
-                placeholder="e.g., 150"
-                step="0.01"
-                min="0"
-                required
-              />
-            </div>
-
-            <div className="mm-input-group">
-              <label className="mm-label">Description</label>
-              <textarea
-                name="description"
-                className="mm-textarea"
-                value={formData.description}
-                onChange={handleInputChange}
-                placeholder="Describe the dish..."
-                rows="3"
-                required
-              />
+              <input type="number" name="price" className="mm-input" value={formData.price} onChange={handleInputChange} placeholder="150" step="0.01" required />
             </div>
 
             <div className="mm-input-group">
               <label className="mm-label">Category</label>
-              <select
-                name="category"
-                className="mm-select"
-                value={formData.category}
-                onChange={handleInputChange}
-                required
-              >
+              <select name="category" className="mm-select" value={formData.category} onChange={handleInputChange} required>
                 <option value="Breakfast">Breakfast</option>
                 <option value="Meal">Meal</option>
                 <option value="Dinner">Dinner</option>
@@ -472,209 +232,119 @@ function MenuManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
             </div>
 
             <div className="mm-input-group">
-              <label className="mm-label">Food Photo</label>
+              <label className="mm-label">Description</label>
+              <textarea name="description" className="mm-textarea" value={formData.description} onChange={handleInputChange} placeholder="Write a short description..." rows="3" required />
+            </div>
+
+            <div className="mm-input-group">
+              <label className="mm-label">Photo</label>
               <div className="mm-file-input-wrapper">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoChange}
-                  className="mm-file-input"
-                />
+                <input type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} id="photo-upload" />
+                <label htmlFor="photo-upload" style={{ cursor: 'pointer' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <Camera size={24} className="text-gray-400" />
+                    <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                      {photoFile ? photoFile.name : 'Upload Dish Photo'}
+                    </span>
+                  </div>
+                </label>
               </div>
               {photoPreview && (
                 <div className="mm-preview-container">
-                  <img
-                    src={photoPreview}
-                    alt="Preview"
-                    className="mm-preview-img"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleRemovePhoto}
-                    className="mm-remove-preview"
-                  >
-                    ×
-                  </button>
+                  <img src={photoPreview} alt="Preview" className="mm-preview-img" />
+                  <button type="button" onClick={() => { setPhotoFile(null); setPhotoPreview(null); }} className="mm-remove-preview"><X size={16} /></button>
                 </div>
               )}
             </div>
 
-            <Button
-              type="submit"
-              variant="primary"
-              fullWidth
-              loading={loading}
-              className="mm-btn" // Keep existing class if it adds specific margins/styles, but Button handles base styles
-            >
-              Add Menu Item
+            <Button type="submit" variant="primary" fullWidth loading={loading}>
+              <Plus size={18} /> Create Menu Item
             </Button>
           </form>
+          {message && <div className={`mm-message ${message.toLowerCase().includes('success') || message.toLowerCase().includes('published') || message.toLowerCase().includes('updated') ? 'success' : 'error'}`}>{message}</div>}
+        </aside>
 
-          {message && (
-            <div className={`mm-message ${message.toLowerCase().includes('success') ? 'success' : 'error'}`}>
-              {message}
-            </div>
-          )}
-        </div>
-
-        {/* Right Column: Menu List */}
-        <div className="mm-content-section">
-
-          {/* Toolbar */}
+        {/* Content: List Management */}
+        <section className="mm-content-section">
           <div className="mm-toolbar">
-            <h2 className="mm-section-title" style={{ margin: 0, border: 'none' }}>
-              All Menu Items ({menuItems.length})
-            </h2>
-
-            <div className="mm-stats">
-              {selectedItems.length} selected
+            <div className="mm-toolbar-left">
+              <h2>Master Catalog</h2>
+              <p>{menuItems.length} items available • {todaysMenu.length} currently in Special Menu</p>
             </div>
-
-            <div className="mm-actions">
-              <Button
-                onClick={handleSelectAll}
-                variant="secondary"
-                disabled={loading || menuItems.length === 0}
-              >
-                Select All
-              </Button>
-              <Button
-                onClick={handleDeselectAll}
-                variant="secondary"
-                disabled={loading || selectedItems.length === 0}
-              >
-                Deselect All
-              </Button>
-              <Button
-                onClick={handleSetTodaysMenu}
-                variant="primary"
-                loading={loading}
-                disabled={loading || selectedItems.length === 0}
-              >
-                Set Today's Special
-              </Button>
+            <div className="mm-toolbar-actions">
+              {isSelectMode ? (
+                <>
+                  <Button variant="ghost" onClick={() => { setIsSelectMode(false); setSelectedItems(todaysMenu.map(i => i.id)); }}>Cancel</Button>
+                  <Button variant="primary" onClick={handleSetTodaysMenu} loading={loading} disabled={selectedItems.length === 0}>
+                    Save Changes ({selectedItems.length})
+                  </Button>
+                </>
+              ) : (
+                <Button variant="secondary" onClick={() => setIsSelectMode(true)}>
+                  <ListChecks size={18} /> Edit Special Menu
+                </Button>
+              )}
             </div>
           </div>
 
-          {/* Menu Items Grid */}
           <div className="mm-grid">
             {menuItems.map((item) => {
               const isSelected = selectedItems.includes(item.id);
-              const isInTodaysMenu = todaysMenu.some(menuItem => menuItem.id === item.id);
+              const isInSpecial = todaysMenu.some(m => m.id === item.id);
 
               return (
-                <div
-                  key={item.id}
-                  className={`mm-card ${isSelected ? 'selected' : ''} ${isInTodaysMenu ? 'todays-special' : ''}`}
-                >
-                  <label className="mm-card-select">
-                    <input
-                      type="checkbox"
-                      className="mm-checkbox"
-                      checked={isSelected}
-                      onChange={() => handleToggleSelection(item.id)}
-                    />
-                    <span style={{ fontSize: '12px', fontWeight: 'bold' }}>
-                      {isInTodaysMenu ? 'In Menu' : 'Select'}
-                    </span>
-                  </label>
-
-                  <div className="mm-card-img-wrapper">
+                <div key={item.id} className={`mm-card ${isSelected && isSelectMode ? 'isSelected' : ''}`} onClick={() => isSelectMode && handleToggleSelection(item.id)}>
+                  {isSelectMode && (
+                    <div className="mm-select-indicator">
+                      <Check className="mm-indicator-icon" />
+                    </div>
+                  )}
+                  
+                  <div className="mm-card-image-wrapper">
                     {item.photoURL ? (
-                      <img
-                        src={item.photoURL}
-                        alt={item.name}
-                        className="mm-card-img"
-                      />
+                      <img src={item.photoURL} alt={item.name} className="mm-card-img" />
                     ) : (
-                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eee', color: '#999' }}>
-                        No Image
-                      </div>
+                      <div className="mm-no-image">No Image</div>
                     )}
+                    <span className="mm-category-tag">{item.category}</span>
                   </div>
 
-                  <h3 className="mm-card-title">{item.name}</h3>
-                  <div className="mm-card-category">{item.category || 'Uncategorized'}</div>
-                  <p className="mm-card-desc">{item.description}</p>
-                  <div className="mm-card-price">
-                    रु {item.price != null ? Number(item.price).toFixed(2) : '0.00'}
+                  <div className="mm-card-content">
+                    <h3 className="mm-card-title">{item.name}</h3>
+                    <p className="mm-card-desc">{item.description}</p>
+                    <div className="mm-card-footer">
+                      <div className="mm-card-price">रु {Number(item.price).toFixed(0)}</div>
+                      {isInSpecial && <span className="mm-card-badge">Current Special</span>}
+                      {item.isFixed && <Star size={14} fill="currentColor" className="text-yellow-500" title="Fixed Item" />}
+                    </div>
                   </div>
 
-                  <div className="mm-card-actions">
-                    <Button
-                      type="button"
-                      onClick={() => handleToggleFixed(item.id, item.isFixed)}
-                      variant={item.isFixed ? 'primary' : 'secondary'}
-                      fullWidth
-                      style={{ marginBottom: '0.5rem', backgroundColor: item.isFixed ? '#28a745' : undefined, borderColor: item.isFixed ? '#28a745' : undefined, color: item.isFixed ? '#fff' : undefined }}
-                    >
-                      {item.isFixed ? '★ Fixed Item' : '☆ Mark Fix Item'}
-                    </Button>
-                    <Button
-                      onClick={() => handleDeleteMenuItem(item.id)}
-                      variant="danger"
-                      fullWidth
-                    >
-                      Delete
-                    </Button>
-                  </div>
+                  {!isSelectMode && (
+                    <div className="mm-card-overlay">
+                      <Button variant="outline" onClick={(e) => { e.stopPropagation(); handleToggleFixed(item.id, item.isFixed); }} fullWidth>
+                        <Star size={16} /> {item.isFixed ? 'Remove Star' : 'Star Item'}
+                      </Button>
+                      <Button variant="danger" onClick={(e) => { e.stopPropagation(); handleDeleteMenuItem(item.id); }} fullWidth>
+                        <Trash2 size={16} /> Delete Forever
+                      </Button>
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
 
           {menuItems.length === 0 && (
-            <div className="nu-empty">
-              No menu items yet. Add your first menu item from the form.
+            <div className="abl-empty" style={{ background: 'var(--color-surface)', padding: 'var(--spacing-40)', textAlign: 'center', borderRadius: 'var(--radius-lg)' }}>
+              <LayoutGrid size={48} className="text-gray-300" style={{ marginBottom: '16px' }} />
+              <h3>Catalog is Empty</h3>
+              <p>Start adding dishes to build your menu catalog.</p>
             </div>
           )}
-
-          {/* Today's Menu Preview Section */}
-          {todaysMenu.length > 0 && (
-            <div style={{ marginTop: '3rem' }}>
-              <h2 className="mm-section-title">Today's Special ({todaysMenu.length})</h2>
-              <div className="mm-grid">
-                {todaysMenu.map((item, index) => (
-                  <div key={item.id || index} className="mm-card todays-special">
-                    <div className="mm-card-img-wrapper">
-                      {item.photoURL ? (
-                        <img
-                          src={item.photoURL}
-                          alt={item.name}
-                          className="mm-card-img"
-                        />
-                      ) : (
-                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eee', color: '#999' }}>
-                          No Image
-                        </div>
-                      )}
-                    </div>
-                    <h3 className="mm-card-title">{item.name}</h3>
-                    <div className="mm-card-category">{item.category || 'Uncategorized'}</div>
-                    <div className="mm-card-price">
-                      रु {item.price != null ? Number(item.price).toFixed(2) : '0.00'}
-                    </div>
-                    <div className="mm-card-actions">
-                      <Button
-                        onClick={() => handleRemoveFromMenu(item.id)}
-                        variant="danger"
-                        loading={loading}
-                        fullWidth
-                      >
-                        Remove from Special
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        </section>
       </main>
-
     </div>
   );
 }
 
 export default MenuManagement;
-

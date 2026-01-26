@@ -1,41 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import PageHeader from '../../components/PageHeader';
 import UserDetailView from './UserDetailView';
-import '../../styles/StandardLayout.css';
 import { db } from '../../lib/firebase';
-import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { formatBalance } from '../../utils/formatCurrency';
 import { formatDate } from '../../utils/dateFormat';
-import { Search, Edit2, User } from 'lucide-react';
+import { Search, Edit2, User, ChevronRight } from 'lucide-react';
+import '../../styles/StandardLayout.css';
+import '../../styles/AllMembersView.css';
 
 function AllMembersView({ onBack, isSidebarOpen, onToggleSidebar }) {
     const [users, setUsers] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUser, setSelectedUser] = useState(null);
     const [loading, setLoading] = useState(true);
-
     const [seatAssignmentsMap, setSeatAssignmentsMap] = useState({});
 
     useEffect(() => {
-        // Listen to seat assignments for real-time status
         const seatUnsub = onSnapshot(collection(db, 'seatAssignments'), (snapshot) => {
             const map = {};
             snapshot.forEach(doc => {
                 const data = doc.data();
-                if (data.userId) {
-                    map[data.userId] = data;
-                }
+                if (data.userId) map[data.userId] = data;
             });
             setSeatAssignmentsMap(map);
         });
-
         return () => seatUnsub();
     }, []);
 
     useEffect(() => {
-        // Fetch all verified users
         const q = query(collection(db, 'users'), where('verified', '==', true));
-        const unsub = onSnapshot(q, async (snapshot) => {
+        const unsub = onSnapshot(q, (snapshot) => {
             const userData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             setUsers(userData);
             setLoading(false);
@@ -46,8 +41,6 @@ function AllMembersView({ onBack, isSidebarOpen, onToggleSidebar }) {
         return () => unsub();
     }, []);
 
-
-
     const filteredUsers = users.filter((u) => {
         const lowerQ = searchQuery.toLowerCase();
         return (u.name?.toLowerCase().includes(lowerQ) ||
@@ -55,224 +48,143 @@ function AllMembersView({ onBack, isSidebarOpen, onToggleSidebar }) {
             u.mrrNumber?.toLowerCase().includes(lowerQ));
     });
 
-    const handleEditUser = (user) => {
-        setSelectedUser(user);
-    };
+    // Pagination Logic
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
+    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
 
-    const handleCloseModal = () => {
-        setSelectedUser(null);
-    };
+    // Reset to page 1 when search query changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
 
-    const handleUserUpdate = () => {
-        // Refresh will happen automatically via onSnapshot
-        console.log('User updated');
+    const handleEditUser = (user) => setSelectedUser(user);
+    const handleCloseModal = () => setSelectedUser(null);
+    const handleUserUpdate = () => console.log('User updated');
+
+    const handlePageChange = (pageNumber) => {
+        setCurrentPage(pageNumber);
+        // Scroll to top of table or container for better UX
+        const container = document.querySelector('.std-body');
+        if (container) container.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     return (
-        <div className="std-container">
-            <PageHeader title="All Members" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
+        <div className="amv-container">
+            <PageHeader 
+                title="Members Directory" 
+                onBack={onBack} 
+                isSidebarOpen={isSidebarOpen} 
+                onToggleSidebar={onToggleSidebar} 
+            />
 
             <main className="std-body">
-                <div className="bg-white rounded-lg shadow-lg p-6">
-                    <div className="mb-6 flex justify-between align-items-center">
-                        <h2 className="text-2xl font-bold" style={{ color: '#1f2937' }}>Member Directory</h2>
-                        <div className="text-sm text-gray-600">
-                            Total Members: <strong>{users.length}</strong>
+                <div className="amv-header-card">
+                    <div className="amv-title-row">
+                        <h2 className="amv-title">Member List</h2>
+                        <div className="amv-stats">
+                            {filteredUsers.length} total • Page {currentPage} of {totalPages || 1}
                         </div>
                     </div>
 
-                    <div className="mb-4 relative">
-                        <Search className="absolute left-3 top-3 text-gray-400" size={20} />
+                    <div className="amv-search-wrapper">
                         <input
                             type="text"
-                            placeholder="Search by Name, Email or MRR..."
-                            className="w-full pl-10 pr-4 py-2 border rounded-lg"
+                            placeholder="Search by Name, Email or MRR ID..."
+                            className="amv-search-input"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            style={{ borderColor: '#d1d5db' }}
                         />
+                        <Search className="amv-search-icon" size={20} />
                     </div>
+                </div>
 
-                    {loading ? (
-                        <div className="text-center py-12">
-                            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-blue-600"></div>
-                            <p className="mt-4 text-gray-600">Loading members...</p>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse" style={{ minWidth: '1000px' }}>
+                {loading ? (
+                    <div className="amv-loading">
+                        <div className="amv-spinner"></div>
+                        <p>Accessing member records...</p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="amv-table-wrapper">
+                            <table className="amv-table">
                                 <thead>
-                                    <tr style={{ backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
-                                        <th className="p-3 font-semibold text-gray-700">User Identity</th>
-                                        <th className="p-3 font-semibold text-gray-700">MRR No.</th>
-                                        <th className="p-3 font-semibold text-gray-700">Balance</th>
-                                        <th className="p-3 font-semibold text-gray-700">Verification</th>
-                                        <th className="p-3 font-semibold text-gray-700">Reading Room</th>
-                                        <th className="p-3 font-semibold text-gray-700">Last Payment</th>
-                                        <th className="p-3 font-semibold text-gray-700">Next Payment</th>
-                                        <th className="p-3 font-semibold text-gray-700">Action</th>
+                                    <tr>
+                                        <th>Identity</th>
+                                        <th>MRR ID</th>
+                                        <th>Status</th>
+                                        <th>Balance</th>
+                                        <th>Reading Room</th>
+                                        <th>Next Payment</th>
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredUsers.map(user => (
-                                        <tr key={user.id} className="border-b hover:bg-gray-50" style={{ transition: 'background 0.2s' }}>
-                                            {/* User Identity Column */}
-                                            <td className="p-3">
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                    {/* User Photo */}
-                                                    <div style={{
-                                                        width: '48px',
-                                                        height: '48px',
-                                                        borderRadius: '50%',
-                                                        overflow: 'hidden',
-                                                        flexShrink: 0,
-                                                        border: '2px solid #e5e7eb'
-                                                    }}>
+                                    {paginatedUsers.map(user => (
+                                        <tr key={user.id}>
+                                            <td>
+                                                <div className="amv-user-cell">
+                                                    <div className="amv-avatar">
                                                         {user.profileImage || user.photoUrl || user.image ? (
                                                             <img
                                                                 src={user.profileImage || user.photoUrl || user.image}
                                                                 alt={user.name}
                                                                 referrerPolicy="no-referrer"
-                                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                                             />
                                                         ) : (
-                                                            <div style={{
-                                                                width: '100%',
-                                                                height: '100%',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                                                color: 'white',
-                                                                fontSize: '18px',
-                                                                fontWeight: 'bold'
-                                                            }}>
+                                                            <div className="amv-avatar-fallback">
                                                                 {user.name?.charAt(0)?.toUpperCase() || 'U'}
                                                             </div>
                                                         )}
                                                     </div>
-                                                    {/* Name and Email */}
-                                                    <div>
-                                                        <div style={{ fontWeight: '600', color: '#1f2937', marginBottom: '2px' }}>
-                                                            {user.name || 'N/A'}
-                                                        </div>
-                                                        <div style={{ fontSize: '13px', color: '#6b7280' }}>
-                                                            {user.email || '-'}
-                                                        </div>
+                                                    <div className="amv-user-info">
+                                                        <span className="amv-user-name">{user.name || 'Anonymous Reader'}</span>
+                                                        <span className="amv-user-email">{user.email || '-'}</span>
                                                     </div>
                                                 </div>
                                             </td>
-
-                                            {/* MRR Number */}
-                                            <td className="p-3">
-                                                <span style={{ fontFamily: 'monospace', color: '#374151', fontWeight: '500' }}>
-                                                    {user.mrrNumber || '-'}
+                                            <td>
+                                                <span className="amv-mrr-code">{user.mrrNumber || '-'}</span>
+                                            </td>
+                                            <td>
+                                                <span className={`amv-badge ${user.verified ? 'verified' : 'pending'}`}>
+                                                    {user.verified ? 'Verified' : 'Pending'}
                                                 </span>
                                             </td>
-
-                                            {/* Balance */}
-                                            <td className="p-3">
-                                                <span style={{
-                                                    fontWeight: '600',
-                                                    color: '#059669',
-                                                    fontSize: '14px'
-                                                }}>
-                                                    {formatBalance(user.balance || 0)}
-                                                </span>
+                                            <td>
+                                                <span className="amv-balance">{formatBalance(user.balance || 0)}</span>
                                             </td>
-
-                                            {/* Verification Status */}
-                                            <td className="p-3">
-                                                <span style={{
-                                                    padding: '4px 10px',
-                                                    borderRadius: '12px',
-                                                    fontSize: '12px',
-                                                    fontWeight: '600',
-                                                    backgroundColor: user.verified ? '#dcfce7' : '#f3f4f6',
-                                                    color: user.verified ? '#166534' : '#6b7280'
-                                                }}>
-                                                    {user.verified ? '✓ Verified' : 'Pending'}
-                                                </span>
-                                            </td>
-
-                                            {/* Reading Room Status */}
-                                            <td className="p-3">
-                                                <div className="flex flex-col">
-                                                    <span style={{
-                                                        padding: '4px 10px',
-                                                        borderRadius: '12px',
-                                                        fontSize: '12px',
-                                                        fontWeight: '600',
-                                                        backgroundColor: seatAssignmentsMap[user.id] ? '#dbeafe' : '#f3f4f6',
-                                                        color: seatAssignmentsMap[user.id] ? '#1e40af' : '#6b7280',
-                                                        width: 'fit-content'
-                                                    }}>
-                                                        {seatAssignmentsMap[user.id] ? '✓ Active' : 'Inactive'}
+                                            <td>
+                                                <div className="amv-room-box">
+                                                    <span className={`amv-badge ${seatAssignmentsMap[user.id] ? 'active' : 'inactive'}`}>
+                                                        {seatAssignmentsMap[user.id] ? 'Active' : 'Inactive'}
                                                     </span>
                                                     {seatAssignmentsMap[user.id] && (
-                                                        <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontWeight: '500', display: 'flex', flexDirection: 'column' }}>
-                                                            <span>Room: {seatAssignmentsMap[user.id].roomName || 'Reading Room'}</span>
-                                                            <span>Seat: {seatAssignmentsMap[user.id].seatLabel || seatAssignmentsMap[user.id].seatId || '-'}</span>
-                                                        </div>
+                                                        <span className="amv-room-info">
+                                                            {seatAssignmentsMap[user.id].roomName || 'Room'} • {seatAssignmentsMap[user.id].seatLabel || 'Seat'}
+                                                        </span>
                                                     )}
                                                 </div>
                                             </td>
-
-                                            {/* Last Payment Date */}
-                                            <td className="p-3">
-                                                <span style={{ color: '#6b7280', fontSize: '14px' }}>
-                                                    {formatDate(user.lastPaymentDate)}
-                                                </span>
+                                            <td>
+                                                <span className="amv-timestamp">{formatDate(user.nextPaymentDue)}</span>
                                             </td>
-
-                                            {/* Next Payment Date */}
-                                            <td className="p-3">
-                                                <span style={{ color: '#6b7280', fontSize: '14px' }}>
-                                                    {formatDate(user.nextPaymentDate)}
-                                                </span>
-                                            </td>
-
-                                            {/* Action Button */}
-                                            <td className="p-3">
-                                                <button
-                                                    onClick={() => handleEditUser(user)}
-                                                    style={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '6px',
-                                                        padding: '6px 14px',
-                                                        backgroundColor: '#3b82f6',
-                                                        color: 'white',
-                                                        border: 'none',
-                                                        borderRadius: '6px',
-                                                        fontSize: '13px',
-                                                        fontWeight: '600',
-                                                        cursor: 'pointer',
-                                                        transition: 'all 0.2s'
-                                                    }}
-                                                    onMouseEnter={(e) => {
-                                                        e.currentTarget.style.backgroundColor = '#2563eb';
-                                                        e.currentTarget.style.transform = 'translateY(-1px)';
-                                                    }}
-                                                    onMouseLeave={(e) => {
-                                                        e.currentTarget.style.backgroundColor = '#3b82f6';
-                                                        e.currentTarget.style.transform = 'translateY(0)';
-                                                    }}
-                                                >
+                                            <td>
+                                                <button className="amv-manage-btn" onClick={() => handleEditUser(user)}>
                                                     <Edit2 size={14} />
                                                     Manage
                                                 </button>
                                             </td>
                                         </tr>
                                     ))}
-                                    {filteredUsers.length === 0 && (
+                                    {paginatedUsers.length === 0 && (
                                         <tr>
-                                            <td colSpan="8" className="p-6 text-center text-gray-500">
-                                                <div style={{ padding: '40px' }}>
-                                                    <User size={48} style={{ margin: '0 auto 16px', color: '#d1d5db' }} />
-                                                    <p style={{ fontSize: '16px', color: '#6b7280' }}>
-                                                        {searchQuery ? 'No members found matching your search.' : 'No members found.'}
-                                                    </p>
+                                            <td colSpan="7">
+                                                <div className="amv-empty">
+                                                    <User size={48} className="amv-empty-icon" />
+                                                    <p>{searchQuery ? 'No members match your search.' : 'The directory is currently empty.'}</p>
                                                 </div>
                                             </td>
                                         </tr>
@@ -280,11 +192,43 @@ function AllMembersView({ onBack, isSidebarOpen, onToggleSidebar }) {
                                 </tbody>
                             </table>
                         </div>
-                    )}
-                </div>
+
+                        {totalPages > 1 && (
+                            <div className="amv-pagination">
+                                <button 
+                                    className="amv-page-nav" 
+                                    disabled={currentPage === 1}
+                                    onClick={() => handlePageChange(currentPage - 1)}
+                                >
+                                    Previous
+                                </button>
+                                
+                                <div className="amv-page-numbers">
+                                    {[...Array(totalPages)].map((_, i) => (
+                                        <button
+                                            key={i + 1}
+                                            className={`amv-page-btn ${currentPage === i + 1 ? 'active' : ''}`}
+                                            onClick={() => handlePageChange(i + 1)}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <button 
+                                    className="amv-page-nav" 
+                                    disabled={currentPage === totalPages}
+                                    onClick={() => handlePageChange(currentPage + 1)}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
+                    </>
+                )}
             </main>
 
-            {/* User Detail View Modal */}
+
             {selectedUser && (
                 <UserDetailView
                     user={selectedUser}
@@ -298,3 +242,4 @@ function AllMembersView({ onBack, isSidebarOpen, onToggleSidebar }) {
 }
 
 export default AllMembersView;
+

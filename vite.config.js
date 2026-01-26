@@ -10,26 +10,23 @@ export default defineConfig({
     mainFields: ['browser', 'module', 'main'],
   },
   optimizeDeps: {
-    include: [
-      'firebase/app',
-      'firebase/auth',
-      'firebase/firestore',
-      'firebase/storage',
-      'firebase/functions',
-    ],
+    include: [],
     esbuildOptions: {
       supported: {
         bigint: true
       }
     },
+    exclude: []
   },
   server: {
+    host: '0.0.0.0', // Allow network access
     port: 5173,
     open: false
   },
   build: {
     chunkSizeWarningLimit: 2000,
     rollupOptions: {
+      external: [],
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {

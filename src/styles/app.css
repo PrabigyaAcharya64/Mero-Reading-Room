@@ -17,12 +17,13 @@
 }
 
 .auth-header__eyebrow {
-  font-family: var(--brand-font-serif);
-  letter-spacing: 0.35em;
+  font-family: var(--font-system-display);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--color-text-secondary);
   margin: 0;
+  font-weight: 600;
 }
 
 .auth-header__headline {
@@ -50,10 +51,10 @@
 }
 
 .auth-tab {
-  font-family: var(--brand-font-body);
-  font-size: 0.88rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
+  font-family: var(--font-system);
+  font-size: 0.875rem;
+  letter-spacing: -0.01em;
+  text-transform: none;
   border: none;
   border-bottom: 2px solid transparent;
   background: transparent;
@@ -61,6 +62,7 @@
   padding: 0.75rem 1rem;
   cursor: pointer;
   transition: color var(--transition-default), border-color var(--transition-default);
+  font-weight: 500;
 }
 
 .auth-tab--active {
@@ -77,12 +79,12 @@
   width: 100%;
   display: grid;
   gap: 1.5rem;
-  background-color: var(--color-surface);
+  background-color: var(--color-surface-elevated);
   color: var(--color-text-primary);
   padding: clamp(1.75rem, 6vw, 2.5rem);
-  border-radius: 0;
-  border: 1px solid var(--color-border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: var(--shadow-card);
 }
 
 .auth-form {
@@ -96,21 +98,22 @@
 }
 
 .input-field__label {
-  font-size: 0.75rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  font-size: 0.8125rem;
+  letter-spacing: -0.01em;
+  text-transform: none;
   color: var(--color-text-secondary);
+  font-weight: 500;
 }
 
 .input-field input {
   width: 100%;
   border: 1px solid var(--color-border);
-  border-radius: 0;
-  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
   font-size: 1rem;
-  font-family: var(--brand-font-body);
+  font-family: var(--font-system);
   color: var(--color-text-primary);
-  background-color: var(--color-surface);
+  background-color: var(--color-surface-elevated);
   transition: border-color var(--transition-default), box-shadow var(--transition-default);
 }
 
@@ -120,8 +123,8 @@
 
 .input-field input:focus {
   outline: none;
-  border-color: var(--color-text-primary);
-  box-shadow: 0 0 0 1px var(--color-text-primary);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
 }
 
 .auth-form__meta {
@@ -162,17 +165,18 @@
 
 .cta-button {
   width: 100%;
-  border-radius: 0;
+  border-radius: var(--radius-md);
   border: 1px solid transparent;
-  padding: 1rem 1.25rem;
-  font-size: 0.9rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  font-family: var(--brand-font-body);
+  padding: 0.875rem 1.25rem;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  font-family: var(--font-system);
   font-weight: 600;
   cursor: pointer;
   transition: background-color var(--transition-default), color var(--transition-default),
-    border-color var(--transition-default);
+    border-color var(--transition-default), transform var(--transition-fast);
+  height: 44px;
 }
 
 .cta-button--primary {
@@ -184,6 +188,10 @@
 .cta-button--primary:focus-visible {
   background-color: #1a1a1a;
   outline: none;
+}
+
+.cta-button--primary:active {
+  transform: scale(0.98);
 }
 
 .cta-button--secondary {
@@ -220,32 +228,32 @@
   gap: 12px;
   width: 100%;
   padding: 12px 14px;
-  border: 1px solid var(--color-border, #ddd);
-  border-radius: var(--spacing-lg, 16px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   background: #ffffff;
-  box-shadow: var(--shadow-card, 0 2px 4px rgba(0, 0, 0, 0.08));
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
-  transition: transform var(--transition-default, 0.2s ease), box-shadow var(--transition-default, 0.2s ease), border-color var(--transition-default, 0.2s ease);
+  transition: transform var(--transition-default), box-shadow var(--transition-default), border-color var(--transition-default);
 }
 
 .interest-card:hover,
 .interest-card:focus-visible {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
   outline: none;
-  box-shadow: var(--shadow-floating, 0 2px 8px rgba(0, 0, 0, 0.15));
+  box-shadow: var(--shadow-md);
 }
 
 .interest-card.is-selected {
-  border-color: #f1c232;
-  background: #fff8e1;
-  box-shadow: 0 10px 24px rgba(241, 194, 50, 0.25);
+  border-color: var(--color-accent);
+  background: rgba(0, 122, 255, 0.05);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
 }
 
 .interest-card__icon {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
-  background: var(--color-secondary, #f5f5f5);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -262,16 +270,17 @@
 }
 
 .interest-card__label {
-  font-weight: 700;
-  color: #111;
-  font-family: var(--font-body);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-family: var(--font-system);
   display: block;
   margin-bottom: 4px;
+  font-size: 0.9375rem;
 }
 
 .interest-card__helper {
-  color: #555;
-  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
   display: block;
 }
 
@@ -339,8 +348,9 @@
 .landing-brand h1 {
   margin: 0;
   font-size: clamp(1.4rem, 3vw, 2rem);
-  font-family: var(--brand-font-serif);
-  letter-spacing: 0.06em;
+  font-family: var(--font-system-display);
+  letter-spacing: -0.02em;
+  font-weight: 700;
 }
 
 .landing-brand__summary {
@@ -386,10 +396,9 @@
   border: 1px solid var(--color-border);
   padding: 0.6rem 1rem;
   background-color: #fff;
-  border-radius: 8px;
-  /* Softer look */
+  border-radius: var(--radius-md);
   height: 48px;
-  /* Fixed height for symmetry */
+  box-shadow: var(--shadow-sm);
 }
 
 .landing-balance__label {
@@ -405,7 +414,7 @@
 .landing-balance__value {
   font-size: 1.25rem;
   font-weight: 700;
-  font-family: var(--brand-font-serif);
+  font-family: var(--font-system-display);
   line-height: 1;
 }
 
@@ -473,20 +482,23 @@
 }
 
 .landing-services {
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-subtle);
   background-color: #fff;
   padding: clamp(1.5rem, 4vw, 2rem);
   display: grid;
   gap: 1.5rem;
   text-align: center;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .landing-services h2 {
   margin: 0;
-  font-family: var(--brand-font-serif);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 1.1rem;
+  font-family: var(--font-system-display);
+  letter-spacing: -0.01em;
+  text-transform: none;
+  font-size: 1.25rem;
+  font-weight: 700;
 }
 
 .landing-services p {
@@ -512,13 +524,14 @@
   cursor: pointer;
   transition: transform var(--transition-default), border-color var(--transition-default),
     box-shadow var(--transition-default);
+  border-radius: var(--radius-lg);
 }
 
 .landing-service-card:hover,
 .landing-service-card:focus-visible {
   border-color: var(--color-text-primary);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
-  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
   outline: none;
 }
 
@@ -537,27 +550,31 @@
 }
 
 .landing-service-card__label {
-  font-size: 0.95rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-family: var(--brand-font-sans);
+  font-size: 0.9375rem;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  font-family: var(--font-system);
+  font-weight: 600;
 }
 
 .landing-announcements {
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-subtle);
   background-color: #fff;
   padding: clamp(1.5rem, 4vw, 2rem);
   display: grid;
   gap: 1.2rem;
   text-align: center;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .landing-announcements h2 {
   margin: 0;
-  font-family: var(--brand-font-serif);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 1.1rem;
+  font-family: var(--font-system-display);
+  letter-spacing: -0.01em;
+  text-transform: none;
+  font-size: 1.25rem;
+  font-weight: 700;
 }
 
 .landing-announcements__empty {

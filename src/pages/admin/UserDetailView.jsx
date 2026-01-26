@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Switch } from "@heroui/react";
 import { doc, updateDoc, getDoc, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { formatBalance } from '../../utils/formatCurrency';
@@ -367,7 +368,7 @@ function UserDetailView({ user, isOpen, onClose, onUpdate }) {
                             <p className="help-text">Directly updates the user's wallet balance.</p>
                         </div>
 
-                        {/* Status Toggles */}
+                        {/* Status Toggles - Custom Premium Switches */}
                         <div className="control-section">
                             <h4>Account Status</h4>
 
@@ -377,14 +378,14 @@ function UserDetailView({ user, isOpen, onClose, onUpdate }) {
                                         <UserCheck size={20} />
                                         <span>Account Verified</span>
                                     </div>
-                                    <label className="toggle-switch">
+                                    <label className="custom-toggle">
                                         <input
                                             type="checkbox"
                                             checked={localUser.verified || false}
                                             onChange={handleToggleVerify}
                                             disabled={isSaving}
                                         />
-                                        <span className="toggle-slider"></span>
+                                        <span className="custom-slider"></span>
                                     </label>
                                 </div>
 
@@ -393,14 +394,14 @@ function UserDetailView({ user, isOpen, onClose, onUpdate }) {
                                         <Ban size={20} />
                                         <span>Ban User</span>
                                     </div>
-                                    <label className="toggle-switch">
+                                    <label className="custom-toggle danger">
                                         <input
                                             type="checkbox"
                                             checked={localUser.isBanned || false}
                                             onChange={handleToggleBan}
                                             disabled={isSaving}
                                         />
-                                        <span className="toggle-slider danger"></span>
+                                        <span className="custom-slider"></span>
                                     </label>
                                 </div>
                             </div>

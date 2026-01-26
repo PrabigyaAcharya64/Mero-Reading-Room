@@ -105,7 +105,7 @@ function AdminLanding({ onNavigateRoot }) {
       case 'new-users':
         return <NewUsers onBack={() => handleNavigate('user-management')} />;
       case 'all-members':
-        return <AllMembersView onBack={() => handleNavigate('user-management')} isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
+        return <AllMembersView onBack={() => handleNavigate('user-management')} isSidebarOpen={isSidebarOpen} />;
       case 'canteen':
         return <CanteenAdminLanding isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
       case 'messages':

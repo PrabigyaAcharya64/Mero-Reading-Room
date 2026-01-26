@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, setDoc, getDoc, where } from 'firebase/firestore';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
 import FullScreenLoader from '../../components/FullScreenLoader';
 import Button from '../../components/Button';
-import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
+import { Search, Package, MapPin, Receipt, Clock, ChevronRight, ChevronLeft } from 'lucide-react';
 import '../../styles/OrderDashboard.css';
 import '../../styles/StandardLayout.css';
 
@@ -14,21 +13,17 @@ function OrderDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
   const { user, userRole } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState('completed'); // Default to completed
+  const [filterStatus, setFilterStatus] = useState('completed');
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   useEffect(() => {
-    // Reset to first page when filter changes
     setCurrentPage(1);
-  }, [filterStatus]);
+  }, [filterStatus, searchQuery]);
 
   useEffect(() => {
     const ordersRef = collection(db, 'orders');
-    // Determine valid role
     const isStaff = userRole === 'admin' || userRole === 'canteen';
 
     let q;
@@ -38,60 +33,39 @@ function OrderDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
       q = query(ordersRef, where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
     }
 
-    // Set up real-time listener for orders
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const ordersData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setOrders(ordersData);
-        setLoading(false);
-      },
-      (error) => {
-        console.error('Error listening to orders:', error);
-        setLoading(false);
-      }
-    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const ordersData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setOrders(ordersData);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error listening to orders:', error);
+      setLoading(false);
+    });
 
-    // Cleanup listener on unmount
-    return () => {
-      unsubscribe();
-    };
-  }, []);
+    return () => unsubscribe();
+  }, [userRole, user.uid]);
 
   const filteredOrders = orders.filter(order => {
     const matchesStatus = order.status === filterStatus;
-    const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         (order.userName && order.userName.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesStatus && matchesSearch;
   });
 
-  // Pagination Logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentOrders = filteredOrders.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
 
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
-  // Universal date formatter
   const formatDate = (val) => {
     if (!val) return 'N/A';
     try {
-      let date;
-      // Check if val is a Firestore timestamp (object with seconds)
-      if (typeof val === 'object' && val.seconds) {
-        date = new Date(val.seconds * 1000);
-      } else {
-        // Try parsing as string or Date object
-        date = new Date(val);
-      }
-
+      const date = val.seconds ? new Date(val.seconds * 1000) : new Date(val);
       if (isNaN(date.getTime())) return 'N/A';
-
       return date.toLocaleString('en-IN', {
-        year: 'numeric',
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
@@ -102,134 +76,104 @@ function OrderDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending':
-        return '#ff9800';
-      case 'completed':
-        return '#4caf50';
-      case 'cancelled':
-        return '#f44336';
-      default:
-        return '#666';
-    }
-  };
-
   return (
     <div className="std-container">
       <PageHeader title="Orders History" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
 
-      <main className="std-body">
+      <main className="od-body">
         <section>
           <div className="od-toolbar">
             <h2 className="od-section-title">History ({filteredOrders.length})</h2>
             <div className="od-filters">
-              <input
-                type="text"
-                placeholder="Search by Order ID..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="od-search-input"
-                style={{
-                  padding: '0.5rem 1rem',
-                  borderRadius: 'var(--radius-default)',
-                  border: '1px solid #ddd',
-                  fontFamily: 'var(--brand-font-sans)',
-                  fontSize: '0.9rem',
-                  width: '200px'
-                }}
-              />
-              {['completed', 'cancelled'].map((status) => (
-                <Button
-                  key={status}
-                  onClick={() => setFilterStatus(status)}
-                  variant={filterStatus === status ? 'primary' : 'outline'}
-                  className={`od-filter-btn ${status}`}
-                  style={{
-                    backgroundColor: filterStatus === status ? (status === 'completed' ? '#4caf50' : '#f44336') : 'transparent',
-                    borderColor: filterStatus === status ? 'transparent' : '#ddd',
-                    color: filterStatus === status ? 'white' : '#666'
-                  }}
-                >
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
-                </Button>
-              ))}
+              <div className="od-search-wrapper">
+                <Search size={16} className="od-search-icon" />
+                <input
+                  type="text"
+                  placeholder="ID or Name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="od-search-input"
+                />
+              </div>
+              <div className="od-segments">
+                {['completed', 'cancelled'].map((status) => (
+                  <button
+                    key={status}
+                    className={`od-segment-btn ${filterStatus === status ? 'active' : ''}`}
+                    onClick={() => setFilterStatus(status)}
+                  >
+                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          {loading && <FullScreenLoader text="Loading orders history..." />}
+          {loading && <FullScreenLoader text="Loading orders archive..." />}
 
           {!loading && filteredOrders.length === 0 ? (
-            <div className="od-empty">
-              No orders found.
+            <div className="abl-empty" style={{ background: 'var(--color-surface)', padding: '60px' }}>
+              <Package size={48} className="text-gray-300" style={{ marginBottom: '16px' }} />
+              <h3>No Archive Data</h3>
+              <p>Try matching with a different status or search term.</p>
             </div>
           ) : !loading && (
             <div className="od-grid">
               {currentOrders.map((order) => (
                 <div key={order.id} className="od-card">
-
-                  {/* Card Header */}
                   <div className="od-card-header">
                     <div className="od-user-info">
-                      <h3>{order.userName || order.userEmail || 'Unknown User'}</h3>
-                      <p className="od-user-email">
-                        {order.userEmail && order.userEmail !== order.userName ? order.userEmail : ''}
-                      </p>
-                      <p className="od-order-id">ID: {order.id}</p>
-                      <p className="od-order-date">{formatDate(order.createdAt)}</p>
+                      <h3>{order.userName || 'Guest User'}</h3>
+                      <p className="od-user-email">{order.userEmail || 'no-email@provided'}</p>
+                      <div className="od-order-meta">
+                        <p className="od-order-id">ID: {order.id.toUpperCase()}</p>
+                        <p className="od-order-date">
+                          <Clock size={10} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> 
+                          {formatDate(order.createdAt)}
+                        </p>
+                      </div>
                     </div>
-
-                    <div className="od-card-actions">
-                      <span className="od-status-badge" style={{ backgroundColor: getStatusColor(order.status || 'pending') }}>
-                        {order.status || 'pending'}
-                      </span>
-                    </div>
+                    <span className={`od-status-badge ${order.status}`}>
+                      {order.status}
+                    </span>
                   </div>
 
-                  {/* Order Items */}
-                  <div style={{ marginBottom: '1.5rem' }}>
-                    <h4 className="od-items-title">Order Items:</h4>
-                    <div className="od-items-grid">
-                      {order.items && order.items.map((item, index) => (
-                        <div key={index} className="od-item">
-                          <div className="od-item-info">
+                  <div className="od-items-section">
+                    <label className="od-section-label">Ordered Items</label>
+                    <div className="od-items-list">
+                      {order.items?.map((item, idx) => (
+                        <div key={idx} className="od-item-row">
+                          <div>
                             <p className="od-item-name">{item.name}</p>
-                            <p className="od-item-qty">Qty: {item.quantity || 1}</p>
+                            <p className="od-item-qty">Quantity: {item.quantity || 1}</p>
                           </div>
-                          <div className="od-item-price">
-                            <p className="od-item-total">
-                              Rs. {((item.price || 0) * (item.quantity || 1)).toFixed(2)}
-                            </p>
-                            <p className="od-item-unit">
-                              {item.price?.toFixed(2) || '0.00'} ea
-                            </p>
+                          <div className="od-item-price-group">
+                            <p className="od-item-total">रु {((item.price || 0) * (item.quantity || 1)).toFixed(0)}</p>
+                            <p className="od-item-unit">रु {item.price?.toFixed(0)} ea</p>
                           </div>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* Summary */}
-                  <div className="od-summary">
+                  <div className="od-summary-box">
                     <div className="od-summary-item">
-                      <p>TOTAL PRICE</p>
-                      <p className="od-summary-total">
-                        Rs. {order.total?.toFixed(2) || '0.00'}
-                      </p>
+                      <label>Total Remittance</label>
+                      <p className="od-summary-total">रु {order.total?.toFixed(0)}</p>
                     </div>
-                    <div className="od-summary-item">
-                      <p>LOCATION</p>
+                    <div className="od-summary-item" style={{ textAlign: 'right' }}>
+                      <label>Service Point</label>
                       <p className="od-summary-text">
-                        {order.location || 'Not specified'}
+                        <MapPin size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> 
+                        {order.location || 'Reading Room'}
                       </p>
                     </div>
                   </div>
 
-                  {/* Notes */}
                   {order.note && (
-                    <div className="od-note">
-                      <p className="od-note-label">NOTE FROM CUSTOMER:</p>
-                      <p className="od-note-text">{order.note}</p>
+                    <div className="od-note" style={{ marginTop: '16px', background: 'rgba(255, 204, 0, 0.05)', padding: '12px', borderLeft: '3px solid #FFCC00', borderRadius: '4px' }}>
+                      <label style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#8E6D00', display: 'block', marginBottom: '4px' }}>Instruction</label>
+                      <p style={{ fontSize: '13px', margin: 0, fontStyle: 'italic' }}>{order.note}</p>
                     </div>
                   )}
                 </div>
@@ -237,27 +181,24 @@ function OrderDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
             </div>
           )}
 
-          {/* Pagination Controls */}
           {filteredOrders.length > itemsPerPage && (
             <div className="od-pagination">
               <Button
-                onClick={() => paginate(currentPage - 1)}
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                variant="outline"
+                variant="ghost"
               >
-                Previous
+                <ChevronLeft size={18} /> Previous
               </Button>
-
               <span className="od-page-info">
                 Page {currentPage} of {totalPages}
               </span>
-
               <Button
-                onClick={() => paginate(currentPage + 1)}
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                variant="outline"
+                variant="ghost"
               >
-                Next
+                Next <ChevronRight size={18} />
               </Button>
             </div>
           )}

@@ -3,7 +3,8 @@
         "composite": true,
         "module": "ESNext",
         "moduleResolution": "Bundler",
-        "allowSyntheticDefaultImports": true
+        "allowSyntheticDefaultImports": true,
+        "allowJs": true
     },
     "include": [
         "vite.config.js"
