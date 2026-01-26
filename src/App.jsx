@@ -1,9 +1,10 @@
 import { AuthProvider, useAuth } from './auth/AuthProvider';
 import { NavigationRoot } from './navigation';
 import FullScreenLoader from './components/FullScreenLoader';
+import { LoadingProvider } from './context/GlobalLoadingContext';
 
 function AppShell() {
-    const { loading } = useAuth() ;
+    const { loading } = useAuth();
 
     if (loading) {
         return <FullScreenLoader text="Loading your account..." />;
@@ -15,7 +16,9 @@ function AppShell() {
 function App() {
     return (
         <AuthProvider>
-            <AppShell />
+            <LoadingProvider>
+                <AppShell />
+            </LoadingProvider>
         </AuthProvider>
     );
 }

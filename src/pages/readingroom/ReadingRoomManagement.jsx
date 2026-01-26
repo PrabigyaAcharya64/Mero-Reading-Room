@@ -71,7 +71,7 @@ const ELEMENT_CONFIG = {
     window: { width: 60, height: 60 }
 };
 
-function ReadingRoomManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
+function ReadingRoomManagement({ onBack }) {
     const { user, signOutUser } = useAuth();
     const displayName = user?.displayName || user?.email?.split('@')[0] || 'Admin';
 
@@ -507,7 +507,7 @@ function ReadingRoomManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
 
     return (
         <div className="rrm-container">
-            <PageHeader title="Reading Room Management" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
+            <PageHeader title="Reading Room Management" onBack={onBack} />
 
             <main className="rrm-body">
 

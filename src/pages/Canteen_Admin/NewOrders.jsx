@@ -12,7 +12,7 @@ import '../../styles/StandardLayout.css';
 // Sound effect for new orders
 // const NEW_ORDER_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
 
-function NewOrders({ onBack, isSidebarOpen, onToggleSidebar }) {
+function NewOrders({ onBack }) {
     const [newOrders, setNewOrders] = useState([]);
     const [preparingOrders, setPreparingOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -138,7 +138,7 @@ function NewOrders({ onBack, isSidebarOpen, onToggleSidebar }) {
 
     return (
         <div className="std-container">
-            <PageHeader title="New Orders" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
+            <PageHeader title="New Orders" onBack={onBack} />
 
             <main className="std-body">
                 {loading && <FullScreenLoader text="Checking for new orders..." />}

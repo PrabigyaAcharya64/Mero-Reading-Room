@@ -7,7 +7,7 @@ import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/StandardLayout.css';
 
-function CreateAnnouncement({ onBack, isSidebarOpen, onToggleSidebar }) {
+function CreateAnnouncement({ onBack }) {
     const { user } = useAuth();
     const [text, setText] = useState('');
     const [durationValue, setDurationValue] = useState(24);
@@ -51,7 +51,7 @@ function CreateAnnouncement({ onBack, isSidebarOpen, onToggleSidebar }) {
 
     return (
         <div className="std-container">
-            <PageHeader title="New Announcement" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
+            <PageHeader title="New Announcement" onBack={onBack} />
 
             <main className="std-body">
                 <div className="auth-card" style={{ maxWidth: '600px', margin: '0 auto' }}>

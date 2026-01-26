@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Import removed - using system fonts from design-system.css */
 
 :root {

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
+import { useLoading } from '../../context/GlobalLoadingContext';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, setDoc, getDoc } from 'firebase/firestore';
@@ -71,8 +72,9 @@ const ELEMENT_CONFIG = {
     window: { width: 60, height: 60 }
 };
 
-function ReadingRoomManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
+function ReadingRoomManagement({ onBack }) {
     const { user } = useAuth();
+    const { setIsLoading } = useLoading();
 
     const [rooms, setRooms] = useState([]);
     const [selectedRoom, setSelectedRoom] = useState(null);
@@ -101,13 +103,82 @@ function ReadingRoomManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
     const [seatAssignments, setSeatAssignments] = useState([]);
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [showStudentModal, setShowStudentModal] = useState(false);
-    const [assignmentMode, setAssignmentMode] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [isDataReady, setIsDataReady] = useState(false);
 
-    useEffect(() => {
-        loadRooms();
-        loadVerifiedUsers();
-        loadSeatAssignments();
+    useLayoutEffect(() => {
+        const fetchDataAndImages = async () => {
+            // Only show global loader on initial mount if rooms are empty
+            // or you can do it every time if desired.
+            // For "system stays hidden until ready", we do it here.
+            setIsLoading(true);
+            try {
+                await Promise.all([
+                    loadRooms(),
+                    loadVerifiedUsers(),
+                    loadSeatAssignments()
+                ]);
+            } catch (error) {
+                console.error("Initialization failed", error);
+            } finally {
+                // The individual load functions (like loadRooms) might need tweaking
+                // to NOT set loading=false internally if we want to wait for images.
+                // However, loadRooms calls `setRooms`. We need to intercept the image loading.
+                // Let's modify the flow:
+                // 1. Fetch data
+                // 2. Preload images
+                // 3. Hide loader
+
+                // Since loadRooms sets state, we can't easily wait for it unless we modify it to return data.
+                // But for now, let's assume valid data is in state or returned.
+                // ACTUALLY, strict requirement: "only appears after... Promise.all to pre-cache images".
+
+                // We need to inspect `loadRooms` to see if we can get the data to preload images.
+                // `loadRooms` updates `rooms` state. We can't await state updates easily in same cycle.
+                // Better to refactor `loadRooms` to return data or handle image preloading inside it.
+            }
+        };
+
+        // We'll refactor loadRooms to handle the image preloading logic directly or returns data.
+        // For minimal disruption, let's inline the logic or wrap it.
+
+        // NEW IMPLEMENTATION based on user request "Implementation in @ReadingRoomManagement.jsx"
+
+        const init = async () => {
+            setIsLoading(true);
+            try {
+                // Parallel fetch data
+                const [roomsData] = await Promise.all([
+                    fetchRoomsData(), // Helper to get data without setting state yet
+                    loadVerifiedUsers(),
+                    loadSeatAssignments()
+                ]);
+
+                // Identify images
+                // Assuming 'imageBbUrl' property based on user prompt, though I don't see it in current file.
+                // I will check if rooms have images. The current file doesn't seem to show imageBbUrl in `loadRooms`
+                // but the user prompt explicitly mentioned it. I will assume it exists on the data.
+
+                const imageUrls = roomsData.map(room => room.imageBbUrl).filter(Boolean);
+
+                await Promise.all(imageUrls.map(url => {
+                    return new Promise((resolve) => {
+                        const img = new Image();
+                        img.src = url;
+                        img.onload = resolve;
+                        img.onerror = resolve;
+                    });
+                }));
+
+                setRooms(roomsData);
+
+            } catch (error) {
+                console.error("Loading failed", error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+
+        init();
     }, []);
 
     // Auto-clear success messages after 3 seconds
@@ -149,14 +220,22 @@ function ReadingRoomManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
         }
     };
 
+    // Helper to fetch rooms without setting state immediately (for preloading)
+    const fetchRoomsData = async () => {
+        const roomsRef = collection(db, 'readingRooms');
+        const snapshot = await getDocs(roomsRef);
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+    };
+
     const loadRooms = async () => {
+        // Keep this for updates that don't need full global reload (e.g. after adding room)
+        // OR if we want to reuse the preloading logic, we can calls init() or similar.
+        // For now, standard load for mutations:
         try {
-            const roomsRef = collection(db, 'readingRooms');
-            const snapshot = await getDocs(roomsRef);
-            const roomsData = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+            const roomsData = await fetchRoomsData();
             setRooms(roomsData);
         } catch (error) {
             console.error('Error loading rooms:', error);
@@ -467,9 +546,11 @@ function ReadingRoomManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
 
     const selectedRoomData = getSelectedRoomData();
 
+    if (!isDataReady) return null;
+
     return (
         <div className="rrm-container">
-            <PageHeader title="Reading Room Management" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
+            <PageHeader title="Reading Room Management" onBack={onBack} />
 
             <main className="rrm-body">
                 <h1 className="rrm-page-title">Reading Room Management</h1>

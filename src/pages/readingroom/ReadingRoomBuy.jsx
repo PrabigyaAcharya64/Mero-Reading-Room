@@ -8,7 +8,7 @@ import PageHeader from '../../components/PageHeader';
 import { generateAndSendInvoice } from './ReadingRoomInvoice';
 import '../../styles/StandardLayout.css';
 
-function ReadingRoomBuy({ onBack, selectedOption, onComplete, isSidebarOpen, onToggleSidebar }) {
+function ReadingRoomBuy({ onBack, selectedOption, onComplete }) {
     const { user, userBalance } = useAuth();
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
@@ -89,7 +89,7 @@ function ReadingRoomBuy({ onBack, selectedOption, onComplete, isSidebarOpen, onT
 
     return (
         <div className="std-container">
-            <PageHeader title="Confirm Payment" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
+            <PageHeader title="Confirm Payment" onBack={onBack} />
 
             <main className="std-body">
                 <div style={{ maxWidth: '900px', margin: '0 auto', border: '1px solid #333', padding: '40px' }}>

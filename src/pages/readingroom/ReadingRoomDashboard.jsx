@@ -67,7 +67,7 @@ const ToiletIcon = ({ size = 40 }) => (
     </svg>
 );
 
-function ReadingRoomDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
+function ReadingRoomDashboard({ onBack }) {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [userData, setUserData] = useState(null);
@@ -164,7 +164,7 @@ function ReadingRoomDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
 
     return (
         <div className="std-container">
-            <PageHeader title="Reading Room" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
+            <PageHeader title="Reading Room" onBack={onBack} />
 
             <main className="std-body">
                 <div style={{

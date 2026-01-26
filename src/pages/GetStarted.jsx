@@ -1,3 +1,5 @@
+import { useState, useLayoutEffect } from 'react';
+import { useLoading } from '../context/GlobalLoadingContext';
 import '../styles/GetStarted.css';
 import Button from '../components/Button';
 
@@ -12,6 +14,31 @@ const illustration = new URL('../assets/bwink_edu_08_single_02.jpg', import.meta
  * - High contrast primary CTA for clear direction
  */
 function GetStarted({ onGetStarted, onLogIn }) {
+  const { setIsLoading } = useLoading();
+  const [isReady, setIsReady] = useState(false);
+
+  useLayoutEffect(() => {
+    const preloadResources = async () => {
+      setIsLoading(true);
+      try {
+        await new Promise((resolve) => {
+          const img = new Image();
+          img.src = illustration;
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      } catch (e) {
+        console.error("Resource preload failed", e);
+      } finally {
+        setIsLoading(false);
+        setIsReady(true);
+      }
+    };
+    preloadResources();
+  }, [setIsLoading]);
+
+  if (!isReady) return null;
+
   return (
     <section className="gs-container" aria-labelledby="gs-headline">
       <div className="gs-content">

@@ -20,7 +20,7 @@ const inventoryIcon = new URL('../../assets/inventory.svg', import.meta.url).hre
 const orderIcon = new URL('../../assets/order.svg', import.meta.url).href;
 const orderPlaceIcon = new URL('../../assets/order_place.svg', import.meta.url).href;
 
-function CanteenAdminLanding({ onBack, isSidebarOpen, onToggleSidebar }) {
+function CanteenAdminLanding({ onBack }) {
   const { user, userRole, signOutUser } = useAuth();
   const [currentView, setCurrentView] = useState('landing');
   const [newOrdersCount, setNewOrdersCount] = useState(0);
@@ -74,8 +74,6 @@ function CanteenAdminLanding({ onBack, isSidebarOpen, onToggleSidebar }) {
       <PageHeader
         title="Canteen Administration"
         onBack={onBack}
-        isSidebarOpen={isSidebarOpen}
-        onToggleSidebar={onToggleSidebar}
         rightElement={
           <button
             onClick={signOutUser}

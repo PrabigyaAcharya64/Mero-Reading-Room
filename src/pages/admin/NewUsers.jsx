@@ -15,7 +15,7 @@ import '../../styles/StandardLayout.css';
 
 const userManagementIcon = new URL('../../assets/usermanagement.svg', import.meta.url).href;
 
-function NewUsers({ onBack, isSidebarOpen, onToggleSidebar }) {
+function NewUsers({ onBack }) {
 
   const { user } = useAuth();
   const [pendingUsers, setPendingUsers] = useState([]);
@@ -161,8 +161,6 @@ function NewUsers({ onBack, isSidebarOpen, onToggleSidebar }) {
         title="User Management"
         icon={userManagementIcon}
         onBack={onBack}
-        isSidebarOpen={isSidebarOpen}
-        onToggleSidebar={onToggleSidebar}
         badgeCount={pendingUsers.length}
       />
 

@@ -8,7 +8,7 @@ import StudentDetailModal from './UserDetailView'; // Reusing UserDetailView for
 // Actually, better to just show the enrollment details in a modal or reuse UserDetailView passing the user ID.
 // For now, let's list them and maybe show a simple modal with the form.
 
-function EnrollmentRequests({ onBack, isSidebarOpen, onToggleSidebar }) {
+function EnrollmentRequests({ onBack }) {
     const [enrollments, setEnrollments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedEnrollment, setSelectedEnrollment] = useState(null);
@@ -57,8 +57,6 @@ function EnrollmentRequests({ onBack, isSidebarOpen, onToggleSidebar }) {
             <PageHeader
                 title="Enrollment Requests"
                 onBack={onBack}
-                isSidebarOpen={isSidebarOpen}
-                onToggleSidebar={onToggleSidebar}
             />
 
             <main className="std-body">

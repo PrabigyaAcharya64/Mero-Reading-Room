@@ -28,12 +28,12 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/Dashboard.css';
 
-function Dashboard({ onNavigate, isSidebarOpen, onToggleSidebar }) {
+function Dashboard({ onNavigate }) {
     const [loading, setLoading] = useState(true);
     const [timeRange, setTimeRange] = useState('6m');
     const [isSelectOpen, setIsSelectOpen] = useState(false);
     const selectRef = useRef(null);
-    
+
     const [stats, setStats] = useState({
         readingRoomSales: 0,
         canteenSales: 0,
@@ -191,8 +191,6 @@ function Dashboard({ onNavigate, isSidebarOpen, onToggleSidebar }) {
         <div style={{ padding: '0', maxWidth: '1600px', margin: '0 auto' }}>
             <PageHeader
                 title="Overview"
-                isSidebarOpen={isSidebarOpen}
-                onToggleSidebar={onToggleSidebar}
             />
             <div style={{ padding: '32px' }}>
                 <p style={{ color: '#6b7280', marginBottom: '32px' }}>Welcome back, Admin. Here's what's happening today.</p>
@@ -266,25 +264,25 @@ function Dashboard({ onNavigate, isSidebarOpen, onToggleSidebar }) {
                     <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '16px', border: '1px solid #e5e7eb', height: '400px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                             <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827' }}>Revenue Trends</h3>
-                            
+
                             {/* CUSTOM DROPDOWN ONLY */}
                             <div className="db-select-wrapper" ref={selectRef}>
-                                <div 
+                                <div
                                     className={`db-select-trigger ${isSelectOpen ? 'open' : ''}`}
                                     onClick={() => setIsSelectOpen(!isSelectOpen)}
                                 >
                                     <span>{timeRangeLabels[timeRange]}</span>
-                                    <ChevronDown size={16} style={{ 
-                                        transform: isSelectOpen ? 'rotate(180deg)' : 'none', 
+                                    <ChevronDown size={16} style={{
+                                        transform: isSelectOpen ? 'rotate(180deg)' : 'none',
                                         transition: 'transform 0.2s',
                                         marginLeft: '8px'
                                     }} />
                                 </div>
-                                
+
                                 {isSelectOpen && (
                                     <div className="db-select-options">
                                         {Object.entries(timeRangeLabels).map(([key, label]) => (
-                                            <div 
+                                            <div
                                                 key={key}
                                                 className={`db-select-option ${timeRange === key ? 'active' : ''}`}
                                                 onClick={() => {
@@ -312,11 +310,11 @@ function Dashboard({ onNavigate, isSidebarOpen, onToggleSidebar }) {
                                     </linearGradient>
                                 </defs>
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} dy={10} />
-                                <YAxis 
-                                    axisLine={false} 
-                                    tickLine={false} 
-                                    tick={{ fill: '#9ca3af', fontSize: 12 }} 
-                                    tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value} 
+                                <YAxis
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#9ca3af', fontSize: 12 }}
+                                    tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}
                                 />
                                 <CartesianGrid vertical={false} stroke="#f3f4f6" />
                                 <Tooltip

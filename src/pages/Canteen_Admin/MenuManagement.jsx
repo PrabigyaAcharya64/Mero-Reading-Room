@@ -12,7 +12,7 @@ import '../../styles/MenuManagement.css';
 import '../../styles/StandardLayout.css';
 import { uploadImageSecurely } from '../../utils/imageUpload';
 
-function MenuManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
+function MenuManagement({ onBack }) {
   const { user } = useAuth();
 
   const [menuItems, setMenuItems] = useState([]);
@@ -201,7 +201,7 @@ function MenuManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
 
   return (
     <div className="std-container">
-      <PageHeader title="Menu Management" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
+      <PageHeader title="Menu Management" onBack={onBack} />
 
       {pageLoading && <FullScreenLoader text="Loading Canteen..." />}
 
@@ -299,7 +299,7 @@ function MenuManagement({ onBack, isSidebarOpen, onToggleSidebar }) {
                       <Check className="mm-indicator-icon" />
                     </div>
                   )}
-                  
+
                   <div className="mm-card-image-wrapper">
                     {item.photoURL ? (
                       <img src={item.photoURL} alt={item.name} className="mm-card-img" />

@@ -9,7 +9,7 @@ import { Search, Edit2, User, ChevronRight } from 'lucide-react';
 import '../../styles/StandardLayout.css';
 import '../../styles/AllMembersView.css';
 
-function AllMembersView({ onBack, isSidebarOpen, onToggleSidebar }) {
+function AllMembersView({ onBack }) {
     const [users, setUsers] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUser, setSelectedUser] = useState(null);
@@ -73,11 +73,9 @@ function AllMembersView({ onBack, isSidebarOpen, onToggleSidebar }) {
 
     return (
         <div className="amv-container">
-            <PageHeader 
-                title="Members Directory" 
-                onBack={onBack} 
-                isSidebarOpen={isSidebarOpen} 
-                onToggleSidebar={onToggleSidebar} 
+            <PageHeader
+                title="Members Directory"
+                onBack={onBack}
             />
 
             <main className="std-body">
@@ -195,14 +193,14 @@ function AllMembersView({ onBack, isSidebarOpen, onToggleSidebar }) {
 
                         {totalPages > 1 && (
                             <div className="amv-pagination">
-                                <button 
-                                    className="amv-page-nav" 
+                                <button
+                                    className="amv-page-nav"
                                     disabled={currentPage === 1}
                                     onClick={() => handlePageChange(currentPage - 1)}
                                 >
                                     Previous
                                 </button>
-                                
+
                                 <div className="amv-page-numbers">
                                     {[...Array(totalPages)].map((_, i) => (
                                         <button
@@ -215,8 +213,8 @@ function AllMembersView({ onBack, isSidebarOpen, onToggleSidebar }) {
                                     ))}
                                 </div>
 
-                                <button 
-                                    className="amv-page-nav" 
+                                <button
+                                    className="amv-page-nav"
                                     disabled={currentPage === totalPages}
                                     onClick={() => handlePageChange(currentPage + 1)}
                                 >

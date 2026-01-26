@@ -9,7 +9,7 @@ import { Search, Package, MapPin, Receipt, Clock, ChevronRight, ChevronLeft } fr
 import '../../styles/OrderDashboard.css';
 import '../../styles/StandardLayout.css';
 
-function OrderDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
+function OrderDashboard({ onBack }) {
   const { user, userRole } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,8 +50,8 @@ function OrderDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
 
   const filteredOrders = orders.filter(order => {
     const matchesStatus = order.status === filterStatus;
-    const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         (order.userName && order.userName.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (order.userName && order.userName.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesStatus && matchesSearch;
   });
 
@@ -78,7 +78,7 @@ function OrderDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
 
   return (
     <div className="std-container">
-      <PageHeader title="Orders History" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
+      <PageHeader title="Orders History" onBack={onBack} />
 
       <main className="od-body">
         <section>
@@ -128,7 +128,7 @@ function OrderDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
                       <div className="od-order-meta">
                         <p className="od-order-id">ID: {order.id.toUpperCase()}</p>
                         <p className="od-order-date">
-                          <Clock size={10} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> 
+                          <Clock size={10} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
                           {formatDate(order.createdAt)}
                         </p>
                       </div>
@@ -164,7 +164,7 @@ function OrderDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
                     <div className="od-summary-item" style={{ textAlign: 'right' }}>
                       <label>Service Point</label>
                       <p className="od-summary-text">
-                        <MapPin size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> 
+                        <MapPin size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
                         {order.location || 'Reading Room'}
                       </p>
                     </div>

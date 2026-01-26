@@ -8,7 +8,7 @@ import Button from '../../components/Button';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/StandardLayout.css';
 
-function ReadingRoomOptions({ onBack, onSelectOption, isSidebarOpen, onToggleSidebar }) {
+function ReadingRoomOptions({ onBack, onSelectOption }) {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [hasExistingMembership, setHasExistingMembership] = useState(false);
@@ -50,7 +50,7 @@ function ReadingRoomOptions({ onBack, onSelectOption, isSidebarOpen, onToggleSid
 
     return (
         <div className="std-container">
-            <PageHeader title="Reading Room Options" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
+            <PageHeader title="Reading Room Options" onBack={onBack} />
 
             <main className="std-body">
                 <div style={{ maxWidth: '900px', margin: '0 auto', border: '1px solid #333', padding: '40px' }}>

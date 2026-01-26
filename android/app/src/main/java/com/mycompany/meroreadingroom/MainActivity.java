@@ -1,4 +1,4 @@
-package com.meroreadingroom;
+package com.mycompany.meroreadingroom;
 
 import com.getcapacitor.BridgeActivity;
 

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
-import { Menu, X } from 'lucide-react';
 import UserManagement from './UserManagement';
 import HostelManagement from './HostelManagement';
 import NewUsers from './NewUsers';
@@ -19,7 +18,8 @@ import '../../styles/StandardLayout.css';
 function AdminLanding({ onNavigateRoot }) {
   const { user, signOutUser } = useAuth();
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Admin';
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Default to open for dashboard
+
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [currentView, setCurrentView] = useState('dashboard');
 
   const [unreadCount, setUnreadCount] = useState(0);
@@ -28,13 +28,7 @@ function AdminLanding({ onNavigateRoot }) {
   // Navigate and manage sidebar state
   const handleNavigate = (view, data = null) => {
     setCurrentView(view);
-
-    // Keep sidebar open on dashboard, close on other pages
-    if (view === 'dashboard') {
-      setIsSidebarOpen(true);
-    } else {
-      setIsSidebarOpen(false);
-    }
+    // Navigation doesn't need to force close anymore since it auto-collapses on mouse leave
   };
   const [newOrdersCount, setNewOrdersCount] = useState(0);
   const [announcements, setAnnouncements] = useState([]);
@@ -97,46 +91,60 @@ function AdminLanding({ onNavigateRoot }) {
   const renderContent = () => {
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard onNavigate={handleNavigate} isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
+        return <Dashboard onNavigate={handleNavigate} />;
       case 'user-management':
-        return <UserManagement onNavigate={handleNavigate} isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
+        return <UserManagement onNavigate={handleNavigate} />;
       case 'hostel':
-        return <HostelManagement isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
+        return <HostelManagement />;
       case 'new-users':
         return <NewUsers onBack={() => handleNavigate('user-management')} />;
       case 'all-members':
-        return <AllMembersView onBack={() => handleNavigate('user-management')} isSidebarOpen={isSidebarOpen} />;
+        return <AllMembersView onBack={() => handleNavigate('user-management')} />;
       case 'canteen':
-        return <CanteenAdminLanding isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
+        return <CanteenAdminLanding />;
       case 'messages':
-        return <AdminMessages isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
+        return <AdminMessages />;
       case 'create-announcement':
-        return <CreateAnnouncement isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
+        return <CreateAnnouncement />;
       case 'reading-rooms':
-        return <ReadingRoomManagement isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
+        return <ReadingRoomManagement />;
       case 'balance-requests':
-        return <AdminBalanceLoad isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
+        return <AdminBalanceLoad />;
       default:
-        return <Dashboard onNavigate={handleNavigate} isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />;
+        return <Dashboard onNavigate={handleNavigate} />;
     }
   };
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f9fafb', position: 'relative' }}>
 
-      <Sidebar
-        currentView={currentView}
-        onNavigate={handleNavigate}
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-      />
+      {/* Sidebar Wrapper for Hover Detection */}
+      <div
+        onMouseEnter={() => setIsSidebarHovered(true)}
+        onMouseLeave={() => setIsSidebarHovered(false)}
+        style={{
+          zIndex: 1000,
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          height: '100vh',
+          width: isSidebarHovered ? '260px' : '72px', // Match Sidebar transition
+          transition: 'width 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+        }}
+      >
+        <Sidebar
+          currentView={currentView}
+          onNavigate={handleNavigate}
+          isOpen={isSidebarHovered}
+        />
+      </div>
 
       <main style={{
-        marginLeft: isSidebarOpen ? '260px' : '0',
+        marginLeft: '72px', // Fixed marginLeft to mini-sidebar width
         flex: 1,
-        width: isSidebarOpen ? 'calc(100% - 260px)' : '100%',
+        width: 'calc(100% - 72px)',
         overflowX: 'hidden',
-        transition: 'margin-left 0.4s cubic-bezier(0.16, 1, 0.3, 1), width 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
         position: 'relative'
       }}>
         {renderContent()}

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
+import { useLoading } from '../../context/GlobalLoadingContext';
 import { Switch } from "@heroui/react";
 import { doc, updateDoc, getDoc, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -10,7 +11,9 @@ import logo from "../../assets/logo.png";
 import EnrollmentPDF from '../../components/pdf/EnrollmentPDF';
 
 function UserDetailView({ user, isOpen, onClose, onUpdate }) {
+    const { setIsLoading } = useLoading();
     const [localUser, setLocalUser] = useState(user);
+    const [isDataReady, setIsDataReady] = useState(false);
     const [balanceAmount, setBalanceAmount] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [showConfirmation, setShowConfirmation] = useState(null);
@@ -20,11 +23,31 @@ function UserDetailView({ user, isOpen, onClose, onUpdate }) {
 
     const [seatAssignment, setSeatAssignment] = useState(null);
 
+
+
+    useLayoutEffect(() => {
+        const initData = async () => {
+            if (user && isOpen) {
+                setIsLoading(true);
+                try {
+                    setLocalUser(user);
+                    await checkReadingRoomEnrollment();
+                } catch (e) {
+                    console.error(e);
+                } finally {
+                    setIsLoading(false);
+                    setIsDataReady(true);
+                }
+            }
+        };
+
+        if (user && isOpen) {
+            initData();
+        }
+    }, [user, isOpen]);
+
     useEffect(() => {
         if (user) {
-            setLocalUser(user);
-            checkReadingRoomEnrollment();
-
             // Fetch active seat assignment
             const q = query(
                 collection(db, 'seatAssignments'),
@@ -208,7 +231,7 @@ function UserDetailView({ user, isOpen, onClose, onUpdate }) {
         window.print();
     };
 
-    if (!isOpen || !user) return null;
+    if (!isOpen || !user || !isDataReady) return null;
 
     return (
         <div className="user-detail-overlay">

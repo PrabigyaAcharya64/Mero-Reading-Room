@@ -7,7 +7,7 @@ import PageHeader from '../../components/PageHeader';
 import '../../styles/AdminMessages.css';
 import '../../styles/StandardLayout.css';
 
-function AdminMessages({ onBack, isSidebarOpen, onToggleSidebar }) {
+function AdminMessages({ onBack }) {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedMessage, setSelectedMessage] = useState(null);
@@ -90,7 +90,7 @@ function AdminMessages({ onBack, isSidebarOpen, onToggleSidebar }) {
 
     return (
         <div className="std-container">
-            <PageHeader title="Messages" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
+            <PageHeader title="Messages" onBack={onBack} />
 
             <main className="std-body">
                 <div className="am-grid">

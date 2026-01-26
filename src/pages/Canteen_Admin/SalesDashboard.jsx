@@ -1,29 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, query, getDocs, orderBy, onSnapshot, limit } from 'firebase/firestore';
-import FullScreenLoader from '../../components/FullScreenLoader';
+import { useLoading } from '../../context/GlobalLoadingContext';
 import Button from '../../components/Button';
 import PageHeader from '../../components/PageHeader';
 import { TrendingUp, Banknote, ShoppingCart, Calendar, Search, MapPin, ReceiptText, ChevronLeft, ChevronRight } from 'lucide-react';
 import '../../styles/SalesDashboard.css';
 import '../../styles/StandardLayout.css';
 
-function SalesDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
+function SalesDashboard({ onBack }) {
   const { userRole } = useAuth();
+  const { setIsLoading } = useLoading();
   const [sales, setSales] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [isDataReady, setIsDataReady] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [viewSales, setViewSales] = useState(0);
   const [viewOrdersCount, setViewOrdersCount] = useState(0);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  
-  // Pagination State
+
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     loadSales();
   }, [selectedDate]);
 
@@ -39,12 +40,12 @@ function SalesDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
   }, [selectedDate, searchQuery]);
 
   const loadSales = async () => {
-    setLoading(true);
+    setIsLoading(true);
     try {
       const ordersRef = collection(db, 'orders');
       const q = query(ordersRef, orderBy('createdAt', 'desc'), limit(1000));
       const snapshot = await getDocs(q);
-      
+
       const completedOrders = snapshot.docs
         .filter(doc => doc.data().status === 'completed')
         .map(doc => {
@@ -76,7 +77,8 @@ function SalesDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
     } catch (error) {
       console.error('Error loading sales:', error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
+      setIsDataReady(true);
     }
   };
 
@@ -98,8 +100,8 @@ function SalesDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
     return date ? date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
   };
 
-  const filteredSalesData = sales.filter(s => 
-    s.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  const filteredSalesData = sales.filter(s =>
+    s.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (s.userName && s.userName.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
@@ -117,9 +119,11 @@ function SalesDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
 
   const salesHistory = Object.values(salesByDate).sort((a, b) => b.date.localeCompare(a.date));
 
+  if (!isDataReady) return null;
+
   return (
     <div className="std-container">
-      <PageHeader title="Sales Insights" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
+      <PageHeader title="Sales Insights" onBack={onBack} />
 
       <main className="sd-body">
         <section>
@@ -166,9 +170,9 @@ function SalesDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
             </div>
           </div>
 
-          {loading && <FullScreenLoader text="Analyzing records..." />}
 
-          {!loading && selectedDate ? (
+
+          {selectedDate ? (
             <div>
               <div className="sd-header-controls">
                 <h2 className="od-section-title">{formatDateDisplay(selectedDate)}</h2>
@@ -265,7 +269,7 @@ function SalesDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
                       )}
                     </div>
                   ))}
-                  
+
                   {/* Pagination Controls */}
                   {totalPages > 1 && (
                     <div className="od-pagination" style={{ margin: '24px 0' }}>
@@ -290,13 +294,13 @@ function SalesDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
                   )}
 
                   <div className="sd-bill-total" style={{ borderStyle: 'dashed', borderColor: 'var(--color-border)' }}>
-                     <span className="sd-total-label">Aggregate Collection ({filteredSalesData.length} records)</span>
-                     <span className="sd-total-amount">रु {filteredSalesData.reduce((sum, s) => sum + (s.total || 0), 0).toLocaleString('en-IN')}</span>
+                    <span className="sd-total-label">Aggregate Collection ({filteredSalesData.length} records)</span>
+                    <span className="sd-total-amount">रु {filteredSalesData.reduce((sum, s) => sum + (s.total || 0), 0).toLocaleString('en-IN')}</span>
                   </div>
                 </div>
               )}
             </div>
-          ) : !loading && (
+          ) : (
             <div>
               <h2 className="od-section-title" style={{ marginBottom: '24px' }}>Historical Archive</h2>
               <div className="sd-list-grid">

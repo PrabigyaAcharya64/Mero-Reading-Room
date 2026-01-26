@@ -8,7 +8,7 @@ import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
 const newUserIcon = new URL('../../assets/newuser.svg', import.meta.url).href;
 const usersIcon = new URL(/* @vite-ignore */ '../../assets/users.svg', import.meta.url).href;
 
-function UserManagement({ onBack, onNavigate, isSidebarOpen, onToggleSidebar }) {
+function UserManagement({ onBack, onNavigate }) {
     const [pendingCount, setPendingCount] = useState(0);
 
     useEffect(() => {
@@ -28,7 +28,7 @@ function UserManagement({ onBack, onNavigate, isSidebarOpen, onToggleSidebar }) 
 
     return (
         <div className="std-container">
-            <PageHeader title="User Management" onBack={onBack} isSidebarOpen={isSidebarOpen} onToggleSidebar={onToggleSidebar} />
+            <PageHeader title="User Management" onBack={onBack} />
 
             <main className="std-body">
                 {/* Landing Services / Buttons */}

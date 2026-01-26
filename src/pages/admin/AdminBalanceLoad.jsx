@@ -25,7 +25,7 @@ import FullScreenLoader from '../../components/FullScreenLoader';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/AdminBalanceLoad.css';
 
-export default function AdminBalanceLoad({ onBack, isSidebarOpen, onToggleSidebar }) {
+export default function AdminBalanceLoad({ onBack }) {
     const [requests, setRequests] = useState([]);
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -155,8 +155,6 @@ export default function AdminBalanceLoad({ onBack, isSidebarOpen, onToggleSideba
             <PageHeader
                 title="Balance Requests"
                 onBack={onBack}
-                isSidebarOpen={isSidebarOpen}
-                onToggleSidebar={onToggleSidebar}
                 rightElement={headerActions}
             />
 
