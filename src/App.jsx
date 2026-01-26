@@ -1,15 +1,8 @@
-import { AuthProvider, useAuth } from './auth/AuthProvider';
+import { AuthProvider } from './auth/AuthProvider';
 import { NavigationRoot } from './navigation';
-import FullScreenLoader from './components/FullScreenLoader';
 import { LoadingProvider } from './context/GlobalLoadingContext';
 
 function AppShell() {
-    const { loading } = useAuth();
-
-    if (loading) {
-        return <FullScreenLoader text="Loading your account..." />;
-    }
-
     return <NavigationRoot />;
 }
 

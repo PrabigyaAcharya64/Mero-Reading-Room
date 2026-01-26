@@ -135,7 +135,6 @@ function Sidebar({ currentView, onNavigate, isOpen }) {
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '12px',
                                     padding: '12px',
                                     borderRadius: '12px',
                                     border: 'none',
@@ -146,24 +145,36 @@ function Sidebar({ currentView, onNavigate, isOpen }) {
                                     cursor: 'pointer',
                                     width: '100%',
                                     textAlign: 'left',
-                                    transition: 'all 0.2s ease',
+                                    transition: 'background-color 0.2s ease, color 0.2s ease',
                                     position: 'relative',
-                                    justifyContent: isOpen ? 'flex-start' : 'center'
+                                    justifyContent: 'flex-start',
+                                    height: '44px'
                                 }}
                             >
                                 {isActive && (
                                     <div style={{
                                         position: 'absolute',
-                                        left: '-12px', // Adjust for padding
+                                        left: '-12px',
                                         width: '4px',
                                         height: '20px',
                                         backgroundColor: '#000',
                                         borderTopRightRadius: '4px',
                                         borderBottomRightRadius: '4px',
-                                        display: isOpen ? 'block' : 'none' // Only show indent line when expanded? Or keep it?
+                                        opacity: isOpen ? 1 : 0,
+                                        transition: 'opacity 0.2s ease'
                                     }} />
                                 )}
-                                <div style={{ minWidth: '20px', display: 'flex', justifyContent: 'center' }}>
+
+                                {/* Icon - always in same position */}
+                                <div style={{
+                                    width: '20px',
+                                    height: '20px',
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    flexShrink: 0,
+                                    marginRight: '12px'
+                                }}>
                                     {item.isLucide ? (
                                         <item.lucideIcon size={20} color={isActive ? '#000' : '#6b7280'} />
                                     ) : (
@@ -180,24 +191,25 @@ function Sidebar({ currentView, onNavigate, isOpen }) {
                                     )}
                                 </div>
 
+                                {/* Label with fade transition */}
                                 <span style={{
-                                    flex: 1,
                                     whiteSpace: 'nowrap',
                                     opacity: isOpen ? 1 : 0,
-                                    transform: isOpen ? 'translateX(0)' : 'translateX(10px)',
-                                    transition: 'opacity 0.2s ease, transform 0.2s ease',
-                                    display: isOpen ? 'block' : 'none'  // Hide completely when collapsed to prevent layout issues
+                                    visibility: isOpen ? 'visible' : 'hidden',
+                                    transition: 'opacity 0.3s ease, visibility 0.3s ease',
+                                    flex: 1
                                 }}>
                                     {item.label}
                                 </span>
 
+                                {/* Badge */}
                                 {item.badge && (
                                     <span style={{
                                         backgroundColor: '#ef4444',
                                         color: 'white',
                                         fontSize: '10px',
                                         fontWeight: 'bold',
-                                        padding: isOpen ? '2px 8px' : '4px', // Dot mode if collapsed
+                                        padding: isOpen ? '2px 8px' : '4px',
                                         borderRadius: '12px',
                                         minWidth: isOpen ? '20px' : '8px',
                                         height: isOpen ? 'auto' : '8px',
@@ -208,7 +220,9 @@ function Sidebar({ currentView, onNavigate, isOpen }) {
                                         right: isOpen ? 'auto' : '8px',
                                         display: 'flex',
                                         alignItems: 'center',
-                                        justifyContent: 'center'
+                                        justifyContent: 'center',
+                                        opacity: isOpen ? 1 : 0.9,
+                                        transition: 'all 0.3s ease'
                                     }}>
                                         {isOpen ? item.badge : ''}
                                     </span>

@@ -39,23 +39,25 @@ function AdditionalDetails({ onComplete }) {
     }
   ];
 
+  const { setIsLoading } = useLoading();
+
   useEffect(() => {
-    // Load user's display name from Firebase
     if (user?.displayName) {
       setFormData(prev => ({ ...prev, name: user.displayName }));
     } else if (user?.email) {
-      // Extract name from email if displayName not available
       const nameFromEmail = user.email.split('@')[0];
       setFormData(prev => ({ ...prev, name: nameFromEmail }));
     }
-
-    // Generate MRR number
     generateMrrNumber();
   }, [user]);
 
+  useEffect(() => {
+    setIsLoading(generatingMrr);
+    return () => setIsLoading(false);
+  }, [generatingMrr, setIsLoading]);
+
   const generateMrrNumber = async () => {
     try {
-
       const usersRef = collection(db, 'users');
       const q = query(
         usersRef,
@@ -70,7 +72,6 @@ function AdditionalDetails({ onComplete }) {
       if (!snapshot.empty) {
         const latestUser = snapshot.docs[0].data();
         if (latestUser.mrrNumber) {
-
           const latestNum = parseInt(latestUser.mrrNumber.replace('MRR', ''), 10);
           const nextNum = latestNum + 1;
           nextMrrNumber = `MRR${nextNum.toString().padStart(3, '0')}`;
@@ -81,8 +82,7 @@ function AdditionalDetails({ onComplete }) {
       setGeneratingMrr(false);
     } catch (error) {
       console.error('Error generating MRR number:', error);
-      const timestamp = Date.now().toString().slice(-6);
-      setMrrNumber(`MRR${timestamp}`);
+      setMrrNumber(`MRR${Date.now().toString().slice(-6)}`);
       setGeneratingMrr(false);
     }
   };
@@ -133,89 +133,41 @@ function AdditionalDetails({ onComplete }) {
     e.preventDefault();
     setError('');
 
-    if (!formData.name || !formData.name.trim()) {
-      setError('Name is required');
-      return;
-    }
-
-    if (!formData.dateOfBirth) {
-      setError('Date of birth is required');
-      return;
-    }
-
-    if (!formData.phoneNumber || !formData.phoneNumber.trim()) {
-      setError('Phone number is required');
-      return;
-    }
-
-    if (!formData.interestedIn || formData.interestedIn.length === 0) {
-      setError('Please select at least one interest');
-      return;
-    }
-
-    if (!photoFile) {
-      setError('Photo is required');
-      return;
-    }
-
-    // Validate phone number format (basic validation)
-    const phoneRegex = /^[0-9]{10}$/;
-    if (!phoneRegex.test(formData.phoneNumber.replace(/\D/g, ''))) {
-      setError('Please enter a valid 10-digit phone number');
+    if (!formData.name?.trim() || !formData.dateOfBirth || !formData.phoneNumber?.trim() || !formData.interestedIn?.length || !photoFile) {
+      setError('All fields are required');
       return;
     }
 
     setLoading(true);
-
     try {
-      // Upload photo
       const photoUrl = await uploadPhoto();
-
-      // Update user profile with name
       if (user && formData.name.trim() !== user.displayName) {
         await updateProfile(user, { displayName: formData.name.trim() });
       }
 
-      // Save additional details to Firestore
       const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
-      const existingData = userDoc.exists() ? userDoc.data() : {};
-
       await setDoc(userDocRef, {
-        ...existingData,
         name: formData.name.trim(),
-        email: user.email, // Ensure email is saved
+        email: user.email,
         dateOfBirth: formData.dateOfBirth,
         phoneNumber: formData.phoneNumber.trim(),
-        interestedIn: Array.isArray(formData.interestedIn) ? formData.interestedIn : [formData.interestedIn],
-        photoUrl: photoUrl,
-        mrrNumber: mrrNumber,
-        // verified: false, // Security Rule Violation: User cannot update protected field 'verified'
+        interestedIn: formData.interestedIn,
+        photoUrl,
+        mrrNumber,
         submittedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }, { merge: true });
 
-      // Sign out user and redirect to pending verification page
       await signOut(auth);
-
-      // Update URL to show pending verification
       window.history.replaceState({}, '', '?pending=true');
-
-      // Call onComplete to navigate to pending verification page
-      if (onComplete) {
-        onComplete();
-      }
+      if (onComplete) onComplete();
     } catch (error) {
       console.error('Error saving details:', error);
-      setError(error instanceof Error ? error.message : 'Failed to save details. Please try again.');
+      setError('Failed to save details. Please try again.');
     } finally {
       setLoading(false);
     }
   };
-
-  if (generatingMrr) {
-    return <FullScreenLoader text="Generating your MRR number..." />;
-  }
 
   return (
     <div className="auth-screen">

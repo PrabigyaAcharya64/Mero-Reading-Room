@@ -7,7 +7,8 @@ import { getBusinessDate } from '../../utils/dateUtils';
 import FullScreenLoader from '../../components/FullScreenLoader';
 import Button from '../../components/Button';
 import PageHeader from '../../components/PageHeader';
-import { Plus, Trash2, Star, Check, X, Camera, LayoutGrid, ListChecks } from 'lucide-react';
+import { Plus, Trash2, Star, Check, X, Camera, LayoutGrid, ListChecks, Eye } from 'lucide-react';
+import CanteenPreviewAdmin from './CanteenPreviewAdmin';
 import '../../styles/MenuManagement.css';
 import '../../styles/StandardLayout.css';
 import { uploadImageSecurely } from '../../utils/imageUpload';
@@ -30,6 +31,7 @@ function MenuManagement({ onBack }) {
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     const initData = async () => {
@@ -190,7 +192,7 @@ function MenuManagement({ onBack }) {
       });
 
       setTodaysMenu(itemsToSet);
-      setMessage(`Today's special updated!`);
+      setMessage(`Today's Special updated!`);
       setIsSelectMode(false);
     } catch (error) {
       setMessage("Error publishing menu");
@@ -198,6 +200,9 @@ function MenuManagement({ onBack }) {
       setLoading(false);
     }
   };
+  if (showPreview) {
+    return <CanteenPreviewAdmin onBack={() => setShowPreview(false)} />;
+  }
 
   return (
     <div className="std-container">
@@ -269,20 +274,25 @@ function MenuManagement({ onBack }) {
           <div className="mm-toolbar">
             <div className="mm-toolbar-left">
               <h2>Master Catalog</h2>
-              <p>{menuItems.length} items available • {todaysMenu.length} currently in Special Menu</p>
+              <p>{menuItems.length} items available • {todaysMenu.length} currently in Today's Special</p>
             </div>
             <div className="mm-toolbar-actions">
               {isSelectMode ? (
                 <>
                   <Button variant="ghost" onClick={() => { setIsSelectMode(false); setSelectedItems(todaysMenu.map(i => i.id)); }}>Cancel</Button>
                   <Button variant="primary" onClick={handleSetTodaysMenu} loading={loading} disabled={selectedItems.length === 0}>
-                    Save Changes ({selectedItems.length})
+                    Set Today's Special ({selectedItems.length})
                   </Button>
                 </>
               ) : (
-                <Button variant="secondary" onClick={() => setIsSelectMode(true)}>
-                  <ListChecks size={18} /> Edit Special Menu
-                </Button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <Button variant="outline" onClick={() => setShowPreview(true)}>
+                    <Eye size={18} /> Preview
+                  </Button>
+                  <Button variant="secondary" onClick={() => setIsSelectMode(true)}>
+                    <ListChecks size={18} /> Edit Today's Special
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -314,7 +324,7 @@ function MenuManagement({ onBack }) {
                     <p className="mm-card-desc">{item.description}</p>
                     <div className="mm-card-footer">
                       <div className="mm-card-price">रु {Number(item.price).toFixed(0)}</div>
-                      {isInSpecial && <span className="mm-card-badge">Current Special</span>}
+                      {isInSpecial && <span className="mm-card-badge">Today's Special</span>}
                       {item.isFixed && <Star size={14} fill="currentColor" className="text-yellow-500" title="Fixed Item" />}
                     </div>
                   </div>
@@ -322,7 +332,7 @@ function MenuManagement({ onBack }) {
                   {!isSelectMode && (
                     <div className="mm-card-overlay">
                       <Button variant="outline" onClick={(e) => { e.stopPropagation(); handleToggleFixed(item.id, item.isFixed); }} fullWidth>
-                        <Star size={16} /> {item.isFixed ? 'Remove Star' : 'Star Item'}
+                        <Star size={16} /> {item.isFixed ? 'Remove from Menu' : 'Add to Menu'}
                       </Button>
                       <Button variant="danger" onClick={(e) => { e.stopPropagation(); handleDeleteMenuItem(item.id); }} fullWidth>
                         <Trash2 size={16} /> Delete Forever

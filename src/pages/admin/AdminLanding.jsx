@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthProvider';
 import UserManagement from './UserManagement';
 import HostelManagement from './HostelManagement';
@@ -17,22 +18,21 @@ import '../../styles/StandardLayout.css';
 
 function AdminLanding({ onNavigateRoot }) {
   const { user, signOutUser } = useAuth();
+  const navigate = useNavigate();
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Admin';
 
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
-  const [currentView, setCurrentView] = useState('dashboard');
+
 
   const [unreadCount, setUnreadCount] = useState(0);
-  // ... (keep other states)
-
-  // Navigate and manage sidebar state
-  const handleNavigate = (view, data = null) => {
-    setCurrentView(view);
-    // Navigation doesn't need to force close anymore since it auto-collapses on mouse leave
-  };
   const [newOrdersCount, setNewOrdersCount] = useState(0);
   const [announcements, setAnnouncements] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+
+  // Navigate using React Router
+  const handleNavigate = (view, data = null) => {
+    navigate(`/admin/${view}`);
+  };
 
   // Filter announcements
   const displayedAnnouncements = announcements.filter(a => {
@@ -88,31 +88,19 @@ function AdminLanding({ onNavigateRoot }) {
     }
   };
 
-  const renderContent = () => {
-    switch (currentView) {
-      case 'dashboard':
-        return <Dashboard onNavigate={handleNavigate} />;
-      case 'user-management':
-        return <UserManagement onNavigate={handleNavigate} />;
-      case 'hostel':
-        return <HostelManagement />;
-      case 'new-users':
-        return <NewUsers onBack={() => handleNavigate('user-management')} />;
-      case 'all-members':
-        return <AllMembersView onBack={() => handleNavigate('user-management')} />;
-      case 'canteen':
-        return <CanteenAdminLanding />;
-      case 'messages':
-        return <AdminMessages />;
-      case 'create-announcement':
-        return <CreateAnnouncement />;
-      case 'reading-rooms':
-        return <ReadingRoomManagement />;
-      case 'balance-requests':
-        return <AdminBalanceLoad />;
-      default:
-        return <Dashboard onNavigate={handleNavigate} />;
-    }
+
+  // Get current route to determine active sidebar item
+  const getCurrentView = () => {
+    const path = window.location.pathname;
+    if (path === '/admin' || path === '/admin/dashboard') return 'dashboard';
+    if (path.includes('/admin/user-management')) return 'user-management';
+    if (path.includes('/admin/hostel')) return 'hostel';
+    if (path.includes('/admin/canteen')) return 'canteen';
+    if (path.includes('/admin/messages')) return 'messages';
+    if (path.includes('/admin/create-announcement')) return 'create-announcement';
+    if (path.includes('/admin/reading-rooms')) return 'reading-rooms';
+    if (path.includes('/admin/balance-requests')) return 'balance-requests';
+    return 'dashboard';
   };
 
   return (
@@ -133,7 +121,7 @@ function AdminLanding({ onNavigateRoot }) {
         }}
       >
         <Sidebar
-          currentView={currentView}
+          currentView={getCurrentView()}
           onNavigate={handleNavigate}
           isOpen={isSidebarHovered}
         />
@@ -147,7 +135,19 @@ function AdminLanding({ onNavigateRoot }) {
         transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
         position: 'relative'
       }}>
-        {renderContent()}
+        <Routes>
+          <Route path="/" element={<Dashboard onNavigate={handleNavigate} />} />
+          <Route path="/dashboard" element={<Dashboard onNavigate={handleNavigate} />} />
+          <Route path="/user-management" element={<UserManagement onNavigate={handleNavigate} />} />
+          <Route path="/hostel" element={<HostelManagement />} />
+          <Route path="/new-users" element={<NewUsers onBack={() => navigate('/admin/user-management')} />} />
+          <Route path="/all-members" element={<AllMembersView onBack={() => navigate('/admin/user-management')} />} />
+          <Route path="/canteen" element={<CanteenAdminLanding />} />
+          <Route path="/messages" element={<AdminMessages />} />
+          <Route path="/create-announcement" element={<CreateAnnouncement />} />
+          <Route path="/reading-rooms" element={<ReadingRoomManagement />} />
+          <Route path="/balance-requests" element={<AdminBalanceLoad />} />
+        </Routes>
       </main>
     </div>
   );

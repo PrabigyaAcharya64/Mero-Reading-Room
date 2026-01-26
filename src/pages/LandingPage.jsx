@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { db } from '../lib/firebase';
 import { doc, getDoc, collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
+import SmartImage from '../components/SmartImage';
 import IDCard from './IDCard';
 import CanteenClient from './canteen/CanteenClient.jsx';
 import CanteenAdminLanding from './Canteen_Admin/CanteenAdminLanding';
-import Contact from './Contact';
+import Contact from './contact/Contact';
+import AnonymousMessage from './contact/AnonymousMessage';
 import ReadingRoomOptions from './readingroom/ReadingRoomOptions';
 import ReadingRoomBuy from './readingroom/ReadingRoomBuy';
 import ReadingRoomEnrollment from './readingroom/ReadingRoomEnrollment';
@@ -25,8 +28,9 @@ import { History as HistoryIcon } from 'lucide-react'; // Using lucide for relia
 
 function LandingPage({ onBack }) {
   const { user, signOutUser, userBalance } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Reader';
-  const [currentView, setCurrentView] = useState('landing');
   const [selectedRoomOption, setSelectedRoomOption] = useState(null);
   const [checkingMembership, setCheckingMembership] = useState(false);
   const [announcements, setAnnouncements] = useState([]);
@@ -78,17 +82,17 @@ function LandingPage({ onBack }) {
           const isExpired = userData.nextPaymentDue && new Date(userData.nextPaymentDue) < new Date();
 
           if (!isExpired) {
-            setCurrentView('readingroom-dashboard');
+            navigate('/reading-room/dashboard');
             return;
           }
         }
       }
 
       // If no valid membership or registration not completed, go to options
-      setCurrentView('readingroom-options');
+      navigate('/reading-room/options');
     } catch (error) {
       console.error('Error checking membership:', error);
-      setCurrentView('readingroom-options');
+      navigate('/reading-room/options');
     } finally {
       setCheckingMembership(false);
     }
@@ -100,11 +104,11 @@ function LandingPage({ onBack }) {
 
     if (membershipStatus.isExpired) {
       // Redirect to renew/buy
-      setCurrentView('readingroom-options');
+      navigate('/reading-room/options');
       return;
     }
 
-    setCurrentView('discussion');
+    navigate('/discussion');
   };
 
   useEffect(() => {
@@ -136,98 +140,8 @@ function LandingPage({ onBack }) {
     }
   };
 
-  // Show ID Card when profile is clicked
-  if (currentView === 'idcard') {
-    return <IDCard onBack={() => setCurrentView('landing')} />;
-  }
-
-  // Show CanteenClient when canteen is clicked
-  if (currentView === 'canteen') {
-    return <CanteenClient onBack={() => setCurrentView('landing')} />;
-  }
-
-  // Show CanteenAdminLanding when canteen admin is clicked
-  if (currentView === 'canteen-admin') {
-    return <CanteenAdminLanding onBack={() => setCurrentView('landing')} />;
-  }
-
-  // Show Contact page when contact is clicked
-  if (currentView === 'contact') {
-    return <Contact onBack={() => setCurrentView('landing')} />;
-  }
-
-  // Show Reading Room Options
-  if (currentView === 'readingroom-options') {
-    return (
-      <ReadingRoomOptions
-        onBack={() => setCurrentView('landing')}
-        onSelectOption={(option) => {
-          setSelectedRoomOption(option);
-          setCurrentView('readingroom-buy');
-        }}
-      />
-    );
-  }
-
-  // Show Reading Room Payment/Buy screen
-  if (currentView === 'readingroom-buy') {
-    return (
-      <ReadingRoomBuy
-        onBack={() => setCurrentView('readingroom-options')}
-        selectedOption={selectedRoomOption}
-        onComplete={(needsEnrollment) => {
-          // After successful payment, check if enrollment is needed
-          if (needsEnrollment) {
-            setCurrentView('readingroom');
-          } else {
-            setCurrentView('readingroom-dashboard');
-          }
-        }}
-      />
-    );
-  }
-
-  // Show Reading Room Enrollment Form
-  if (currentView === 'readingroom') {
-    return (
-      <ReadingRoomEnrollment
-        onBack={() => setCurrentView('readingroom-buy')}
-        onComplete={() => setCurrentView('readingroom-dashboard')}
-      />
-    );
-  }
-
-  // Show Reading Room Dashboard
-  if (currentView === 'readingroom-dashboard') {
-    return <ReadingRoomDashboard onBack={() => setCurrentView('landing')} />;
-  }
-
-  // Show Discussion
-  if (currentView === 'discussion') {
-    return <Discussion onBack={() => setCurrentView('landing')} />;
-  }
-
-  // Show Load Balance
-  if (currentView === 'load-balance') {
-    return (
-      <LoadBalance
-        onBack={() => setCurrentView('landing')}
-        onComplete={() => setCurrentView('balance-confirmation')}
-      />
-    );
-  }
-
-  // Show Confirmation
-  if (currentView === 'balance-confirmation') {
-    return <Confirmation onHome={() => setCurrentView('landing')} />;
-  }
-
-  // Show Statement
-  if (currentView === 'statement') {
-    return <Statement onBack={() => setCurrentView('landing')} />;
-  }
-
-  return (
+  // Landing Home Component
+  const LandingHome = () => (
     <div className="std-container">
       <header className="landing-header">
         <p className="landing-greeting">
@@ -238,7 +152,7 @@ function LandingPage({ onBack }) {
             <div className="landing-balance__label">Balance</div>
             <div
               className="landing-balance__value"
-              onClick={() => setCurrentView('statement')}
+              onClick={() => navigate('/statement')}
               style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
               title="View History"
             >
@@ -249,7 +163,7 @@ function LandingPage({ onBack }) {
               type="button"
               className="landing-balance__add"
               aria-label="Add to balance"
-              onClick={() => setCurrentView('load-balance')}
+              onClick={() => navigate('/load-balance')}
             >
               +
             </button>
@@ -258,13 +172,12 @@ function LandingPage({ onBack }) {
             type="button"
             className="landing-profile"
             aria-label="Profile"
-            onClick={() => setCurrentView('idcard')}
+            onClick={() => navigate('/idcard')}
           >
             <img src={profileIcon} alt="" />
           </button>
         </div>
       </header>
-
 
       <main className="std-body">
         <section className="landing-services">
@@ -275,14 +188,14 @@ function LandingPage({ onBack }) {
                 {checkingMembership ? (
                   <div style={{ width: '24px', height: '24px', border: '2px solid #333', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
                 ) : (
-                  <img src={readingRoomIcon} alt="" aria-hidden="true" />
+                  <SmartImage src={readingRoomIcon} alt="" aria-hidden="true" />
                 )}
               </span>
               <span className="landing-service-card__label">Reading Room</span>
             </button>
             <button type="button" className="landing-service-card">
               <span className="landing-service-card__icon">
-                <img src={hostelIcon} alt="" aria-hidden="true" />
+                <SmartImage src={hostelIcon} alt="" aria-hidden="true" />
               </span>
               <span className="landing-service-card__label">Hostel</span>
             </button>
@@ -299,23 +212,23 @@ function LandingPage({ onBack }) {
             )}
 
             {isAdmin && (
-              <button type="button" className="landing-service-card" onClick={() => setCurrentView('canteen-admin')}>
+              <button type="button" className="landing-service-card" onClick={() => navigate('/canteen-admin')}>
                 <span className="landing-service-card__icon">
-                  <img src={adminIcon} alt="" aria-hidden="true" />
+                  <SmartImage src={adminIcon} alt="" aria-hidden="true" />
                 </span>
                 <span className="landing-service-card__label">Canteen Admin</span>
               </button>
             )}
 
-            <button type="button" className="landing-service-card" onClick={() => setCurrentView('canteen')}>
+            <button type="button" className="landing-service-card" onClick={() => navigate('/canteen')}>
               <span className="landing-service-card__icon">
-                <img src={foodIcon} alt="" aria-hidden="true" />
+                <SmartImage src={foodIcon} alt="" aria-hidden="true" />
               </span>
               <span className="landing-service-card__label">Canteen</span>
             </button>
-            <button type="button" className="landing-service-card" onClick={() => setCurrentView('contact')}>
+            <button type="button" className="landing-service-card" onClick={() => navigate('/contact')}>
               <span className="landing-service-card__icon">
-                <img src={contactIcon} alt="" aria-hidden="true" />
+                <SmartImage src={contactIcon} alt="" aria-hidden="true" />
               </span>
               <span className="landing-service-card__label">Contact</span>
             </button>
@@ -357,6 +270,67 @@ function LandingPage({ onBack }) {
         </section>
       </main>
     </div>
+  );
+
+  return (
+    <Routes>
+      <Route path="/" element={<LandingHome />} />
+      <Route path="/idcard" element={<IDCard onBack={() => navigate('/')} />} />
+      <Route path="/canteen" element={<CanteenClient onBack={() => navigate('/')} />} />
+      <Route path="/canteen-admin" element={<CanteenAdminLanding onBack={() => navigate('/')} />} />
+      <Route path="/contact" element={<Contact onBack={() => navigate('/')} />} />
+      <Route
+        path="/reading-room/options"
+        element={
+          <ReadingRoomOptions
+            onBack={() => navigate('/')}
+            onSelectOption={(option) => {
+              setSelectedRoomOption(option);
+              navigate('/reading-room/buy');
+            }}
+          />
+        }
+      />
+      <Route
+        path="/reading-room/buy"
+        element={
+          <ReadingRoomBuy
+            onBack={() => navigate('/reading-room/options')}
+            selectedOption={selectedRoomOption}
+            onComplete={(needsEnrollment) => {
+              if (needsEnrollment) {
+                navigate('/reading-room/enrollment');
+              } else {
+                navigate('/reading-room/dashboard');
+              }
+            }}
+          />
+        }
+      />
+      <Route
+        path="/reading-room/enrollment"
+        element={
+          <ReadingRoomEnrollment
+            onBack={() => navigate('/reading-room/buy')}
+            onComplete={() => navigate('/reading-room/dashboard')}
+          />
+        }
+      />
+      <Route path="/reading-room/dashboard" element={<ReadingRoomDashboard onBack={() => navigate('/')} />} />
+      <Route path="/discussion" element={<Discussion onBack={() => navigate('/')} />} />
+      <Route
+        path="/load-balance"
+        element={
+          <LoadBalance
+            onBack={() => navigate('/')}
+            onComplete={() => navigate('/balance-confirmation')}
+          />
+        }
+      />
+      <Route path="/balance-confirmation" element={<Confirmation onHome={() => navigate('/')} />} />
+      <Route path="/statement" element={<Statement onBack={() => navigate('/')} />} />
+      <Route path="/anonymous-message" element={<AnonymousMessage onBack={() => navigate('/contact')} />} />
+    </Routes>
   );
 }
 

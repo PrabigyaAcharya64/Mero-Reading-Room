@@ -10,7 +10,7 @@ const CanteenMenu = ({
   onBack,
   onNavigate,
   todaysMenu,
-  fixedMenu = [], 
+  fixedMenu = [],
   cart,
   addToCart,
   userBalance
@@ -204,6 +204,10 @@ const CanteenMenu = ({
                   </div>
                 ))}
               </div>
+            )}
+
+            {todaysMenu.length > 0 && fixedMenu.length > 0 && (
+              <div className="menu-separator" />
             )}
 
             {/* Fixed Menu Section */}

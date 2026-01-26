@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import GetStarted from '../pages/GetStarted';
 import Login from '../pages/Login';
 import SignUp from '../pages/SignUp';
@@ -8,12 +10,15 @@ import LandingPage from '../pages/LandingPage';
 import AdminLanding from '../pages/admin/AdminLanding';
 import CanteenAdminLanding from '../pages/Canteen_Admin/CanteenAdminLanding';
 import { useAuth } from '../auth/AuthProvider';
+import { useLoading } from '../context/GlobalLoadingContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import FullScreenLoader from '../components/FullScreenLoader';
+import PageTransition from '../components/PageTransition';
 
 export function NavigationRoot() {
-    const { user, userRole, loading } = useAuth();
+    const { user, userRole, loading: authLoading } = useAuth();
+    const { setSplashDone } = useLoading();
+    const location = useLocation();
 
     // Check URL params for pending verification
     const urlParams = new URLSearchParams(window.location.search);
@@ -24,54 +29,29 @@ export function NavigationRoot() {
     const [needsAdditionalDetails, setNeedsAdditionalDetails] = useState(false);
     const [isVerified, setIsVerified] = useState(null);
     const [checkingVerification, setCheckingVerification] = useState(false);
-    const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
     const handleRootNavigate = (newMode, userData = null) => {
         if (userData) setSelectedUser(userData);
         setMode(newMode);
     };
 
+    // Replace legacy timer with splash completion logic
     useEffect(() => {
-        // Set initial load complete after a short delay to ensure smooth transitions
-        const timer = setTimeout(() => {
-            setInitialLoadComplete(true);
-        }, 500);
-
-        return () => clearTimeout(timer);
-    }, []);
-
-    // ... (Keep existing back button handling)
-    useEffect(() => {
-        // Push initial state to history
-        window.history.pushState({ page: 'app' }, '', window.location.href);
-
-        const handlePopState = (event) => {
-            // Prevent default back navigation
-            event.preventDefault();
-
-            // Push state again to keep user in the app
-            window.history.pushState({ page: 'app' }, '', window.location.href);
-
-            console.log('Back button pressed - staying in app');
-        };
-
-        window.addEventListener('popstate', handlePopState);
-
-        return () => {
-            window.removeEventListener('popstate', handlePopState);
-        };
-    }, []);
+        if (!authLoading && !checkingVerification) {
+            // Signal that we are ready to reveal the app
+            setSplashDone();
+        }
+    }, [authLoading, checkingVerification, setSplashDone]);
 
     useEffect(() => {
-        if (user && !loading) {
+        if (user && !authLoading) {
             checkUserStatus();
         }
-    }, [user, loading]);
+    }, [user, authLoading]);
 
     const checkUserStatus = async () => {
         if (!user) return;
 
-        // Admin and canteen users don't need verification
         if (userRole === 'admin' || userRole === 'canteen') {
             setIsVerified(true);
             return;
@@ -84,18 +64,14 @@ export function NavigationRoot() {
 
             if (userDoc.exists()) {
                 const userData = userDoc.data();
-
-                // Check if user has submitted additional details
                 if (!userData.mrrNumber || !userData.submittedAt) {
                     setNeedsAdditionalDetails(true);
                     setIsVerified(false);
                 } else {
-                    // Check verification status
                     setIsVerified(userData.verified === true);
                     setNeedsAdditionalDetails(false);
                 }
             } else {
-                // User document doesn't exist, needs additional details
                 setNeedsAdditionalDetails(true);
                 setIsVerified(false);
             }
@@ -107,87 +83,102 @@ export function NavigationRoot() {
         }
     };
 
-    // Show full screen loader during initial app load or auth checking
-    if (loading || checkingVerification || !initialLoadComplete) {
-        let loadingText = "Loading your account...";
-        if (checkingVerification) {
-            loadingText = "Verifying your account...";
-        } else if (!initialLoadComplete) {
-            loadingText = "Initializing application...";
-        }
+    // Determine which stack to render
+    const renderContent = () => {
+        if (user) {
+            if (needsAdditionalDetails) {
+                return (
+                    <PageTransition key="additional-details">
+                        <AdditionalDetails
+                            onComplete={() => {
+                                setNeedsAdditionalDetails(false);
+                                setMode('pending-verification');
+                            }}
+                        />
+                    </PageTransition>
+                );
+            }
 
-        return <FullScreenLoader text={loadingText} />;
-    }
+            if (isVerified === false) {
+                return (
+                    <PageTransition key="pending-verification">
+                        <PendingVerification />
+                    </PageTransition>
+                );
+            }
 
-    if (user) {
-        // If user needs to complete additional details
-        if (needsAdditionalDetails) {
             return (
-                <AdditionalDetails
-                    onComplete={() => {
-                        setNeedsAdditionalDetails(false);
-                        setMode('pending-verification');
-                    }}
-                />
+                <PageTransition key="app-stack">
+                    <AppStack userRole={userRole} onNavigateRoot={handleRootNavigate} />
+                </PageTransition>
             );
         }
 
-        // If user is not verified, show pending verification page
-        if (isVerified === false) {
-            return <PendingVerification />;
-        }
-
-        // User is verified, proceed to app
-        return <AppStack userRole={userRole} onNavigateRoot={handleRootNavigate} />;
-    }
-
-    return <AuthStack mode={mode} onChangeMode={setMode} />;
-}
-
-export function AuthStack({ mode, onChangeMode }) {
-    if (mode === 'login') {
-        return <Login onSwitch={() => onChangeMode('signup')} />;
-    }
-
-    if (mode === 'signup') {
-        return <SignUp onSwitch={() => onChangeMode('login')} onComplete={() => onChangeMode('additional-details')} />;
-    }
-
-    if (mode === 'additional-details') {
         return (
-            <AdditionalDetails
-                onComplete={() => {
-                    onChangeMode('pending-verification');
-                }}
-            />
+            <PageTransition key="auth-stack">
+                <AuthStack mode={mode} onChangeMode={setMode} />
+            </PageTransition>
         );
-    }
-
-    if (mode === 'pending-verification') {
-        return <PendingVerification />;
-    }
-
-    // Check if we should show pending verification from URL or session
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('pending') === 'true') {
-        return <PendingVerification />;
-    }
+    };
 
     return (
-        <GetStarted onGetStarted={() => onChangeMode('signup')} onLogIn={() => onChangeMode('login')} />
+        <AnimatePresence mode="wait">
+            {renderContent()}
+        </AnimatePresence>
     );
 }
 
+export function AuthStack({ mode, onChangeMode }) {
+    const getContent = () => {
+        if (mode === 'login') {
+            return <Login onSwitch={() => onChangeMode('signup')} />;
+        }
+        if (mode === 'signup') {
+            return <SignUp onSwitch={() => onChangeMode('login')} onComplete={() => onChangeMode('additional-details')} />;
+        }
+        if (mode === 'additional-details' || mode === 'pending-verification') {
+            // These cases are handled in NavigationRoot but kept for safety
+            return mode === 'additional-details' ? <AdditionalDetails onComplete={() => onChangeMode('pending-verification')} /> : <PendingVerification />;
+        }
+        return <GetStarted onGetStarted={() => onChangeMode('signup')} onLogIn={() => onChangeMode('login')} />;
+    };
+
+    return (
+        <AnimatePresence mode="wait">
+            <motion.div
+                key={mode}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                style={{ width: '100%', height: '100%' }}
+            >
+                {getContent()}
+            </motion.div>
+        </AnimatePresence>
+    );
+}
+
+// Helper to provide motion to AuthStack items
+import { motion } from 'framer-motion';
+
 export function AppStack({ userRole, onNavigateRoot }) {
-    // Redirect based on user role
     if (userRole === 'admin') {
-        return <AdminLanding onNavigateRoot={onNavigateRoot} />;
+        return (
+            <Routes>
+                <Route path="/admin/*" element={<AdminLanding onNavigateRoot={onNavigateRoot} />} />
+                <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+            </Routes>
+        );
     }
 
     if (userRole === 'canteen') {
         return <CanteenAdminLanding />;
     }
 
-    // Default landing page for users without a specific role
-    return <LandingPage />;
+    return (
+        <Routes>
+            <Route path="/*" element={<LandingPage />} />
+        </Routes>
+    );
 }

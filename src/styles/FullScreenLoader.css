@@ -1,0 +1,106 @@
+.splash-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    opacity: 1;
+}
+
+.splash-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.splash-logo {
+    width: 120px;
+    height: auto;
+    margin-bottom: 2rem;
+    animation: pulse 2s infinite ease-in-out;
+}
+
+.splash-loader {
+    width: 40px;
+    height: 40px;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+
+    50% {
+        transform: scale(1.05);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+}
+
+.app-container-wrapper {
+    height: 100dvh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    /* Match splash background to prevent flashes */
+}
+
+/* Ensure children that rely on full height work correctly */
+.app-container-wrapper>* {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.app-content {
+    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+}
+
+.content-hidden {
+    opacity: 0;
+    transform: scale(0.98);
+    pointer-events: none;
+}
+
+.content-visible {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+}
+
+.revealed {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.hidden {
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+}
