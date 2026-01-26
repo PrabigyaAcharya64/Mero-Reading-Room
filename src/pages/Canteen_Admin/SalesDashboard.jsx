@@ -48,13 +48,32 @@ function SalesDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
       const snapshot = await getDocs(q);
       const completedOrders = snapshot.docs
         .filter(doc => doc.data().status === 'completed')
-        .map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          orderDate: doc.data().completedAt
-            ? new Date(doc.data().completedAt).toISOString().split('T')[0]
-            : new Date(doc.data().createdAt).toISOString().split('T')[0]
-        }));
+        .map(doc => {
+          const data = doc.data();
+          const dateToParse = data.completedAt || data.createdAt;
+          let dateStr = '';
+
+          try {
+            if (dateToParse) {
+              const dateObj = new Date(dateToParse);
+              if (!isNaN(dateObj.getTime())) {
+                dateStr = dateObj.toISOString().split('T')[0];
+              }
+            }
+          } catch (e) {
+            console.error('Error parsing date for order', doc.id, e);
+          }
+
+          if (!dateStr) {
+            dateStr = new Date().toISOString().split('T')[0];
+          }
+
+          return {
+            id: doc.id,
+            ...data,
+            orderDate: dateStr
+          };
+        });
 
       // Filter by selected date
       const filteredSales = selectedDate
@@ -81,24 +100,44 @@ function SalesDashboard({ onBack, isSidebarOpen, onToggleSidebar }) {
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Invalid Date';
+
+      return date.toLocaleString('en-IN', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (e) {
+      return 'Invalid Date';
+    }
   };
 
   const formatDateDisplay = (dateString) => {
     if (!dateString) return 'N/A';
-    const date = new Date(dateString + 'T00:00:00');
-    return date.toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    try {
+      // Split YYYY-MM-DD and create date locally to avoid timezone shifts
+      const parts = dateString.split('-');
+      if (parts.length !== 3) {
+        const d = new Date(dateString);
+        if (isNaN(d.getTime())) return 'Invalid Date';
+        return d.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+      }
+
+      const date = new Date(parts[0], parts[1] - 1, parts[2]);
+      if (isNaN(date.getTime())) return 'Invalid Date';
+
+      return date.toLocaleDateString('en-IN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    } catch (e) {
+      return 'Invalid Date';
+    }
   };
 
   // Group sales by date for history view
