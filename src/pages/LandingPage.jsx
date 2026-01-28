@@ -4,7 +4,6 @@ import { useAuth } from '../auth/AuthProvider';
 import { db } from '../lib/firebase';
 import { doc, getDoc, collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 import { Bell, Clock, History as HistoryIcon } from 'lucide-react';
-import SmartImage from '../components/SmartImage';
 import IDCard from './IDCard';
 import CanteenClient from './canteen/CanteenClient.jsx';
 import CanteenAdminLanding from './Canteen_Admin/CanteenAdminLanding';
@@ -190,14 +189,14 @@ function LandingPage({ onBack }) {
                 {checkingMembership ? (
                   <div style={{ width: '24px', height: '24px', border: '2px solid #333', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
                 ) : (
-                  <SmartImage src={readingRoomIcon} alt="" aria-hidden="true" />
+                  <img src={readingRoomIcon} alt="" aria-hidden="true" />
                 )}
               </span>
               <span className="landing-service-card__label">Reading Room</span>
             </button>
             <button type="button" className="landing-service-card">
               <span className="landing-service-card__icon">
-                <SmartImage src={hostelIcon} alt="" aria-hidden="true" />
+                <img src={hostelIcon} alt="" aria-hidden="true" />
               </span>
               <span className="landing-service-card__label">Hostel</span>
             </button>
@@ -216,7 +215,7 @@ function LandingPage({ onBack }) {
             {isAdmin && (
               <button type="button" className="landing-service-card" onClick={() => navigate('/canteen-admin')}>
                 <span className="landing-service-card__icon">
-                  <SmartImage src={adminIcon} alt="" aria-hidden="true" />
+                  <img src={adminIcon} alt="" aria-hidden="true" />
                 </span>
                 <span className="landing-service-card__label">Canteen Admin</span>
               </button>
@@ -224,13 +223,13 @@ function LandingPage({ onBack }) {
 
             <button type="button" className="landing-service-card" onClick={() => navigate('/canteen')}>
               <span className="landing-service-card__icon">
-                <SmartImage src={foodIcon} alt="" aria-hidden="true" />
+                <img src={foodIcon} alt="" aria-hidden="true" />
               </span>
               <span className="landing-service-card__label">Canteen</span>
             </button>
             <button type="button" className="landing-service-card" onClick={() => navigate('/contact')}>
               <span className="landing-service-card__icon">
-                <SmartImage src={contactIcon} alt="" aria-hidden="true" />
+                <img src={contactIcon} alt="" aria-hidden="true" />
               </span>
               <span className="landing-service-card__label">Contact</span>
             </button>

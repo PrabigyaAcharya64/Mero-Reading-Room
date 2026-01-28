@@ -52,6 +52,14 @@ function AdminLanding() {
 
   // Navigate using React Router with loading state
   const handleNavigate = (view) => {
+    if (view === '__hover_expand') {
+      setIsSidebarHovered(true);
+      return;
+    }
+    if (view === '__hover_collapse') {
+      setIsSidebarHovered(false);
+      return;
+    }
     setIsLoading(true);
     navigate(view === 'dashboard' ? '/admin' : `/admin/${view}`);
   };
@@ -115,36 +123,23 @@ function AdminLanding() {
     return titles[currentView] || 'Admin Panel';
   };
 
+  const isExpanded = isMobile ? isSidebarOpen : isSidebarHovered;
+
   return (
     <div className="admin-layout">
-      {/* Mobile Overlay is handled inside Sidebar component now, or we can keep a local one */}
-      
       <Sidebar
         currentView={currentView}
         onNavigate={handleNavigate}
-        isOpen={isMobile ? isSidebarOpen : isSidebarHovered}
+        isOpen={isExpanded}
         isMobile={isMobile}
         onClose={() => setIsSidebarOpen(false)}
       />
 
-      {/* Sidebar Wrapper for Desktop Hover Detection */}
-      {!isMobile && (
-        <div
-          onMouseEnter={() => setIsSidebarHovered(true)}
-          onMouseLeave={() => setIsSidebarHovered(false)}
-          style={{
-            zIndex: 1000,
-            position: 'fixed',
-            left: 0,
-            top: 0,
-            height: '100vh',
-            width: '72px' // Area to trigger hover
-          }}
-        />
-      )}
-
       {/* Main Content Area */}
-      <div className={`admin-main-content ${!isMobile && isSidebarHovered ? 'sidebar-expanded' : 'sidebar-collapsed'}`}>
+      <div 
+        className={`admin-main-content ${!isMobile && isExpanded ? 'sidebar-expanded' : 'sidebar-collapsed'}`}
+        onMouseEnter={() => !isMobile && setIsSidebarHovered(false)} // Close if mouse enters content
+      >
         <header className="admin-header">
           {isMobile && (
             <button className="sidebar-toggle-btn" onClick={() => setIsSidebarOpen(!isSidebarOpen)} aria-label="Toggle Sidebar">

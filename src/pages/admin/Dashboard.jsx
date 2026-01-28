@@ -185,9 +185,6 @@ function Dashboard({ onNavigate, onDataLoaded }) {
 
     return (
         <div style={{ padding: '0', maxWidth: '1600px', margin: '0 auto' }}>
-            <PageHeader
-                title="Overview"
-            />
             <div style={{ padding: '32px' }}>
                 <p style={{ color: '#6b7280', marginBottom: '32px' }}>Welcome back, Admin. Here's what's happening today.</p>
 

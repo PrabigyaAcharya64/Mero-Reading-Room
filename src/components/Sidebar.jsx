@@ -82,6 +82,8 @@ function Sidebar({ currentView, onNavigate, isOpen, isMobile, onClose }) {
 
             <aside
                 className={`sidebar-container ${isExpanded ? 'expanded' : 'collapsed'} ${isMobile ? 'mobile-drawer' : ''} ${isMobile && isOpen ? 'mobile-drawer-open' : ''}`}
+                onMouseEnter={() => !isMobile && onNavigate && onNavigate('__hover_expand')}
+                onMouseLeave={() => !isMobile && onNavigate && onNavigate('__hover_collapse')}
             >
                 {/* Sidebar Header (Mobile only) */}
                 {isMobile && (
