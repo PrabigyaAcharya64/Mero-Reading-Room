@@ -2,18 +2,15 @@ import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, query, getDocs, orderBy, onSnapshot, limit } from 'firebase/firestore';
-import { useLoading } from '../../context/GlobalLoadingContext';
 import Button from '../../components/Button';
 import PageHeader from '../../components/PageHeader';
 import { TrendingUp, Banknote, ShoppingCart, Calendar, Search, MapPin, ReceiptText, ChevronLeft, ChevronRight } from 'lucide-react';
 import '../../styles/SalesDashboard.css';
 import '../../styles/StandardLayout.css';
 
-function SalesDashboard({ onBack }) {
+function SalesDashboard({ onBack, onDataLoaded }) {
   const { userRole } = useAuth();
-  const { setIsLoading } = useLoading();
   const [sales, setSales] = useState([]);
-  const [isDataReady, setIsDataReady] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [viewSales, setViewSales] = useState(0);
   const [viewOrdersCount, setViewOrdersCount] = useState(0);
@@ -24,8 +21,13 @@ function SalesDashboard({ onBack }) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  useLayoutEffect(() => {
-    loadSales();
+  useEffect(() => {
+    Promise.all([
+      loadSales()
+    ]).finally(() => {
+      onDataLoaded?.();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
 
   useEffect(() => {
@@ -40,7 +42,6 @@ function SalesDashboard({ onBack }) {
   }, [selectedDate, searchQuery]);
 
   const loadSales = async () => {
-    setIsLoading(true);
     try {
       const ordersRef = collection(db, 'orders');
       const q = query(ordersRef, orderBy('createdAt', 'desc'), limit(1000));
@@ -76,9 +77,6 @@ function SalesDashboard({ onBack }) {
       setSales(filteredForStats);
     } catch (error) {
       console.error('Error loading sales:', error);
-    } finally {
-      setIsLoading(false);
-      setIsDataReady(true);
     }
   };
 
@@ -119,7 +117,6 @@ function SalesDashboard({ onBack }) {
 
   const salesHistory = Object.values(salesByDate).sort((a, b) => b.date.localeCompare(a.date));
 
-  if (!isDataReady) return null;
 
   return (
     <div className="std-container">

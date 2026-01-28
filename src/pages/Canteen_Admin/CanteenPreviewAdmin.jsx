@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../../lib/firebase';
-import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, getDoc, getDocs } from 'firebase/firestore';
 import { getBusinessDate } from '../../utils/dateUtils';
 import PageHeader from '../../components/PageHeader';
+import { useLoading } from '../../context/GlobalLoadingContext';
 import Button from '../../components/Button';
 
 // Reuse styles for consistent look
@@ -10,16 +11,27 @@ import '../../styles/CanteenMenu.css';
 import '../../styles/StandardLayout.css';
 
 const CanteenPreviewAdmin = ({ onBack }) => {
+    const { isLoading, setIsLoading } = useLoading();
     const [todaysMenu, setTodaysMenu] = useState([]);
     const [fixedMenu, setFixedMenu] = useState([]);
     const categoryOrder = ['Breakfast', 'Meal', 'Dinner', 'Snacks', 'Drinks'];
 
-    // ------------------------------------------------------------------
-    // Data Fetching
-    // ------------------------------------------------------------------
     useEffect(() => {
+        setIsLoading(true);
         const today = getBusinessDate();
         const todaysMenuRef = doc(db, 'todaysMenu', today);
+        const fixedQ = query(
+            collection(db, 'menuItems'),
+            where('isFixed', '==', true)
+        );
+
+        // Standard Batch Reveal Pattern
+        Promise.all([
+            getDoc(todaysMenuRef),
+            getDocs(fixedQ)
+        ]).finally(() => {
+            setIsLoading(false);
+        });
 
         const unsubscribe = onSnapshot(todaysMenuRef, (snapshot) => {
             if (snapshot.exists()) {
@@ -30,16 +42,7 @@ const CanteenPreviewAdmin = ({ onBack }) => {
             }
         });
 
-        return () => unsubscribe();
-    }, []);
-
-    useEffect(() => {
-        const q = query(
-            collection(db, 'menuItems'),
-            where('isFixed', '==', true)
-        );
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+        const unsubscribeFixed = onSnapshot(fixedQ, (snapshot) => {
             const items = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -47,7 +50,10 @@ const CanteenPreviewAdmin = ({ onBack }) => {
             setFixedMenu(items);
         });
 
-        return () => unsubscribe();
+        return () => {
+            unsubscribe();
+            unsubscribeFixed();
+        };
     }, []);
 
     // ------------------------------------------------------------------

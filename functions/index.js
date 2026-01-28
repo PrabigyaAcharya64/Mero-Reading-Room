@@ -713,25 +713,48 @@ exports.processReadingRoomPurchase = onCall(async (request) => {
 /**
  * Callable function to process canteen order
  * Handles balance deduction, stock updates, and order creation atomically
+ * Supports proxy orders if targetUserId is provided and caller is authorized
  */
 exports.processCanteenOrder = onCall(async (request) => {
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Must be authenticated to place order.');
     }
 
-    const { cart, note } = request.data;
+    const { cart, note, targetUserId } = request.data;
+    const callerId = request.auth.uid;
+    let userIdToCharge = callerId;
+    let isProxyOrder = false;
 
     if (!cart || !Array.isArray(cart) || cart.length === 0) {
         throw new HttpsError('invalid-argument', 'Cart is empty or invalid.');
     }
 
-    const userId = request.auth.uid;
     const db = admin.firestore();
 
     try {
+        // Handle Proxy Order logic
+        if (targetUserId && targetUserId !== callerId) {
+            // Verify caller has permission to place proxy orders
+            // Check both token (claims) and document for consistency with security rules
+            const tokenRole = request.auth.token.role;
+            let callerRole = tokenRole;
+
+            if (!callerRole) {
+                const callerDoc = await db.collection('users').doc(callerId).get();
+                callerRole = callerDoc.exists ? callerDoc.data().role : null;
+            }
+
+            if (callerRole !== 'admin' && callerRole !== 'canteen') {
+                console.error(`User ${callerId} attempted proxy order for ${targetUserId} but is not authorized. Role: ${callerRole}`);
+                throw new HttpsError('permission-denied', 'Unauthorized to place proxy orders.');
+            }
+            userIdToCharge = targetUserId;
+            isProxyOrder = true;
+        }
+
         const result = await db.runTransaction(async (transaction) => {
             // 1. Get user and validate balance
-            const userRef = db.collection('users').doc(userId);
+            const userRef = db.collection('users').doc(userIdToCharge);
             const userDoc = await transaction.get(userRef);
 
             if (!userDoc.exists) {
@@ -745,7 +768,7 @@ exports.processCanteenOrder = onCall(async (request) => {
             const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
             if (currentBalance < total) {
-                throw new HttpsError('failed-precondition', 'Insufficient balance.');
+                throw new HttpsError('failed-precondition', isProxyOrder ? 'Client has insufficient balance.' : 'Insufficient balance.');
             }
 
             // 2. Validate and reserve stock
@@ -791,15 +814,17 @@ exports.processCanteenOrder = onCall(async (request) => {
             // Create order
             const orderRef = db.collection('orders').doc();
             transaction.set(orderRef, {
-                userId: userId,
-                userEmail: userData.email || request.auth.token.email,
+                userId: userIdToCharge,
+                userEmail: userData.email || null,
                 userName: userData.name || userData.displayName || 'Reader',
                 items: cart,
                 total: total,
                 status: 'pending',
                 note: note || null,
                 location: null,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                isProxyOrder: isProxyOrder,
+                processedBy: isProxyOrder ? callerId : null
             });
 
             return {

@@ -4,7 +4,7 @@ import { db } from '../../lib/firebase';
 import { collection, addDoc, getDocs, doc, setDoc, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { validateMenuItemName, validatePrice, validateDescription, validateCategory } from '../../utils/validation';
 import { getBusinessDate } from '../../utils/dateUtils';
-import FullScreenLoader from '../../components/FullScreenLoader';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import Button from '../../components/Button';
 import PageHeader from '../../components/PageHeader';
 import { Plus, Trash2, Star, Check, X, Camera, LayoutGrid, ListChecks, Eye } from 'lucide-react';
@@ -12,10 +12,7 @@ import CanteenPreviewAdmin from './CanteenPreviewAdmin';
 import '../../styles/MenuManagement.css';
 import '../../styles/StandardLayout.css';
 import { uploadImageSecurely } from '../../utils/imageUpload';
-
-function MenuManagement({ onBack }) {
-  const { user } = useAuth();
-
+function MenuManagement({ onBack, onDataLoaded }) {
   const [menuItems, setMenuItems] = useState([]);
   const [todaysMenu, setTodaysMenu] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
@@ -29,17 +26,17 @@ function MenuManagement({ onBack }) {
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [pageLoading, setPageLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     const initData = async () => {
-      setPageLoading(true);
       await Promise.all([loadMenuItems(), loadTodaysMenu()]);
-      setPageLoading(false);
+      // Signal parent that data is loaded
+      onDataLoaded?.();
     };
     initData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -208,7 +205,6 @@ function MenuManagement({ onBack }) {
     <div className="std-container">
       <PageHeader title="Menu Management" onBack={onBack} />
 
-      {pageLoading && <FullScreenLoader text="Loading Canteen..." />}
 
       <main className="std-body mm-grid-layout">
         {/* Sidebar: Add Form */}

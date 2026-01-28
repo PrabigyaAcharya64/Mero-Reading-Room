@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { updateProfile } from 'firebase/auth';
 import { useAuth } from '../auth/AuthProvider';
+import { useLoading } from '../context/GlobalLoadingContext';
 import { auth } from '../lib/firebase';
 import { validatePassword, validateEmail, validateName } from '../utils/validation';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Button from '../components/Button';
 import '../styles/Auth.css';
 
-function SignUp({ onSwitch, onComplete }) {
+function SignUp() {
+  const navigate = useNavigate();
   const { signUpEmail, signInWithGoogle } = useAuth();
+  const { setIsLoading } = useLoading();
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -29,9 +33,6 @@ function SignUp({ onSwitch, onComplete }) {
     if (name === 'password') {
       const validation = validatePassword(value);
       setPasswordStrength(validation);
-    } else if (name === 'confirmPassword' && form.password) {
-      // Clear password strength when confirming (optional)
-      // or verify match here if desired
     }
   };
 
@@ -67,20 +68,18 @@ function SignUp({ onSwitch, onComplete }) {
 
     setSubmitting(true);
     setFeedback({ type: '', message: '' });
-
     try {
+      setIsLoading(true);
       await signUpEmail(emailValidation.sanitized, form.password);
 
       if (auth.currentUser && nameValidation.sanitized) {
         await updateProfile(auth.currentUser, { displayName: nameValidation.sanitized });
       }
 
-      // Redirect to additional details page after successful signup
-      if (onComplete) {
-        onComplete();
-      }
+      navigate('/');
     } catch (error) {
       setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'Unable to create your account.' });
+      setIsLoading(false);
     } finally {
       setSubmitting(false);
     }
@@ -90,12 +89,12 @@ function SignUp({ onSwitch, onComplete }) {
     setSubmitting(true);
     setFeedback({ type: '', message: '' });
     try {
+      setIsLoading(true);
       await signInWithGoogle();
-      if (onComplete) {
-        onComplete();
-      }
+      navigate('/');
     } catch (error) {
       setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'Google sign-up is unavailable.' });
+      setIsLoading(false);
     } finally {
       setSubmitting(false);
     }
@@ -219,13 +218,14 @@ function SignUp({ onSwitch, onComplete }) {
             type="button"
             variant="ghost"
             fullWidth
-            onClick={onSwitch}
+            onClick={() => navigate('/login')}
           >
             BACK TO LOGIN
           </Button>
         </div>
       </form>
 
+      {/* Feedback Message */}
       {feedback.message && (
         <div className={`auth-feedback ${feedback.type}`}>
           {feedback.message}

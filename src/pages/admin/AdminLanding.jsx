@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthProvider';
 import UserManagement from './UserManagement';
 import HostelManagement from './HostelManagement';
@@ -10,37 +10,33 @@ import AdminMessages from './AdminMessages';
 import CreateAnnouncement from './CreateAnnouncement';
 import ReadingRoomManagement from '../readingroom/ReadingRoomManagement';
 import AdminBalanceLoad from './AdminBalanceLoad';
+import AdminTransactionStatement from './AdminTransactionStatement';
 import Sidebar from '../../components/Sidebar';
 import Dashboard from './Dashboard';
+import { useLoading } from '../../context/GlobalLoadingContext';
 import { collection, query, where, onSnapshot, deleteDoc, doc, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import '../../styles/StandardLayout.css';
 
-function AdminLanding({ onNavigateRoot }) {
+function AdminLanding() {
   const { user, signOutUser } = useAuth();
+  const { setIsLoading } = useLoading();
   const navigate = useNavigate();
-  const displayName = user?.displayName || user?.email?.split('@')[0] || 'Admin';
-
+  const location = useLocation();
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
-
-
   const [unreadCount, setUnreadCount] = useState(0);
   const [newOrdersCount, setNewOrdersCount] = useState(0);
   const [announcements, setAnnouncements] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
 
-  // Navigate using React Router
-  const handleNavigate = (view, data = null) => {
-    navigate(`/admin/${view}`);
+  // Navigate using React Router with loading state
+  const handleNavigate = (view) => {
+    setIsLoading(true);
+    navigate(view === 'dashboard' ? '/admin' : `/admin/${view}`);
   };
 
-  // Filter announcements
-  const displayedAnnouncements = announcements.filter(a => {
-    const expiresAt = a.expiresAt?.toDate ? a.expiresAt.toDate() : new Date(a.expiresAt);
-    const now = new Date();
-    const isExpired = expiresAt < now;
-    return showHistory ? isExpired : !isExpired;
-  });
+  const handlePageReady = () => {
+    setIsLoading(false);
+  };
 
   useEffect(() => {
     const q = query(collection(db, 'messages'), where('read', '==', false));
@@ -78,20 +74,9 @@ function AdminLanding({ onNavigateRoot }) {
     return () => unsubscribe();
   }, []);
 
-  const handleDeleteAnnouncement = async (id) => {
-    if (window.confirm('Are you sure you want to delete this announcement?')) {
-      try {
-        await deleteDoc(doc(db, 'announcements', id));
-      } catch (error) {
-        console.error('Error deleting announcement:', error);
-      }
-    }
-  };
-
-
-  // Get current route to determine active sidebar item
-  const getCurrentView = () => {
-    const path = window.location.pathname;
+  // Determine active sidebar item from location
+  const currentView = useMemo(() => {
+    const path = location.pathname;
     if (path === '/admin' || path === '/admin/dashboard') return 'dashboard';
     if (path.includes('/admin/user-management')) return 'user-management';
     if (path.includes('/admin/hostel')) return 'hostel';
@@ -100,8 +85,10 @@ function AdminLanding({ onNavigateRoot }) {
     if (path.includes('/admin/create-announcement')) return 'create-announcement';
     if (path.includes('/admin/reading-rooms')) return 'reading-rooms';
     if (path.includes('/admin/balance-requests')) return 'balance-requests';
+    if (path.includes('/admin/transaction-statement')) return 'transaction-statement';
     return 'dashboard';
-  };
+  }, [location.pathname]);
+
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f9fafb', position: 'relative' }}>
@@ -116,19 +103,19 @@ function AdminLanding({ onNavigateRoot }) {
           left: 0,
           top: 0,
           height: '100vh',
-          width: isSidebarHovered ? '260px' : '72px', // Match Sidebar transition
+          width: isSidebarHovered ? '260px' : '72px',
           transition: 'width 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
         }}
       >
         <Sidebar
-          currentView={getCurrentView()}
+          currentView={currentView}
           onNavigate={handleNavigate}
           isOpen={isSidebarHovered}
         />
       </div>
 
       <main style={{
-        marginLeft: '72px', // Fixed marginLeft to mini-sidebar width
+        marginLeft: '72px',
         flex: 1,
         width: 'calc(100% - 72px)',
         overflowX: 'hidden',
@@ -136,17 +123,18 @@ function AdminLanding({ onNavigateRoot }) {
         position: 'relative'
       }}>
         <Routes>
-          <Route path="/" element={<Dashboard onNavigate={handleNavigate} />} />
-          <Route path="/dashboard" element={<Dashboard onNavigate={handleNavigate} />} />
-          <Route path="/user-management" element={<UserManagement onNavigate={handleNavigate} />} />
-          <Route path="/hostel" element={<HostelManagement />} />
-          <Route path="/new-users" element={<NewUsers onBack={() => navigate('/admin/user-management')} />} />
-          <Route path="/all-members" element={<AllMembersView onBack={() => navigate('/admin/user-management')} />} />
-          <Route path="/canteen" element={<CanteenAdminLanding />} />
-          <Route path="/messages" element={<AdminMessages />} />
-          <Route path="/create-announcement" element={<CreateAnnouncement />} />
-          <Route path="/reading-rooms" element={<ReadingRoomManagement />} />
-          <Route path="/balance-requests" element={<AdminBalanceLoad />} />
+          <Route path="/" element={<Dashboard onNavigate={handleNavigate} onDataLoaded={handlePageReady} />} />
+          <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
+          <Route path="/user-management" element={<UserManagement onNavigate={handleNavigate} onDataLoaded={handlePageReady} />} />
+          <Route path="/hostel" element={<HostelManagement onBack={() => handleNavigate('dashboard')} onDataLoaded={handlePageReady} />} />
+          <Route path="/new-users" element={<NewUsers onBack={() => handleNavigate('user-management')} onDataLoaded={handlePageReady} />} />
+          <Route path="/all-members" element={<AllMembersView onBack={() => handleNavigate('user-management')} onDataLoaded={handlePageReady} />} />
+          <Route path="/canteen/*" element={<CanteenAdminLanding onDataLoaded={handlePageReady} />} />
+          <Route path="/messages" element={<AdminMessages onDataLoaded={handlePageReady} />} />
+          <Route path="/create-announcement" element={<CreateAnnouncement onDataLoaded={handlePageReady} />} />
+          <Route path="/reading-rooms" element={<ReadingRoomManagement onDataLoaded={handlePageReady} />} />
+          <Route path="/balance-requests" element={<AdminBalanceLoad onDataLoaded={handlePageReady} />} />
+          <Route path="/transaction-statement" element={<AdminTransactionStatement onDataLoaded={handlePageReady} />} />
         </Routes>
       </main>
     </div>

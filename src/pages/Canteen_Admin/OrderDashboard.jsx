@@ -1,18 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
-import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
-import FullScreenLoader from '../../components/FullScreenLoader';
+import { collection, query, orderBy, onSnapshot, where, getDocs } from 'firebase/firestore';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import Button from '../../components/Button';
 import PageHeader from '../../components/PageHeader';
 import { Search, Package, MapPin, Receipt, Clock, ChevronRight, ChevronLeft } from 'lucide-react';
 import '../../styles/OrderDashboard.css';
 import '../../styles/StandardLayout.css';
 
-function OrderDashboard({ onBack }) {
+function OrderDashboard({ onBack, onDataLoaded }) {
   const { user, userRole } = useAuth();
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('completed');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -33,16 +32,19 @@ function OrderDashboard({ onBack }) {
       q = query(ordersRef, where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
     }
 
+    // Standard Batch Reveal Pattern - signal parent when loaded
+    getDocs(q).finally(() => {
+      onDataLoaded?.();
+    });
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const ordersData = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
       setOrders(ordersData);
-      setLoading(false);
     }, (error) => {
       console.error('Error listening to orders:', error);
-      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -109,15 +111,14 @@ function OrderDashboard({ onBack }) {
             </div>
           </div>
 
-          {loading && <FullScreenLoader text="Loading orders archive..." />}
 
-          {!loading && filteredOrders.length === 0 ? (
+          {filteredOrders.length === 0 ? (
             <div className="abl-empty" style={{ background: 'var(--color-surface)', padding: '60px' }}>
               <Package size={48} className="text-gray-300" style={{ marginBottom: '16px' }} />
               <h3>No Archive Data</h3>
               <p>Try matching with a different status or search term.</p>
             </div>
-          ) : !loading && (
+          ) : (
             <div className="od-grid">
               {currentOrders.map((order) => (
                 <div key={order.id} className="od-card">

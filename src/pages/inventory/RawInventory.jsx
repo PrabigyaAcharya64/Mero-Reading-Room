@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, doc, updateDoc, increment, addDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, updateDoc, increment, addDoc, deleteDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import PageHeader from '../../components/PageHeader';
-import FullScreenLoader from '../../components/FullScreenLoader';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/RawInventory.css';
 import '../../styles/StandardLayout.css';
 
-const RawInventory = ({ onBack }) => {
+const RawInventory = ({ onBack, onDataLoaded }) => {
     const [inventoryItems, setInventoryItems] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
     const [newItem, setNewItem] = useState({
         itemName: '',
@@ -19,16 +18,22 @@ const RawInventory = ({ onBack }) => {
 
     useEffect(() => {
         const q = query(collection(db, 'raw_materials'));
+
+        // Standard Batch Reveal Pattern - signal parent when loaded
+        getDocs(q).finally(() => {
+            onDataLoaded?.();
+        });
+
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const items = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
             setInventoryItems(items);
-            setLoading(false);
         });
 
         return () => unsubscribe();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleConsume = async (id, currentQty) => {
@@ -72,9 +77,6 @@ const RawInventory = ({ onBack }) => {
         }
     };
 
-    if (loading) {
-        return <FullScreenLoader text="Loading raw inventory..." />;
-    }
 
     return (
         <div className="std-container">
@@ -127,14 +129,12 @@ const RawInventory = ({ onBack }) => {
                                         <td>
                                             <div className="action-buttons-simple">
                                                 <button
-                                                    className="action-btn consume"
+                                                    className="consume-btn-simple"
                                                     onClick={() => handleConsume(item.id, item.currentQty)}
                                                     disabled={item.currentQty <= 0}
                                                     title="Consume Stock (-1)"
                                                 >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="action-icon">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-9 9.375-9-9.375M11.25 12V3.75" />
-                                                    </svg>
+                                                    Consumed -1
                                                 </button>
                                                 <button
                                                     className="action-btn delete"

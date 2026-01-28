@@ -4,7 +4,7 @@ import { useAuth } from '../../auth/AuthProvider';
 import { db, functions } from '../../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import FullScreenLoader from '../../components/FullScreenLoader';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/LoadBalance.css';
 
 export default function LoadBalance({ onBack, onComplete }) {
@@ -86,7 +86,16 @@ export default function LoadBalance({ onBack, onComplete }) {
         }
     };
 
-    if (loading) return <FullScreenLoader text="Processing transaction..." />;
+    if (loading) {
+        return (
+            <div className="std-container">
+                <PageHeader title="Load Balance" onBack={onBack} />
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+                    <LoadingSpinner />
+                </div>
+            </div>
+        );
+    }
 
     // Step 1: Amount
     if (step === 1) {

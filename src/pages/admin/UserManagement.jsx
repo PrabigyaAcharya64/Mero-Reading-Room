@@ -3,17 +3,21 @@ import React, { useState, useEffect } from 'react';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/StandardLayout.css';
 import { db } from '../../lib/firebase';
-import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, getDocs } from 'firebase/firestore';
 
 const newUserIcon = new URL('../../assets/newuser.svg', import.meta.url).href;
 const usersIcon = new URL(/* @vite-ignore */ '../../assets/users.svg', import.meta.url).href;
-
-function UserManagement({ onBack, onNavigate }) {
+function UserManagement({ onBack, onNavigate, onDataLoaded }) {
     const [pendingCount, setPendingCount] = useState(0);
 
     useEffect(() => {
-        // Fetch pending count
         const pendingQ = query(collection(db, 'users'), orderBy('submittedAt', 'desc'));
+
+        // Standard Batch Reveal Pattern - signal parent when loaded
+        getDocs(pendingQ).finally(() => {
+            onDataLoaded?.();
+        });
+
         const unsubPending = onSnapshot(pendingQ, (snapshot) => {
             const count = snapshot.docs.filter(doc => {
                 const data = doc.data();
@@ -24,6 +28,7 @@ function UserManagement({ onBack, onNavigate }) {
             console.error("Error fetching pending users:", error);
         });
         return () => unsubPending();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (
@@ -33,7 +38,7 @@ function UserManagement({ onBack, onNavigate }) {
             <main className="std-body">
                 {/* Landing Services / Buttons */}
                 <section className="landing-services">
-                    <div className="landing-services__grid">
+                    <div className="landing-services__grid" style={{ justifyContent: 'center' }}>
                         <button
                             type="button"
                             className="landing-service-card"

@@ -3,7 +3,6 @@ import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, setDoc, getDoc } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import FullScreenLoader from '../../components/FullScreenLoader';
 import Button from '../../components/Button';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/ReadingRoomManagement.css';
@@ -70,9 +69,8 @@ const ELEMENT_CONFIG = {
     door: { width: 50, height: 75 },
     window: { width: 60, height: 60 }
 };
-
-function ReadingRoomManagement({ onBack }) {
-    const { user, signOutUser } = useAuth();
+function ReadingRoomManagement({ onBack, onDataLoaded }) {
+    const { user } = useAuth();
     const displayName = user?.displayName || user?.email?.split('@')[0] || 'Admin';
 
     const [rooms, setRooms] = useState([]);
@@ -105,9 +103,14 @@ function ReadingRoomManagement({ onBack }) {
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
-        loadRooms();
-        loadVerifiedUsers();
-        loadSeatAssignments();
+        Promise.all([
+            loadRooms(),
+            loadVerifiedUsers(),
+            loadSeatAssignments()
+        ]).finally(() => {
+            onDataLoaded?.();
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Auto-clear success messages after 3 seconds
@@ -226,7 +229,7 @@ function ReadingRoomManagement({ onBack }) {
             let preservedLastPayment = null;
 
             if (existingAssignment) {
-                if (!confirm(`${student.name} is already assigned to ${existingAssignment.seatLabel} in ${existingAssignment.roomName}. Move them here?`)) {
+                if (!confirm(`${student.name} is already assigned to ${existingAssignment.seatLabel} in ${existingAssignment.roomName}. Move them here ? `)) {
                     return;
                 }
 
@@ -278,7 +281,7 @@ function ReadingRoomManagement({ onBack }) {
 
             console.log('User document updated successfully for userId:', userId, existingAssignment ? '(reassignment - payment dates preserved)' : '(new assignment)');
 
-            setMessage(`Assigned ${student.name} to ${seat.label}${existingAssignment ? ' (payment dates preserved)' : ''}`);
+            setMessage(`Assigned ${student.name} to ${seat.label}${existingAssignment ? ' (payment dates preserved)' : ''} `);
             loadSeatAssignments();
             setAssignmentMode(false);
             setSelectedStudent(null);
@@ -353,7 +356,7 @@ function ReadingRoomManagement({ onBack }) {
             const config = ELEMENT_CONFIG[elementForm.type];
 
             const newElement = {
-                id: `${elementForm.type}-${Date.now()}`,
+                id: `${elementForm.type} -${Date.now()} `,
                 type: elementForm.type,
                 label: elementForm.label || '',
                 x: elementForm.x,
@@ -753,8 +756,8 @@ function ReadingRoomManagement({ onBack }) {
                                     <div
                                         style={{
                                             position: 'relative',
-                                            width: `${selectedRoomData.width}px`,
-                                            height: `${selectedRoomData.height}px`,
+                                            width: `${selectedRoomData.width} px`,
+                                            height: `${selectedRoomData.height} px`,
                                             border: '2px solid #333',
                                             backgroundColor: '#f9f9f9',
                                             borderRadius: '8px',
@@ -884,10 +887,10 @@ function ReadingRoomManagement({ onBack }) {
                                                         key={element.id}
                                                         style={{
                                                             position: 'absolute',
-                                                            left: `${element.x}px`,
-                                                            top: `${element.y}px`,
-                                                            width: `${element.width}px`,
-                                                            height: `${element.height + (element.type === 'seat' && isAssigned ? 20 : 0)}px`,
+                                                            left: `${element.x} px`,
+                                                            top: `${element.y} px`,
+                                                            width: `${element.width} px`,
+                                                            height: `${element.height + (element.type === 'seat' && isAssigned ? 20 : 0)} px`,
                                                             cursor: selectedRoomData.isLocked
                                                                 ? (element.type === 'seat' ? 'pointer' : 'default')
                                                                 : (isDragging === element.id ? 'grabbing' : 'grab'),
@@ -909,9 +912,9 @@ function ReadingRoomManagement({ onBack }) {
                                                         title={
                                                             element.type === 'seat'
                                                                 ? (isAssigned
-                                                                    ? `${element.label} - ${assignment.userName}`
+                                                                    ? `${element.label} - ${assignment.userName} `
                                                                     : `${element.label} - Available`)
-                                                                : `${element.type} ${element.label || ''}`
+                                                                : `${element.type} ${element.label || ''} `
                                                         }
                                                     >
                                                         {renderIcon()}

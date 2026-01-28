@@ -13,7 +13,8 @@ const CanteenMenu = ({
   fixedMenu = [],
   cart,
   addToCart,
-  userBalance
+  userBalance,
+  userName
 }) => {
   const categoryOrder = ['Breakfast', 'Meal', 'Dinner', 'Snacks', 'Drinks'];
 
@@ -183,7 +184,7 @@ const CanteenMenu = ({
 
           {/* Balance */}
           <div className="menu-balance-container">
-            <span className="balance-label">Balance</span>
+            <span className="balance-label">{userName ? `${userName}'s Balance` : 'Balance'}</span>
             <span className="balance-value">Rs. {(userBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../auth/AuthProvider';
@@ -7,7 +7,7 @@ import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/StandardLayout.css';
 
-function CreateAnnouncement({ onBack }) {
+function CreateAnnouncement({ onBack, onDataLoaded }) {
     const { user } = useAuth();
     const [text, setText] = useState('');
     const [durationValue, setDurationValue] = useState(24);
@@ -15,6 +15,11 @@ function CreateAnnouncement({ onBack }) {
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState(null);
+
+    useEffect(() => {
+        onDataLoaded?.();
+    }, []);
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();

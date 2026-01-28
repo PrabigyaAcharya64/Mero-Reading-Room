@@ -3,7 +3,6 @@ import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import FullScreenLoader from '../../components/FullScreenLoader';
 import Button from '../../components/Button';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/StandardLayout.css';
@@ -45,7 +44,14 @@ function ReadingRoomOptions({ onBack, onSelectOption }) {
     };
 
     if (loading) {
-        return <FullScreenLoader text="Loading options..." />;
+        return (
+            <div className="std-container">
+                <PageHeader title="Reading Room" onBack={onBack} />
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+                    <LoadingSpinner />
+                </div>
+            </div>
+        );
     }
 
     return (

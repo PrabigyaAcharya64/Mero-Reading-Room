@@ -14,11 +14,20 @@ function Contact({ onBack }) {
         name: user?.displayName || '',
         email: user?.email || '',
         phone: '',
-        message: ''
+        category: 'App Support',
+        message: '',
+        isAnonymous: false
     });
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState(null);
+
+    const categories = [
+        'App Support',
+        'Suggestions',
+        'Problem',
+        'Other'
+    ];
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -43,8 +52,11 @@ function Contact({ onBack }) {
     }, [user]);
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
     };
 
     const handleSubmit = async (e) => {
@@ -53,12 +65,28 @@ function Contact({ onBack }) {
         setError(null);
 
         try {
-            await addDoc(collection(db, 'messages'), {
-                ...formData,
-                userId: user?.uid || null,
+            const messageData = {
+                subject: formData.category,
+                category: formData.category,
+                message: formData.message,
                 createdAt: serverTimestamp(),
-                read: false
-            });
+                read: false,
+                anonymous: formData.isAnonymous
+            };
+
+            if (formData.isAnonymous) {
+                messageData.name = 'Anonymous';
+                messageData.email = 'anonymous@system';
+                messageData.phone = 'N/A';
+                messageData.userId = null;
+            } else {
+                messageData.name = formData.name;
+                messageData.email = formData.email;
+                messageData.phone = formData.phone;
+                messageData.userId = user?.uid || null;
+            }
+
+            await addDoc(collection(db, 'messages'), messageData);
             setSuccess(true);
             setFormData(prev => ({ ...prev, message: '' }));
         } catch (err) {
@@ -84,46 +112,9 @@ function Contact({ onBack }) {
                         <p className="auth-header__subtext">
                             Send us your complaints or feedback. We're here to help.
                         </p>
-                        <p className="auth-header__subtext" style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                        <p className="auth-header__subtext" style={{ fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '10px' }}>
                             For urgent queries call us at 986-7666655
                         </p>
-
-                        {/* Anonymous Message Link */}
-                        <div
-                            style={{
-                                marginTop: '16px',
-                                padding: '12px',
-                                backgroundColor: '#f5f5f5',
-                                borderRadius: '8px',
-                                border: '1px solid #e0e0e0'
-                            }}
-                        >
-                            <p style={{ margin: '0 0 8px 0', fontSize: '0.875rem', color: '#666' }}>
-                                Prefer to stay anonymous?
-                            </p>
-                            <button
-                                type="button"
-                                onClick={() => navigate('/anonymous-message')}
-                                style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: '#1976d2',
-                                    cursor: 'pointer',
-                                    fontSize: '0.9375rem',
-                                    fontWeight: 600,
-                                    padding: 0,
-                                    textDecoration: 'underline',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px'
-                                }}
-                            >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12 1C8.676 1 6 3.676 6 7V10H5C3.895 10 3 10.895 3 12V20C3 21.105 3.895 22 5 22H19C20.105 22 21 21.105 21 20V12C21 10.895 20.105 10 19 10H18V7C18 3.676 15.324 1 12 1ZM9 7C9 5.346 10.346 4 12 4C13.654 4 15 5.346 15 7V10H9V7Z" fill="#1976d2" />
-                                </svg>
-                                Submit anonymous feedback
-                            </button>
-                        </div>
                     </div>
 
                     {success ? (
@@ -139,7 +130,29 @@ function Contact({ onBack }) {
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit} className="auth-form">
-                            {/* Name, Email, and Phone fields are hidden but data is still sent */}
+                            <div className="input-field">
+                                <label className="input-field__label" htmlFor="category">Category</label>
+                                <select
+                                    id="category"
+                                    name="category"
+                                    value={formData.category}
+                                    onChange={handleChange}
+                                    className="input-field__input"
+                                    style={{
+                                        width: '100%',
+                                        border: '1px solid var(--color-border)',
+                                        padding: '0.85rem 1rem',
+                                        fontFamily: 'var(--brand-font-body)',
+                                        fontSize: '1rem',
+                                        borderRadius: '8px',
+                                        backgroundColor: 'white'
+                                    }}
+                                >
+                                    {categories.map(cat => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                </select>
+                            </div>
 
                             <div className="input-field">
                                 <label className="input-field__label" htmlFor="message">Message</label>
@@ -157,9 +170,38 @@ function Contact({ onBack }) {
                                         padding: '0.85rem 1rem',
                                         fontFamily: 'var(--brand-font-body)',
                                         fontSize: '1rem',
-                                        resize: 'vertical'
+                                        resize: 'vertical',
+                                        borderRadius: '8px'
                                     }}
                                 />
+                            </div>
+
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                padding: '12px',
+                                backgroundColor: '#f8f9fa',
+                                borderRadius: '8px',
+                                border: '1px solid #e9ecef',
+                                marginBottom: '20px'
+                            }}>
+                                <input
+                                    type="checkbox"
+                                    id="isAnonymous"
+                                    name="isAnonymous"
+                                    checked={formData.isAnonymous}
+                                    onChange={handleChange}
+                                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                />
+                                <label htmlFor="isAnonymous" style={{ cursor: 'pointer', fontSize: '0.9rem', color: '#495057', fontWeight: 500 }}>
+                                    Send Anonymously (Hide my identity)
+                                </label>
+                                {formData.isAnonymous && (
+                                    <span style={{ marginLeft: 'auto', fontSize: '0.75rem', backgroundColor: '#e3f2fd', color: '#1976d2', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
+                                        IDENTITY HIDDEN
+                                    </span>
+                                )}
                             </div>
 
                             {error && <div className="auth-feedback" style={{ borderColor: '#d93025', color: '#d93025' }}>{error}</div>}
@@ -170,7 +212,7 @@ function Contact({ onBack }) {
                                 loading={submitting}
                                 disabled={submitting}
                             >
-                                Send Message
+                                {formData.isAnonymous ? 'Send Anonymously' : 'Send Message'}
                             </Button>
                         </form>
                     )}
