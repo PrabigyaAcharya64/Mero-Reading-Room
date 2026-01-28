@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
-import { collection, query, where, getDocs, doc, updateDoc, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, orderBy, deleteField } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import FullScreenLoader from '../../components/FullScreenLoader';
 import Button from '../../components/Button';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
@@ -19,18 +18,15 @@ function NewUsers({ onBack }) {
 
   const { user } = useAuth();
   const [pendingUsers, setPendingUsers] = useState([]);
-  const [verifiedUsers, setVerifiedUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('pending');
   const [verifying, setVerifying] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
 
   useEffect(() => {
-
     setCurrentPage(1);
-  }, [activeTab, searchQuery]);
+  }, [searchQuery]);
 
   useEffect(() => {
     loadUsers();
@@ -41,32 +37,25 @@ function NewUsers({ onBack }) {
       setLoading(true);
       const usersRef = collection(db, 'users');
 
-      // Get all users with additional details
+      // Only get users who have submitted details but are NOT yet verified
+      // Note: We'll filter in JS because we want to see users where verified is false OR undefined
       const q = query(usersRef, orderBy('submittedAt', 'desc'));
       const snapshot = await getDocs(q);
 
       const pending = [];
-      const verified = [];
 
       snapshot.forEach((docSnap) => {
         const userData = docSnap.data();
-        // Only show users who have submitted additional details
-        if (userData.mrrNumber && userData.submittedAt) {
-          const userInfo = {
+        // Only show users who have submitted additional details and are not verified
+        if (userData.mrrNumber && userData.submittedAt && userData.verified !== true) {
+          pending.push({
             id: docSnap.id,
             ...userData,
-          };
-
-          if (userData.verified === true) {
-            verified.push(userInfo);
-          } else {
-            pending.push(userInfo);
-          }
+          });
         }
       });
 
       setPendingUsers(pending);
-      setVerifiedUsers(verified);
     } catch (error) {
       console.error('Error loading users:', error);
     } finally {
@@ -107,14 +96,24 @@ function NewUsers({ onBack }) {
   };
 
   const handleReject = async (userId) => {
-    if (!confirm('Are you sure you want to reject this user? They will need to resubmit their information.')) {
+    if (!confirm('Are you sure you want to reject this user? Their current request data will be discarded and they will need to resubmit their information from the beginning.')) {
       return;
     }
 
     try {
       setVerifying(userId);
       const userDocRef = doc(db, 'users', userId);
+
+      // Discard the request data to force resubmission
+      // Navigation handles redirection based on absence of mrrNumber/submittedAt
       await updateDoc(userDocRef, {
+        mrrNumber: deleteField(),
+        submittedAt: deleteField(),
+        name: deleteField(),
+        dateOfBirth: deleteField(),
+        phoneNumber: deleteField(),
+        interestedIn: deleteField(),
+        photoUrl: deleteField(),
         verified: false,
         rejected: true,
         rejectedAt: new Date().toISOString(),
@@ -133,13 +132,11 @@ function NewUsers({ onBack }) {
   };
 
 
-  const filteredUsers = activeTab === 'pending'
-    ? pendingUsers
-    : verifiedUsers.filter(user =>
-      user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.mrrNumber?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  const filteredUsers = pendingUsers.filter(user =>
+    user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.mrrNumber?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
@@ -165,47 +162,26 @@ function NewUsers({ onBack }) {
       />
 
       <main className="std-body">
-        <div className="nu-tabs">
-          <Button
-            className={`nu-tab-btn ${activeTab === 'pending' ? 'active' : ''}`}
-            variant="ghost" // Using ghost to apply custom custom styling via CSS
-            onClick={() => setActiveTab('pending')}
-          >
-            Pending
-            {pendingUsers.length > 0 && <span className="nu-badge pending">{pendingUsers.length}</span>}
-          </Button>
-          <Button
-            className={`nu-tab-btn ${activeTab === 'verified' ? 'active' : ''}`}
-            variant="ghost"
-            onClick={() => setActiveTab('verified')}
-          >
-            Verified
-            <span className="nu-badge verified">{verifiedUsers.length}</span>
-          </Button>
+        <div className="nu-search-container" style={{ marginBottom: '20px' }}>
+          <input
+            type="text"
+            placeholder="Search pending requests..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="nu-search-input"
+          />
         </div>
 
-        {/* Search bar - only visible in verified tab */}
-        {activeTab === 'verified' && (
-          <div className="nu-search-container">
-            <input
-              type="text"
-              placeholder="Search by name, email, or MRR ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="nu-search-input"
-            />
+
+        {loading && (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '50px' }}>
+            <LoadingSpinner />
           </div>
         )}
 
-        {loading && <FullScreenLoader text="Loading users..." />}
-
         {!loading && displayUsers.length === 0 ? (
           <div className="nu-empty">
-            <p>
-              {activeTab === 'pending'
-                ? 'No pending users at this time.'
-                : 'No verified users yet.'}
-            </p>
+            <p>No pending verification requests at this time.</p>
           </div>
         ) : (
           <div className="nu-grid">
@@ -275,29 +251,27 @@ function NewUsers({ onBack }) {
                   </div>
 
                   {/* Action Buttons */}
-                  {activeTab === 'pending' && (
-                    <div className="nu-card__actions" style={{ gap: '10px' }}>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => handleVerify(userData.id)}
-                        loading={verifying === userData.id}
-                        disabled={verifying !== null && verifying !== userData.id}
-                        style={{ backgroundColor: '#2e7d32', borderColor: '#2e7d32' }}
-                      >
-                        ✓ Verify
-                      </Button>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => handleReject(userData.id)}
-                        loading={verifying === userData.id}
-                        disabled={verifying !== null && verifying !== userData.id}
-                      >
-                        ✗ Reject
-                      </Button>
-                    </div>
-                  )}
+                  <div className="nu-card__actions" style={{ gap: '10px' }}>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleVerify(userData.id)}
+                      loading={verifying === userData.id}
+                      disabled={verifying !== null && verifying !== userData.id}
+                      style={{ backgroundColor: '#2e7d32', borderColor: '#2e7d32' }}
+                    >
+                      ✓ Verify
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => handleReject(userData.id)}
+                      loading={verifying === userData.id}
+                      disabled={verifying !== null && verifying !== userData.id}
+                    >
+                      ✗ Reject
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}

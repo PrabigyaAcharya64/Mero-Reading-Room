@@ -11,7 +11,7 @@ import logo from "../../assets/logo.png";
 import EnrollmentPDF from '../../components/pdf/EnrollmentPDF';
 
 function UserDetailView({ user, isOpen, onClose, onUpdate }) {
-    const { setIsLoading } = useLoading();
+    // Removed global loader to prevent flashing
     const [localUser, setLocalUser] = useState(user);
     const [isDataReady, setIsDataReady] = useState(false);
     const [balanceAmount, setBalanceAmount] = useState('');
@@ -28,14 +28,13 @@ function UserDetailView({ user, isOpen, onClose, onUpdate }) {
     useLayoutEffect(() => {
         const initData = async () => {
             if (user && isOpen) {
-                setIsLoading(true);
+                // Local loading state handled by isDataReady
                 try {
                     setLocalUser(user);
                     await checkReadingRoomEnrollment();
                 } catch (e) {
                     console.error(e);
                 } finally {
-                    setIsLoading(false);
                     setIsDataReady(true);
                 }
             }
@@ -231,7 +230,7 @@ function UserDetailView({ user, isOpen, onClose, onUpdate }) {
         window.print();
     };
 
-    if (!isOpen || !user || !isDataReady) return null;
+    if (!isOpen || !user) return null;
 
     return (
         <div className="user-detail-overlay">
@@ -253,386 +252,392 @@ function UserDetailView({ user, isOpen, onClose, onUpdate }) {
 
                 {/* Split Screen Content */}
                 <div className="user-detail-content">
-                    {/* LEFT PANEL - Control Center */}
-                    <div className="control-panel no-print">
-                        <h3>Control Center</h3>
-
-                        {/* User Photo */}
-                        <div className="control-section">
-                            <div className="user-photo-large">
-                                {(localUser.profileImage || localUser.photoUrl || localUser.image) ? (
-                                    <img
-                                        src={localUser.profileImage || localUser.photoUrl || localUser.image}
-                                        alt={localUser.name}
-                                        referrerPolicy="no-referrer"
-                                    />
-                                ) : (
-                                    <div className="photo-placeholder">{localUser.name?.charAt(0)?.toUpperCase()}</div>
-                                )}
-                            </div>
+                    {!isDataReady ? (
+                        <div style={{ display: 'flex', justifyContent: 'center', padding: '50px', width: '100%' }}>
+                            <p>Loading user details...</p>
                         </div>
+                    ) : (
+                        <>
+                            {/* LEFT PANEL - Control Center */}
+                            <div className="control-panel no-print">
+                                <h3>Control Center</h3>
 
-                        {/* Basic Info */}
-                        <div className="control-section">
-                            <h4>Basic Information</h4>
-
-                            <div className="form-group">
-                                <label>Full Name</label>
-                                <input
-                                    type="text"
-                                    value={localUser.name || ''}
-                                    onChange={(e) => handleInputChange('name', e.target.value)}
-                                    onBlur={() => handleBlur('name')}
-                                    readOnly={true} // Name usually shouldn't be changed here easily
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Email</label>
-                                <input
-                                    type="email"
-                                    value={localUser.email || ''}
-                                    onChange={(e) => handleInputChange('email', e.target.value)}
-                                    onBlur={() => handleBlur('email')}
-                                    readOnly={true}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Phone Number</label>
-                                <input
-                                    type="tel"
-                                    value={localUser.phoneNumber || ''}
-                                    onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                                    onBlur={() => handleBlur('phoneNumber')}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Date of Birth</label>
-                                <input
-                                    type="date"
-                                    value={formatDateForInput(localUser.dateOfBirth) || ''}
-                                    onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                                    onBlur={() => handleBlur('dateOfBirth')}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>MRR Number</label>
-                                <input
-                                    type="text"
-                                    value={localUser.mrrNumber || ''}
-                                    readOnly
-                                    className="bg-gray-100 cursor-not-allowed"
-                                />
-                            </div>
-
-                            <div className="form-group pb-2">
-                                <label>Assigned Seat</label>
-                                <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
-                                    {seatAssignment ? (
-                                        <div className="flex flex-col gap-1 text-sm">
-                                            <div>
-                                                <span className="font-bold text-blue-600">Active: </span>
-                                                <span className="text-gray-700">{formatDate(seatAssignment.assignedAt)}</span>
-                                            </div>
-                                            <div className="text-gray-900 font-medium">
-                                                Room: {seatAssignment.roomName || 'Reading Room'}
-                                            </div>
-                                            <div className="text-gray-900 font-medium">
-                                                Seat: {seatAssignment.seatLabel || seatAssignment.seatId || '-'}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center text-gray-500 italic">
-                                            <span>No active seat assignment</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-
-                            <div className="form-group">
-                                <label>Current Address</label>
-                                <input
-                                    type="text"
-                                    value={localUser.currentAddress || ''}
-                                    onChange={(e) => handleInputChange('currentAddress', e.target.value)}
-                                    onBlur={() => handleBlur('currentAddress')}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Atomic Balance Tool */}
-                        <div className="control-section balance-section">
-                            <h4>Balance Management</h4>
-                            <div className="current-balance">
-                                <span>Current Balance:</span>
-                                <strong>{formatBalance(localUser.balance || 0)}</strong>
-                            </div>
-
-                            <div className="balance-controls">
-                                <input
-                                    type="number"
-                                    placeholder="Set New Balance"
-                                    value={balanceAmount}
-                                    onChange={(e) => setBalanceAmount(e.target.value)}
-                                    step="0.01"
-                                />
-                                <button
-                                    className="btn-primary"
-                                    onClick={submitBalanceUpdate}
-                                    disabled={isSaving || balanceAmount === ''}
-                                >
-                                    {isSaving ? 'Processing...' : 'Set Balance'}
-                                </button>
-                            </div>
-                            <p className="help-text">Directly updates the user's wallet balance.</p>
-                        </div>
-
-                        {/* Status Toggles - Custom Premium Switches */}
-                        <div className="control-section">
-                            <h4>Account Status</h4>
-
-                            <div className="toggle-group">
-                                <div className="toggle-item">
-                                    <div className="toggle-info">
-                                        <UserCheck size={20} />
-                                        <span>Account Verified</span>
+                                {/* User Photo */}
+                                <div className="control-section">
+                                    <div className="user-photo-large">
+                                        {(localUser.profileImage || localUser.photoUrl || localUser.image) ? (
+                                            <img
+                                                src={localUser.profileImage || localUser.photoUrl || localUser.image}
+                                                alt={localUser.name}
+                                                referrerPolicy="no-referrer"
+                                            />
+                                        ) : (
+                                            <div className="photo-placeholder">{localUser.name?.charAt(0)?.toUpperCase()}</div>
+                                        )}
                                     </div>
-                                    <label className="custom-toggle">
-                                        <input
-                                            type="checkbox"
-                                            checked={localUser.verified || false}
-                                            onChange={handleToggleVerify}
-                                            disabled={isSaving}
-                                        />
-                                        <span className="custom-slider"></span>
-                                    </label>
                                 </div>
 
-                                <div className="toggle-item danger">
-                                    <div className="toggle-info">
-                                        <Ban size={20} />
-                                        <span>Ban User</span>
-                                    </div>
-                                    <label className="custom-toggle danger">
-                                        <input
-                                            type="checkbox"
-                                            checked={localUser.isBanned || false}
-                                            onChange={handleToggleBan}
-                                            disabled={isSaving}
-                                        />
-                                        <span className="custom-slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
+                                {/* Basic Info */}
+                                <div className="control-section">
+                                    <h4>Basic Information</h4>
 
-                        {/* Payment Timeline */}
-                        <div className="control-section">
-                            <h4>Payment Timeline</h4>
-                            <div className="timeline-info">
-                                <div className="timeline-item">
-                                    <label>Last Payment:</label>
-                                    <span>{localUser.lastPaymentDate ? formatDate(localUser.lastPaymentDate) : '-'}</span>
-                                </div>
-                                <div className="timeline-item">
-                                    <label>Next Payment:</label>
-                                    <span>
-                                        {localUser.nextPaymentDate
-                                            ? formatDate(localUser.nextPaymentDate)
-                                            : localUser.nextPaymentDue
-                                                ? formatDate(new Date(localUser.nextPaymentDue * 1000))
-                                                : '-'}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* RIGHT PANEL - Form Replica */}
-                    {hasReadingRoom ? (
-                        <div className="form-replica">
-                            <div className="form-replica-content" id="printable-form" style={{ backgroundColor: 'white', padding: '40px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', maxWidth: '1200px', margin: '20px auto' }}>
-                                {/* Header */}
-                                <div style={{ textAlign: 'center', marginBottom: '30px', borderBottom: '2px solid #333', paddingBottom: '20px' }}>
-                                    <img src={logo} alt="Logo" style={{ width: '80px', height: '80px', marginBottom: '10px', display: 'block', margin: '0 auto 10px auto' }} />
-                                    <h1 style={{ margin: '10px 0', fontSize: '24px', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                                        Membership Registration Form
-                                    </h1>
-                                    <h2 style={{ margin: '5px 0', fontSize: '18px', fontWeight: '600' }}>
-                                        Mero Reading Room
-                                    </h2>
-                                </div>
-
-                                {/* Registration Fields - Two Column Layout */}
-                                <table style={{ width: '100%', marginBottom: '30px', borderCollapse: 'collapse', border: '1px solid #333' }}>
-                                    <tbody>
-                                        <tr>
-                                            <td style={{ padding: '10px', border: '1px solid #333', width: '25%', fontWeight: '600' }}>Name:</td>
-                                            <td style={{ padding: '10px', border: '1px solid #333', width: '25%' }}>
-                                                <input
-                                                    type="text"
-                                                    value={enrollmentData?.name || localUser.name || ''}
-                                                    readOnly
-                                                    style={{ width: '100%', padding: '5px', border: '1px solid #ccc', background: '#fff' }}
-                                                />
-                                            </td>
-                                            <td style={{ padding: '10px', border: '1px solid #333', width: '25%', fontWeight: '600' }}>College:</td>
-                                            <td style={{ padding: '10px', border: '1px solid #333', width: '25%' }}>
-                                                <input
-                                                    type="text"
-                                                    value={enrollmentData?.college || localUser.college || ''}
-                                                    readOnly
-                                                    style={{ width: '100%', padding: '5px', border: '1px solid #ccc', background: '#fff' }}
-                                                />
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td style={{ padding: '10px', border: '1px solid #333', fontWeight: '600' }}>Mobile No:</td>
-                                            <td style={{ padding: '10px', border: '1px solid #333' }}>
-                                                <input
-                                                    type="text"
-                                                    value={enrollmentData?.mobileNo || localUser.phoneNumber || ''}
-                                                    readOnly
-                                                    style={{ width: '100%', padding: '5px', border: '1px solid #ccc', background: '#fff' }}
-                                                />
-                                            </td>
-                                            <td style={{ padding: '10px', border: '1px solid #333', fontWeight: '600' }}>Current Address:</td>
-                                            <td style={{ padding: '10px', border: '1px solid #333' }}>
-                                                <input
-                                                    type="text"
-                                                    value={enrollmentData?.currentAddress || localUser.currentAddress || ''}
-                                                    readOnly
-                                                    style={{ width: '100%', padding: '5px', border: '1px solid #ccc', background: '#fff' }}
-                                                />
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td style={{ padding: '10px', border: '1px solid #333', fontWeight: '600' }}>E-Mail:</td>
-                                            <td style={{ padding: '10px', border: '1px solid #333' }}>
-                                                <input
-                                                    type="text"
-                                                    value={enrollmentData?.email || localUser.email || ''}
-                                                    readOnly
-                                                    style={{ width: '100%', padding: '5px', border: '1px solid #ccc', background: '#fff' }}
-                                                />
-                                            </td>
-                                            <td style={{ padding: '10px', border: '1px solid #333', fontWeight: '600' }}>Joining Date:</td>
-                                            <td style={{ padding: '10px', border: '1px solid #333' }}>
-                                                <input
-                                                    type="text"
-                                                    value={enrollmentData?.joiningDate ? formatDate(enrollmentData.joiningDate) : ''}
-                                                    readOnly
-                                                    style={{ width: '100%', padding: '5px', border: '1px solid #ccc', background: '#fff' }}
-                                                />
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td style={{ padding: '10px', border: '1px solid #333', fontWeight: '600' }}>Preparing For:</td>
-                                            <td style={{ padding: '10px', border: '1px solid #333' }}>
-                                                <input
-                                                    type="text"
-                                                    value={enrollmentData?.preparingFor || localUser.preparingFor || ''}
-                                                    readOnly
-                                                    style={{ width: '100%', padding: '5px', border: '1px solid #ccc', background: '#fff' }}
-                                                />
-                                            </td>
-                                            <td style={{ padding: '10px', border: '1px solid #333', fontWeight: '600' }}>DoB:</td>
-                                            <td style={{ padding: '10px', border: '1px solid #333' }}>
-                                                <input
-                                                    type="text"
-                                                    value={enrollmentData?.dob ? formatDate(enrollmentData.dob) : formatDate(localUser.dateOfBirth)}
-                                                    readOnly
-                                                    style={{ width: '100%', padding: '5px', border: '1px solid #ccc', background: '#fff' }}
-                                                />
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-
-                                {/* Rules and Regulations */}
-                                <div style={{ marginBottom: '30px' }}>
-                                    <h3 style={{ fontWeight: 'bold', marginBottom: '15px', fontSize: '16px' }}>
-                                        All members should adhere to the following rules and regulations inside the premises
-                                    </h3>
-                                    <ol style={{ paddingLeft: '20px', lineHeight: '1.8' }}>
-                                        <li>The building is a complete SILENCE ZONE. Mobile phones should be kept in SILENT MODE at all times when inside the building, receiving calls is not permitted in the study room or the common spaces outside the rooms.</li>
-                                        <li>The whole of the building is a NON-SMOKING ZONE. Members may use the garden or canteen area for smoking.</li>
-                                        <li>Side talks and murmurs are strictly prohibited inside the study rooms, members should use the DISCUSSION ROOMS for any such discussions or self study requiring interactions.</li>
-                                        <li>Members are not allowed to eat food items at the study table/inside the building.</li>
-                                        <li>Only members are allowed inside the building. Any third party visitation is strictly prohibited except accompanied by the staff personnel.</li>
-                                        <li>Members shall be allowed a grace period of 3 days for renewal of membership. The payment is non-refundable and non-transferable.</li>
-                                        <li>The office should be informed of any discontinuance of our services else the member shall continue to be charged a membership fee as we continue to keep the seat. The fee shall be payable till the date informed.</li>
-                                        <li>Reading Room reserves the right to inspect bags or other such items when members enter/leave the Reading Room facility. The locker and study table allotted to each member are the responsibility of such individual members and shall be personally liable for damages, including and not limited to, breaking, defacing them, using of pen, marker, non-removable stickers etc. It shall also apply to any other property owned, operated or maintained by Reading Room. Further, the Reading Room shall not be responsible for any goods or items kept therein.</li>
-                                        <li>Reading Room is authorized by the members to post any congratulatory posts/information with photo upon their success in subsequent examinations and life achievements through different online/offline mediums.</li>
-                                        <li>In case of failure to adhere to the aforementioned rules and regulations, the Reading Room reserves the unconditional right to warn and where necessary, terminate the membership without any financial obligations on the Reading Rooms part.</li>
-                                    </ol>
-                                </div>
-
-                                {/* Declaration */}
-                                <div style={{ marginBottom: '30px' }}>
-                                    <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={true}
-                                            readOnly
-                                            style={{ marginTop: '3px', width: '18px', height: '18px', cursor: 'pointer' }}
-                                        />
-                                        <span style={{ flex: 1 }}>
-                                            I hereby declare that I have read, understood and agree to be bound by the aforementioned rules and regulations.
-                                        </span>
-                                    </label>
-                                </div>
-
-                                {/* Date and Signature */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px', alignItems: 'start' }}>
-                                    <div>
-                                        <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Date:</label>
+                                    <div className="form-group">
+                                        <label>Full Name</label>
                                         <input
                                             type="text"
-                                            value={formatDate(enrollmentData?.declarationDate || enrollmentData?.submittedAt)}
-                                            readOnly
-                                            style={{ width: '100%', padding: '8px', border: '1px solid #333', borderRadius: '4px', background: '#fff', boxSizing: 'border-box' }}
+                                            value={localUser.name || ''}
+                                            onChange={(e) => handleInputChange('name', e.target.value)}
+                                            onBlur={() => handleBlur('name')}
+                                            readOnly={true} // Name usually shouldn't be changed here easily
                                         />
                                     </div>
-                                    <div>
-                                        <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Signature:</label>
-                                        <div style={{ padding: '4px', border: '1px solid #333', borderRadius: '4px', minHeight: '40px', overflow: 'hidden', boxSizing: 'border-box', background: '#fff' }}>
-                                            {enrollmentData?.signatureUrl && (
-                                                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                                                    <img
-                                                        src={enrollmentData.signatureUrl}
-                                                        alt="Signature"
-                                                        style={{ maxWidth: '180px', maxHeight: '60px', objectFit: 'contain' }}
-                                                        referrerPolicy="no-referrer"
-                                                    />
+
+                                    <div className="form-group">
+                                        <label>Email</label>
+                                        <input
+                                            type="email"
+                                            value={localUser.email || ''}
+                                            onChange={(e) => handleInputChange('email', e.target.value)}
+                                            onBlur={() => handleBlur('email')}
+                                            readOnly={true}
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Phone Number</label>
+                                        <input
+                                            type="tel"
+                                            value={localUser.phoneNumber || ''}
+                                            onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                                            onBlur={() => handleBlur('phoneNumber')}
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Date of Birth</label>
+                                        <input
+                                            type="date"
+                                            value={formatDateForInput(localUser.dateOfBirth) || ''}
+                                            onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                                            onBlur={() => handleBlur('dateOfBirth')}
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>MRR Number</label>
+                                        <input
+                                            type="text"
+                                            value={localUser.mrrNumber || ''}
+                                            readOnly
+                                            className="bg-gray-100 cursor-not-allowed"
+                                        />
+                                    </div>
+
+                                    <div className="form-group pb-2">
+                                        <label>Assigned Seat</label>
+                                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                            {seatAssignment ? (
+                                                <div className="flex flex-col gap-1 text-sm">
+                                                    <div>
+                                                        <span className="font-bold text-blue-600">Active: </span>
+                                                        <span className="text-gray-700">{formatDate(seatAssignment.assignedAt)}</span>
+                                                    </div>
+                                                    <div className="text-gray-900 font-medium">
+                                                        Room: {seatAssignment.roomName || 'Reading Room'}
+                                                    </div>
+                                                    <div className="text-gray-900 font-medium">
+                                                        Seat: {seatAssignment.seatLabel || seatAssignment.seatId || '-'}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center text-gray-500 italic">
+                                                    <span>No active seat assignment</span>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
+
+
+                                    <div className="form-group">
+                                        <label>Current Address</label>
+                                        <input
+                                            type="text"
+                                            value={localUser.currentAddress || ''}
+                                            onChange={(e) => handleInputChange('currentAddress', e.target.value)}
+                                            onBlur={() => handleBlur('currentAddress')}
+                                        />
+                                    </div>
                                 </div>
 
-                                {/* Print Button */}
-                                <div className="print-button-container no-print" style={{ textAlign: 'center' }}>
-                                    <button className="btn-print" onClick={async () => {
-                                        try {
-                                            // Dynamic import to avoid SSR issues if any, though not strictly needed for SPA
-                                            const { pdf } = await import('@react-pdf/renderer');
-                                            const blob = await pdf(<EnrollmentPDF data={enrollmentData} user={localUser} />).toBlob();
-                                            const url = URL.createObjectURL(blob);
-                                            window.open(url, '_blank');
-                                        } catch (err) {
-                                            console.error('PDF Generation Error:', err);
-                                            alert('Failed to generate PDF');
-                                        }
-                                    }}>
-                                        Generate Document (Print)
-                                    </button>
+                                {/* Atomic Balance Tool */}
+                                <div className="control-section balance-section">
+                                    <h4>Balance Management</h4>
+                                    <div className="current-balance">
+                                        <span>Current Balance:</span>
+                                        <strong>{formatBalance(localUser.balance || 0)}</strong>
+                                    </div>
+
+                                    <div className="balance-controls">
+                                        <input
+                                            type="number"
+                                            placeholder="Set New Balance"
+                                            value={balanceAmount}
+                                            onChange={(e) => setBalanceAmount(e.target.value)}
+                                            step="0.01"
+                                        />
+                                        <button
+                                            className="btn-primary"
+                                            onClick={submitBalanceUpdate}
+                                            disabled={isSaving || balanceAmount === ''}
+                                        >
+                                            {isSaving ? 'Processing...' : 'Set Balance'}
+                                        </button>
+                                    </div>
+                                    <p className="help-text">Directly updates the user's wallet balance.</p>
                                 </div>
-                                <style>{`
+
+                                {/* Status Toggles - Custom Premium Switches */}
+                                <div className="control-section">
+                                    <h4>Account Status</h4>
+
+                                    <div className="toggle-group">
+                                        <div className="toggle-item">
+                                            <div className="toggle-info">
+                                                <UserCheck size={20} />
+                                                <span>Account Verified</span>
+                                            </div>
+                                            <label className="custom-toggle">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={localUser.verified || false}
+                                                    onChange={handleToggleVerify}
+                                                    disabled={isSaving}
+                                                />
+                                                <span className="custom-slider"></span>
+                                            </label>
+                                        </div>
+
+                                        <div className="toggle-item danger">
+                                            <div className="toggle-info">
+                                                <Ban size={20} />
+                                                <span>Ban User</span>
+                                            </div>
+                                            <label className="custom-toggle danger">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={localUser.isBanned || false}
+                                                    onChange={handleToggleBan}
+                                                    disabled={isSaving}
+                                                />
+                                                <span className="custom-slider"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Payment Timeline */}
+                                <div className="control-section">
+                                    <h4>Payment Timeline</h4>
+                                    <div className="timeline-info">
+                                        <div className="timeline-item">
+                                            <label>Last Payment:</label>
+                                            <span>{localUser.lastPaymentDate ? formatDate(localUser.lastPaymentDate) : '-'}</span>
+                                        </div>
+                                        <div className="timeline-item">
+                                            <label>Next Payment:</label>
+                                            <span>
+                                                {localUser.nextPaymentDate
+                                                    ? formatDate(localUser.nextPaymentDate)
+                                                    : localUser.nextPaymentDue
+                                                        ? formatDate(new Date(localUser.nextPaymentDue * 1000))
+                                                        : '-'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* RIGHT PANEL - Form Replica */}
+                            {hasReadingRoom ? (
+                                <div className="form-replica">
+                                    <div className="form-replica-content" id="printable-form" style={{ backgroundColor: 'white', padding: '40px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', maxWidth: '1200px', margin: '20px auto' }}>
+                                        {/* Header */}
+                                        <div style={{ textAlign: 'center', marginBottom: '30px', borderBottom: '2px solid #333', paddingBottom: '20px' }}>
+                                            <img src={logo} alt="Logo" style={{ width: '80px', height: '80px', marginBottom: '10px', display: 'block', margin: '0 auto 10px auto' }} />
+                                            <h1 style={{ margin: '10px 0', fontSize: '24px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                                                Membership Registration Form
+                                            </h1>
+                                            <h2 style={{ margin: '5px 0', fontSize: '18px', fontWeight: '600' }}>
+                                                Mero Reading Room
+                                            </h2>
+                                        </div>
+
+                                        {/* Registration Fields - Two Column Layout */}
+                                        <table style={{ width: '100%', marginBottom: '30px', borderCollapse: 'collapse', border: '1px solid #333' }}>
+                                            <tbody>
+                                                <tr>
+                                                    <td style={{ padding: '10px', border: '1px solid #333', width: '25%', fontWeight: '600' }}>Name:</td>
+                                                    <td style={{ padding: '10px', border: '1px solid #333', width: '25%' }}>
+                                                        <input
+                                                            type="text"
+                                                            value={enrollmentData?.name || localUser.name || ''}
+                                                            readOnly
+                                                            style={{ width: '100%', padding: '5px', border: '1px solid #ccc', background: '#fff' }}
+                                                        />
+                                                    </td>
+                                                    <td style={{ padding: '10px', border: '1px solid #333', width: '25%', fontWeight: '600' }}>College:</td>
+                                                    <td style={{ padding: '10px', border: '1px solid #333', width: '25%' }}>
+                                                        <input
+                                                            type="text"
+                                                            value={enrollmentData?.college || localUser.college || ''}
+                                                            readOnly
+                                                            style={{ width: '100%', padding: '5px', border: '1px solid #ccc', background: '#fff' }}
+                                                        />
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ padding: '10px', border: '1px solid #333', fontWeight: '600' }}>Mobile No:</td>
+                                                    <td style={{ padding: '10px', border: '1px solid #333' }}>
+                                                        <input
+                                                            type="text"
+                                                            value={enrollmentData?.mobileNo || localUser.phoneNumber || ''}
+                                                            readOnly
+                                                            style={{ width: '100%', padding: '5px', border: '1px solid #ccc', background: '#fff' }}
+                                                        />
+                                                    </td>
+                                                    <td style={{ padding: '10px', border: '1px solid #333', fontWeight: '600' }}>Current Address:</td>
+                                                    <td style={{ padding: '10px', border: '1px solid #333' }}>
+                                                        <input
+                                                            type="text"
+                                                            value={enrollmentData?.currentAddress || localUser.currentAddress || ''}
+                                                            readOnly
+                                                            style={{ width: '100%', padding: '5px', border: '1px solid #ccc', background: '#fff' }}
+                                                        />
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ padding: '10px', border: '1px solid #333', fontWeight: '600' }}>E-Mail:</td>
+                                                    <td style={{ padding: '10px', border: '1px solid #333' }}>
+                                                        <input
+                                                            type="text"
+                                                            value={enrollmentData?.email || localUser.email || ''}
+                                                            readOnly
+                                                            style={{ width: '100%', padding: '5px', border: '1px solid #ccc', background: '#fff' }}
+                                                        />
+                                                    </td>
+                                                    <td style={{ padding: '10px', border: '1px solid #333', fontWeight: '600' }}>Joining Date:</td>
+                                                    <td style={{ padding: '10px', border: '1px solid #333' }}>
+                                                        <input
+                                                            type="text"
+                                                            value={enrollmentData?.joiningDate ? formatDate(enrollmentData.joiningDate) : ''}
+                                                            readOnly
+                                                            style={{ width: '100%', padding: '5px', border: '1px solid #ccc', background: '#fff' }}
+                                                        />
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ padding: '10px', border: '1px solid #333', fontWeight: '600' }}>Preparing For:</td>
+                                                    <td style={{ padding: '10px', border: '1px solid #333' }}>
+                                                        <input
+                                                            type="text"
+                                                            value={enrollmentData?.preparingFor || localUser.preparingFor || ''}
+                                                            readOnly
+                                                            style={{ width: '100%', padding: '5px', border: '1px solid #ccc', background: '#fff' }}
+                                                        />
+                                                    </td>
+                                                    <td style={{ padding: '10px', border: '1px solid #333', fontWeight: '600' }}>DoB:</td>
+                                                    <td style={{ padding: '10px', border: '1px solid #333' }}>
+                                                        <input
+                                                            type="text"
+                                                            value={enrollmentData?.dob ? formatDate(enrollmentData.dob) : formatDate(localUser.dateOfBirth)}
+                                                            readOnly
+                                                            style={{ width: '100%', padding: '5px', border: '1px solid #ccc', background: '#fff' }}
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+
+                                        {/* Rules and Regulations */}
+                                        <div style={{ marginBottom: '30px' }}>
+                                            <h3 style={{ fontWeight: 'bold', marginBottom: '15px', fontSize: '16px' }}>
+                                                All members should adhere to the following rules and regulations inside the premises
+                                            </h3>
+                                            <ol style={{ paddingLeft: '20px', lineHeight: '1.8' }}>
+                                                <li>The building is a complete SILENCE ZONE. Mobile phones should be kept in SILENT MODE at all times when inside the building, receiving calls is not permitted in the study room or the common spaces outside the rooms.</li>
+                                                <li>The whole of the building is a NON-SMOKING ZONE. Members may use the garden or canteen area for smoking.</li>
+                                                <li>Side talks and murmurs are strictly prohibited inside the study rooms, members should use the DISCUSSION ROOMS for any such discussions or self study requiring interactions.</li>
+                                                <li>Members are not allowed to eat food items at the study table/inside the building.</li>
+                                                <li>Only members are allowed inside the building. Any third party visitation is strictly prohibited except accompanied by the staff personnel.</li>
+                                                <li>Members shall be allowed a grace period of 3 days for renewal of membership. The payment is non-refundable and non-transferable.</li>
+                                                <li>The office should be informed of any discontinuance of our services else the member shall continue to be charged a membership fee as we continue to keep the seat. The fee shall be payable till the date informed.</li>
+                                                <li>Reading Room reserves the right to inspect bags or other such items when members enter/leave the Reading Room facility. The locker and study table allotted to each member are the responsibility of such individual members and shall be personally liable for damages, including and not limited to, breaking, defacing them, using of pen, marker, non-removable stickers etc. It shall also apply to any other property owned, operated or maintained by Reading Room. Further, the Reading Room shall not be responsible for any goods or items kept therein.</li>
+                                                <li>Reading Room is authorized by the members to post any congratulatory posts/information with photo upon their success in subsequent examinations and life achievements through different online/offline mediums.</li>
+                                                <li>In case of failure to adhere to the aforementioned rules and regulations, the Reading Room reserves the unconditional right to warn and where necessary, terminate the membership without any financial obligations on the Reading Rooms part.</li>
+                                            </ol>
+                                        </div>
+
+                                        {/* Declaration */}
+                                        <div style={{ marginBottom: '30px' }}>
+                                            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={true}
+                                                    readOnly
+                                                    style={{ marginTop: '3px', width: '18px', height: '18px', cursor: 'pointer' }}
+                                                />
+                                                <span style={{ flex: 1 }}>
+                                                    I hereby declare that I have read, understood and agree to be bound by the aforementioned rules and regulations.
+                                                </span>
+                                            </label>
+                                        </div>
+
+                                        {/* Date and Signature */}
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px', alignItems: 'start' }}>
+                                            <div>
+                                                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Date:</label>
+                                                <input
+                                                    type="text"
+                                                    value={formatDate(enrollmentData?.declarationDate || enrollmentData?.submittedAt)}
+                                                    readOnly
+                                                    style={{ width: '100%', padding: '8px', border: '1px solid #333', borderRadius: '4px', background: '#fff', boxSizing: 'border-box' }}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Signature:</label>
+                                                <div style={{ padding: '4px', border: '1px solid #333', borderRadius: '4px', minHeight: '40px', overflow: 'hidden', boxSizing: 'border-box', background: '#fff' }}>
+                                                    {enrollmentData?.signatureUrl && (
+                                                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                                                            <img
+                                                                src={enrollmentData.signatureUrl}
+                                                                alt="Signature"
+                                                                style={{ maxWidth: '180px', maxHeight: '60px', objectFit: 'contain' }}
+                                                                referrerPolicy="no-referrer"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Print Button */}
+                                        <div className="print-button-container no-print" style={{ textAlign: 'center' }}>
+                                            <button className="btn-print" onClick={async () => {
+                                                try {
+                                                    // Dynamic import to avoid SSR issues if any, though not strictly needed for SPA
+                                                    const { pdf } = await import('@react-pdf/renderer');
+                                                    const blob = await pdf(<EnrollmentPDF data={enrollmentData} user={localUser} />).toBlob();
+                                                    const url = URL.createObjectURL(blob);
+                                                    window.open(url, '_blank');
+                                                } catch (err) {
+                                                    console.error('PDF Generation Error:', err);
+                                                    alert('Failed to generate PDF');
+                                                }
+                                            }}>
+                                                Generate Document (Print)
+                                            </button>
+                                        </div>
+                                        <style>{`
                                     @media print {
                                         button, .no-print {
                                             display: none !important;
@@ -668,14 +673,16 @@ function UserDetailView({ user, isOpen, onClose, onUpdate }) {
                                         }
                                     }
                                 `}</style>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="form-replica flex items-center justify-center bg-gray-50">
-                            <div className="text-center p-8 text-gray-500">
-                                <p>No reading room enrollment form available for this user.</p>
-                            </div>
-                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="form-replica flex items-center justify-center bg-gray-50">
+                                    <div className="text-center p-8 text-gray-500">
+                                        <p>No reading room enrollment form available for this user.</p>
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
 
@@ -706,7 +713,7 @@ function UserDetailView({ user, isOpen, onClose, onUpdate }) {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 }
 

@@ -3,7 +3,7 @@ import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { doc, getDoc, onSnapshot, collection, query, where } from 'firebase/firestore';
 import PageHeader from '../../components/PageHeader';
-import FullScreenLoader from '../../components/FullScreenLoader';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/StandardLayout.css';
 
 
@@ -125,7 +125,14 @@ function ReadingRoomDashboard({ onBack }) {
 
 
     if (loading) {
-        return <FullScreenLoader text="Loading dashboard..." />;
+        return (
+            <div className="std-container">
+                <PageHeader title="My Dashboard" onBack={onBack} />
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+                    <LoadingSpinner />
+                </div>
+            </div>
+        );
     }
 
     const nextDue = userData?.nextPaymentDue;

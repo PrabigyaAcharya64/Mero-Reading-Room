@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { updateProfile } from 'firebase/auth';
 import { useAuth } from '../auth/AuthProvider';
 import { auth } from '../lib/firebase';
@@ -7,7 +8,8 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import Button from '../components/Button';
 import '../styles/Auth.css';
 
-function SignUp({ onSwitch, onComplete }) {
+function SignUp() {
+  const navigate = useNavigate();
   const { signUpEmail, signInWithGoogle } = useAuth();
   const [form, setForm] = useState({
     name: '',
@@ -29,9 +31,6 @@ function SignUp({ onSwitch, onComplete }) {
     if (name === 'password') {
       const validation = validatePassword(value);
       setPasswordStrength(validation);
-    } else if (name === 'confirmPassword' && form.password) {
-      // Clear password strength when confirming (optional)
-      // or verify match here if desired
     }
   };
 
@@ -75,10 +74,7 @@ function SignUp({ onSwitch, onComplete }) {
         await updateProfile(auth.currentUser, { displayName: nameValidation.sanitized });
       }
 
-      // Redirect to additional details page after successful signup
-      if (onComplete) {
-        onComplete();
-      }
+      navigate('/');
     } catch (error) {
       setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'Unable to create your account.' });
     } finally {
@@ -91,9 +87,7 @@ function SignUp({ onSwitch, onComplete }) {
     setFeedback({ type: '', message: '' });
     try {
       await signInWithGoogle();
-      if (onComplete) {
-        onComplete();
-      }
+      navigate('/');
     } catch (error) {
       setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'Google sign-up is unavailable.' });
     } finally {
@@ -219,13 +213,14 @@ function SignUp({ onSwitch, onComplete }) {
             type="button"
             variant="ghost"
             fullWidth
-            onClick={onSwitch}
+            onClick={() => navigate('/login')}
           >
             BACK TO LOGIN
           </Button>
         </div>
       </form>
 
+      {/* Feedback Message */}
       {feedback.message && (
         <div className={`auth-feedback ${feedback.type}`}>
           {feedback.message}

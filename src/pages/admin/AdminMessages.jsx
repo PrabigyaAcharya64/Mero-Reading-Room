@@ -11,10 +11,33 @@ function AdminMessages({ onBack }) {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedMessage, setSelectedMessage] = useState(null);
-    const [filter, setFilter] = useState('unread');
+    const [statusFilter, setStatusFilter] = useState('unread');
+    const [categoryFilter, setCategoryFilter] = useState('All Categories');
 
     const [userMap, setUserMap] = useState({});
     const [searchQuery, setSearchQuery] = useState('');
+
+    const categories = [
+        { label: 'All Categories', value: 'All Categories' },
+        { label: 'App Support', value: 'App Support' },
+        { label: 'Suggestions', value: 'Suggestions' },
+        { label: 'Problems', value: 'Problem' },
+        { label: 'Other', value: 'Other' }
+    ];
+
+    const getCategoryStyle = (category) => {
+        const cat = (category || '').toLowerCase();
+        if (cat.includes('problem')) {
+            return { bg: '#fee2e2', text: '#dc2626', border: '#fca5a5' };
+        }
+        if (cat.includes('suggestion')) {
+            return { bg: '#dcfce7', text: '#16a34a', border: '#86efac' };
+        }
+        if (cat.includes('app support')) {
+            return { bg: '#fef9c3', text: '#a16207', border: '#fde047' };
+        }
+        return { bg: '#f1f5f9', text: '#475569', border: '#cbd5e1' };
+    };
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -43,21 +66,16 @@ function AdminMessages({ onBack }) {
                 const data = docSnapshot.data();
                 let createdAt = null;
 
-                // Handle different createdAt formats
                 if (data.createdAt) {
                     if (typeof data.createdAt.toDate === 'function') {
-                        // Firestore Timestamp
                         createdAt = data.createdAt.toDate();
                     } else if (data.createdAt instanceof Date) {
-                        // JavaScript Date
                         createdAt = data.createdAt;
                     } else if (typeof data.createdAt === 'string' || typeof data.createdAt === 'number') {
-                        // String or number timestamp
                         createdAt = new Date(data.createdAt);
                     }
                 }
 
-                // If createdAt is still null, use current time as fallback
                 if (!createdAt) {
                     createdAt = new Date();
                 }
@@ -98,37 +116,54 @@ function AdminMessages({ onBack }) {
                     {/* Message List */}
                     <div className="am-list-panel">
                         {/* Filter Buttons & Search */}
-                        <div className="am-filter-bar" style={{ flexDirection: 'column', gap: '10px', alignItems: 'stretch' }}>
-                            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <div className="am-filter-bar" style={{ flexDirection: 'column', gap: '12px', alignItems: 'stretch' }}>
+                            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
                                 <button
-                                    onClick={() => setFilter('unread')}
-                                    className={`am-filter-btn ${filter === 'unread' ? 'active' : ''}`}
+                                    onClick={() => setStatusFilter('unread')}
+                                    className={`am-filter-btn ${statusFilter === 'unread' ? 'active' : ''}`}
+                                    style={{ flex: '0 0 auto', minWidth: '120px' }}
                                 >
                                     Unread {messages.filter(m => !m.read).length > 0 && `(${messages.filter(m => !m.read).length})`}
                                 </button>
                                 <button
-                                    onClick={() => setFilter('all')}
-                                    className={`am-filter-btn ${filter === 'all' ? 'active' : ''}`}
+                                    onClick={() => setStatusFilter('all')}
+                                    className={`am-filter-btn ${statusFilter === 'all' ? 'active' : ''}`}
+                                    style={{ flex: '0 0 auto', minWidth: '100px' }}
                                 >
                                     All ({messages.length})
                                 </button>
-                                <button
-                                    onClick={() => setFilter('anonymous')}
-                                    className={`am-filter-btn ${filter === 'anonymous' ? 'active' : ''}`}
+
+                                <select
+                                    value={categoryFilter}
+                                    onChange={(e) => setCategoryFilter(e.target.value)}
+                                    style={{
+                                        marginLeft: 'auto',
+                                        padding: '8px 14px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #ddd',
+                                        fontSize: '0.875rem',
+                                        backgroundColor: 'white',
+                                        color: '#333',
+                                        cursor: 'pointer',
+                                        minWidth: '160px'
+                                    }}
                                 >
-                                    Anonymous ({messages.filter(m => m.anonymous).length})
-                                </button>
+                                    {categories.map(cat => (
+                                        <option key={cat.value} value={cat.value}>{cat.label}</option>
+                                    ))}
+                                </select>
                             </div>
+
                             <input
                                 type="text"
-                                placeholder="Search by MRR ID or Name..."
+                                placeholder="Search by MRR ID, Name, or Message..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 style={{
-                                    padding: '8px',
-                                    borderRadius: '4px',
+                                    padding: '10px 14px',
+                                    borderRadius: '8px',
                                     border: '1px solid #ddd',
-                                    marginTop: '5px'
+                                    fontSize: '0.9rem'
                                 }}
                             />
                         </div>
@@ -142,71 +177,86 @@ function AdminMessages({ onBack }) {
                         ) : (
                             (() => {
                                 const filtered = messages.filter(msg => {
-                                    // Handle filter logic
-                                    let isFilterMatch = false;
-                                    if (filter === 'anonymous') {
-                                        isFilterMatch = msg.anonymous === true;
-                                    } else if (filter === 'unread') {
-                                        isFilterMatch = !msg.read && !msg.anonymous;
-                                    } else { // 'all'
-                                        isFilterMatch = !msg.anonymous; // Don't show anonymous in 'all'
+                                    // Status filter
+                                    if (statusFilter === 'unread' && msg.read) return false;
+
+                                    // Category filter
+                                    if (categoryFilter !== 'All Categories') {
+                                        // Match either 'Problem' or 'Problems' if it comes from old data
+                                        const msgCat = (msg.category || msg.subject || '').toLowerCase();
+                                        const filterCat = categoryFilter.toLowerCase();
+                                        if (msgCat !== filterCat && !(filterCat === 'problem' && msgCat === 'problems')) return false;
                                     }
 
+                                    // Search query
                                     const mrrId = userMap[msg.email] || '';
+                                    const searchLower = searchQuery.toLowerCase();
                                     const searchMatch = searchQuery === '' ||
-                                        mrrId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                        (msg.name && msg.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                                        (msg.subject && msg.subject.toLowerCase().includes(searchQuery.toLowerCase()));
-                                    return isFilterMatch && searchMatch;
+                                        mrrId.toLowerCase().includes(searchLower) ||
+                                        (msg.name && msg.name.toLowerCase().includes(searchLower)) ||
+                                        (msg.message && msg.message.toLowerCase().includes(searchLower)) ||
+                                        (msg.category && msg.category.toLowerCase().includes(searchLower)) ||
+                                        (msg.subject && msg.subject.toLowerCase().includes(searchLower));
+
+                                    return searchMatch;
                                 });
 
                                 if (filtered.length === 0) {
                                     return (
                                         <div className="am-empty">
-                                            {searchQuery ? 'No matching messages.' : (filter === 'unread' ? 'No unread messages.' : 'No messages found.')}
+                                            {searchQuery || categoryFilter !== 'All Categories' ? 'No matching messages.' : (statusFilter === 'unread' ? 'No unread messages.' : 'No messages found.')}
                                         </div>
                                     );
                                 }
 
-                                return filtered.map(msg => (
-                                    <div
-                                        key={msg.id}
-                                        onClick={() => handleMessageClick(msg)}
-                                        className={`am-message-item ${!msg.read ? 'unread' : ''} ${selectedMessage?.id === msg.id ? 'selected' : ''}`}
-                                    >
-                                        <div className="am-message-header">
-                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                    <span className={`am-message-name ${!msg.read ? 'unread' : ''}`}>{msg.name}</span>
-                                                    {msg.anonymous && (
-                                                        <span style={{ fontSize: '0.65rem', backgroundColor: '#e3f2fd', color: '#1976d2', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                                <path d="M12 1C8.676 1 6 3.676 6 7V10H5C3.895 10 3 10.895 3 12V20C3 21.105 3.895 22 5 22H19C20.105 22 21 21.105 21 20V12C21 10.895 20.105 10 19 10H18V7C18 3.676 15.324 1 12 1ZM9 7C9 5.346 10.346 4 12 4C13.654 4 15 5.346 15 7V10H9V7Z" fill="#1976d2" />
-                                                            </svg>
-                                                            ANON
+                                return filtered.map(msg => {
+                                    const catStyle = getCategoryStyle(msg.category || msg.subject);
+                                    return (
+                                        <div
+                                            key={msg.id}
+                                            onClick={() => handleMessageClick(msg)}
+                                            className={`am-message-item ${!msg.read ? 'unread' : ''} ${selectedMessage?.id === msg.id ? 'selected' : ''}`}
+                                        >
+                                            <div className="am-message-header">
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        <span className={`am-message-name ${!msg.read ? 'unread' : ''}`}>{msg.name}</span>
+                                                        {msg.anonymous && (
+                                                            <span style={{ fontSize: '0.6rem', backgroundColor: '#f5f5f5', color: '#666', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                                                ANON
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                                                        {userMap[msg.email] && !msg.anonymous && (
+                                                            <span style={{ fontSize: '0.75rem', color: '#666', fontWeight: 'bold' }}>
+                                                                {userMap[msg.email]}
+                                                            </span>
+                                                        )}
+                                                        <span style={{
+                                                            fontSize: '0.65rem',
+                                                            backgroundColor: catStyle.bg,
+                                                            color: catStyle.text,
+                                                            padding: '2px 8px',
+                                                            borderRadius: '12px',
+                                                            fontWeight: '700',
+                                                            textTransform: 'uppercase',
+                                                            border: `1px solid ${catStyle.border}`
+                                                        }}>
+                                                            {(msg.category || msg.subject || 'GENERAL').replace(/s$/, '')}
                                                         </span>
-                                                    )}
+                                                    </div>
                                                 </div>
-                                                {userMap[msg.email] && !msg.anonymous && (
-                                                    <span style={{ fontSize: '0.75rem', color: '#666', fontWeight: 'bold' }}>
-                                                        {userMap[msg.email]}
-                                                    </span>
-                                                )}
-                                                {msg.subject && (
-                                                    <span style={{ fontSize: '0.75rem', color: '#888', fontStyle: 'italic' }}>
-                                                        {msg.subject}
-                                                    </span>
-                                                )}
+                                                <span className="am-message-date">
+                                                    {msg.createdAt ? msg.createdAt.toLocaleDateString() : 'N/A'}
+                                                </span>
                                             </div>
-                                            <span className="am-message-date">
-                                                {msg.createdAt ? msg.createdAt.toLocaleDateString() : 'N/A'}
-                                            </span>
+                                            <div className="am-message-preview">
+                                                {msg.message}
+                                            </div>
                                         </div>
-                                        <div className="am-message-preview">
-                                            {msg.message}
-                                        </div>
-                                    </div>
-                                ));
+                                    );
+                                });
                             })()
                         )}
                     </div>
@@ -214,44 +264,55 @@ function AdminMessages({ onBack }) {
                     {/* Message Detail */}
                     <div className="am-detail-panel">
                         {selectedMessage ? (
-                            <div className="am-detail-content">
-                                <div className="am-detail-header">
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <h3 className="am-detail-title">{selectedMessage.name}</h3>
-                                        {selectedMessage.anonymous && (
-                                            <span style={{ fontSize: '0.75rem', backgroundColor: '#e3f2fd', color: '#1976d2', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M12 1C8.676 1 6 3.676 6 7V10H5C3.895 10 3 10.895 3 12V20C3 21.105 3.895 22 5 22H19C20.105 22 21 21.105 21 20V12C21 10.895 20.105 10 19 10H18V7C18 3.676 15.324 1 12 1ZM9 7C9 5.346 10.346 4 12 4C13.654 4 15 5.346 15 7V10H9V7Z" fill="#1976d2" />
-                                                </svg>
-                                                Anonymous
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="am-detail-meta">
-                                        {selectedMessage.subject && <div>Subject: <strong>{selectedMessage.subject}</strong></div>}
-                                        {!selectedMessage.anonymous && (
-                                            <>
-                                                {userMap[selectedMessage.email] && <div>MRR ID: <strong>{userMap[selectedMessage.email]}</strong></div>}
-                                                <div>Email: {selectedMessage.email}</div>
-                                                <div>Phone: {selectedMessage.phone}</div>
-                                            </>
-                                        )}
-                                        <div>Date: {selectedMessage.createdAt ? selectedMessage.createdAt.toLocaleString() : 'N/A'}</div>
-                                        {selectedMessage.anonymous && (
-                                            <div style={{ marginTop: '8px', padding: '8px', backgroundColor: '#fff3e0', borderLeft: '3px solid #ff9800', fontSize: '0.875rem', display: 'flex', gap: '6px' }}>
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0, marginTop: '2px' }}>
-                                                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#ff9800" strokeWidth="2" />
-                                                    <path d="M12 8V12M12 16H12.01" stroke="#ff9800" strokeWidth="2" strokeLinecap="round" />
-                                                </svg>
-                                                <span>This is an anonymous message. No user information is available to protect the sender's identity.</span>
+                            (() => {
+                                const catStyle = getCategoryStyle(selectedMessage.category || selectedMessage.subject);
+                                return (
+                                    <div className="am-detail-content">
+                                        <div className="am-detail-header">
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <h3 className="am-detail-title">{selectedMessage.name}</h3>
+                                                    {selectedMessage.anonymous && (
+                                                        <span style={{ fontSize: '0.7rem', backgroundColor: '#e0e0e0', color: '#444', padding: '3px 8px', borderRadius: '6px', fontWeight: 'bold' }}>
+                                                            Anonymous
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <span style={{
+                                                    fontSize: '0.8rem',
+                                                    backgroundColor: catStyle.bg,
+                                                    color: catStyle.text,
+                                                    padding: '4px 14px',
+                                                    borderRadius: '20px',
+                                                    fontWeight: '800',
+                                                    textTransform: 'uppercase',
+                                                    border: `1px solid ${catStyle.border}`
+                                                }}>
+                                                    {(selectedMessage.category || selectedMessage.subject || 'General').replace(/s$/, '')}
+                                                </span>
                                             </div>
-                                        )}
+                                            <div className="am-detail-meta" style={{ marginTop: '15px' }}>
+                                                {!selectedMessage.anonymous && (
+                                                    <>
+                                                        {userMap[selectedMessage.email] && <div>MRR ID: <strong>{userMap[selectedMessage.email]}</strong></div>}
+                                                        <div>Email: {selectedMessage.email}</div>
+                                                        <div>Phone: {selectedMessage.phone}</div>
+                                                    </>
+                                                )}
+                                                <div>Date: {selectedMessage.createdAt ? selectedMessage.createdAt.toLocaleString() : 'N/A'}</div>
+                                                {selectedMessage.anonymous && (
+                                                    <div style={{ marginTop: '12px', padding: '10px', backgroundColor: '#fff8e1', borderLeft: '4px solid #ffc107', borderRadius: '4px', fontSize: '0.85rem' }}>
+                                                        <strong>Note:</strong> This message was sent anonymously. Identity info is hidden.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="am-detail-message" style={{ borderTop: '1px solid #eee', paddingTop: '20px' }}>
+                                            {selectedMessage.message}
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="am-detail-message">
-                                    {selectedMessage.message}
-                                </div>
-                            </div>
+                                );
+                            })()
                         ) : (
                             <div className="am-detail-empty">
                                 Select a message to view details

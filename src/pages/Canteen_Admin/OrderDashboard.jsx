@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
-import FullScreenLoader from '../../components/FullScreenLoader';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import Button from '../../components/Button';
 import PageHeader from '../../components/PageHeader';
 import { Search, Package, MapPin, Receipt, Clock, ChevronRight, ChevronLeft } from 'lucide-react';
@@ -109,7 +109,11 @@ function OrderDashboard({ onBack }) {
             </div>
           </div>
 
-          {loading && <FullScreenLoader text="Loading orders archive..." />}
+          {loading && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+              <LoadingSpinner />
+            </div>
+          )}
 
           {!loading && filteredOrders.length === 0 ? (
             <div className="abl-empty" style={{ background: 'var(--color-surface)', padding: '60px' }}>

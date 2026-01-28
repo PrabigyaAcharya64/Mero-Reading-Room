@@ -12,7 +12,7 @@ function UserManagement({ onBack, onNavigate }) {
     const [pendingCount, setPendingCount] = useState(0);
 
     useEffect(() => {
-        // Fetch pending count
+
         const pendingQ = query(collection(db, 'users'), orderBy('submittedAt', 'desc'));
         const unsubPending = onSnapshot(pendingQ, (snapshot) => {
             const count = snapshot.docs.filter(doc => {
@@ -33,7 +33,7 @@ function UserManagement({ onBack, onNavigate }) {
             <main className="std-body">
                 {/* Landing Services / Buttons */}
                 <section className="landing-services">
-                    <div className="landing-services__grid">
+                    <div className="landing-services__grid" style={{ justifyContent: 'center' }}>
                         <button
                             type="button"
                             className="landing-service-card"

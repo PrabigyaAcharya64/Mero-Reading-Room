@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Button from '../components/Button';
 import '../styles/Auth.css';
 
-function Login({ onSwitch }) {
+function Login() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { signInEmail, signInWithGoogle, resetPassword } = useAuth();
   const [form, setForm] = useState({ email: '', password: '' });
   const [feedback, setFeedback] = useState({ type: '', message: '' });
@@ -13,6 +16,9 @@ function Login({ onSwitch }) {
   const [resetEmail, setResetEmail] = useState('');
   const [resetting, setResetting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Get the redirect path from location state, default to root
+  const from = location.state?.from?.pathname || "/";
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -30,6 +36,7 @@ function Login({ onSwitch }) {
     setFeedback({ type: '', message: '' });
     try {
       await signInEmail(form.email, form.password);
+      navigate(from, { replace: true });
     } catch (error) {
       setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'Unable to sign in right now.' });
     } finally {
@@ -66,6 +73,7 @@ function Login({ onSwitch }) {
     setFeedback({ type: '', message: '' });
     try {
       await signInWithGoogle();
+      navigate(from, { replace: true });
     } catch (error) {
       setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'Unable to sign in with Google.' });
     } finally {
@@ -148,7 +156,7 @@ function Login({ onSwitch }) {
             type="button"
             variant="ghost"
             fullWidth
-            onClick={onSwitch}
+            onClick={() => navigate('/signup')}
           >
             SIGN UP
           </Button>

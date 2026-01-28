@@ -3,7 +3,7 @@ import { ArrowLeft, Wallet, ArrowUpRight, ArrowDownLeft, Clock, AlertCircle } fr
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, query, where, orderBy, onSnapshot, limit } from 'firebase/firestore';
-import FullScreenLoader from '../../components/FullScreenLoader';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/Statement.css';
 
 export default function Statement({ onBack }) {
@@ -79,7 +79,16 @@ export default function Statement({ onBack }) {
         return dateB - dateA;
     });
 
-    if (loading) return <FullScreenLoader text="Loading history..." />;
+    if (loading) {
+        return (
+            <div className="std-container">
+                <PageHeader title="Account Statement" onBack={onBack} />
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+                    <LoadingSpinner />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="stmt-container">

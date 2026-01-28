@@ -3,7 +3,6 @@ import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { doc, getDoc, addDoc, collection, setDoc } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import FullScreenLoader from '../../components/FullScreenLoader';
 import Button from '../../components/Button';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
@@ -146,12 +145,19 @@ function ReadingRoomEnrollment({ onBack, onComplete }) {
     };
 
     if (loading) {
-        return <FullScreenLoader text="Loading your data..." />;
+        return (
+            <div className="std-container">
+                <PageHeader title="Reading Room Enrollment" onBack={onBack} />
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+                    <LoadingSpinner />
+                </div>
+            </div>
+        );
     }
 
     return (
         <div className="std-container">
-            <PageHeader title="Reading Room" onBack={onBack} />
+            <PageHeader title="Reading Room Enrollment" onBack={onBack} />
 
             <main className="std-body">
 

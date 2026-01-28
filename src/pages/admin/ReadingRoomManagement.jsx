@@ -74,7 +74,7 @@ const ELEMENT_CONFIG = {
 
 function ReadingRoomManagement({ onBack }) {
     const { user } = useAuth();
-    const { setIsLoading } = useLoading();
+    // Removed global loader to prevent flashing
 
     const [rooms, setRooms] = useState([]);
     const [selectedRoom, setSelectedRoom] = useState(null);
@@ -110,7 +110,7 @@ function ReadingRoomManagement({ onBack }) {
             // Only show global loader on initial mount if rooms are empty
             // or you can do it every time if desired.
             // For "system stays hidden until ready", we do it here.
-            setIsLoading(true);
+            // setIsLoading(true); // Disable global loader
             try {
                 await Promise.all([
                     loadRooms(),
@@ -144,7 +144,8 @@ function ReadingRoomManagement({ onBack }) {
         // NEW IMPLEMENTATION based on user request "Implementation in @ReadingRoomManagement.jsx"
 
         const init = async () => {
-            setIsLoading(true);
+            // setIsLoading(true); // Disable global loader
+            setLoading(true); // Use local loader if possible, or just let it load
             try {
                 // Parallel fetch data
                 const [roomsData] = await Promise.all([
@@ -174,7 +175,9 @@ function ReadingRoomManagement({ onBack }) {
             } catch (error) {
                 console.error("Loading failed", error);
             } finally {
-                setIsLoading(false);
+                // setIsLoading(false);
+                setLoading(false);
+                setIsDataReady(true);
             }
         }
 

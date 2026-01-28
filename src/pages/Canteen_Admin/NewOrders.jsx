@@ -141,7 +141,11 @@ function NewOrders({ onBack }) {
             <PageHeader title="New Orders" onBack={onBack} />
 
             <main className="std-body">
-                {loading && <FullScreenLoader text="Checking for new orders..." />}
+                {loading && (
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+                        <LoadingSpinner />
+                    </div>
+                )}
 
                 {!loading && (
                     <div className="no-grid">

@@ -11,7 +11,7 @@ import '../../styles/StandardLayout.css';
 
 function SalesDashboard({ onBack }) {
   const { userRole } = useAuth();
-  const { setIsLoading } = useLoading();
+  // Removed global loader to prevent flashing
   const [sales, setSales] = useState([]);
   const [isDataReady, setIsDataReady] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -40,7 +40,10 @@ function SalesDashboard({ onBack }) {
   }, [selectedDate, searchQuery]);
 
   const loadSales = async () => {
-    setIsLoading(true);
+    // Only show local loader if not already ready (initial load)
+    if (!isDataReady) {
+      // We can use a local state here if we want to show a spinner
+    }
     try {
       const ordersRef = collection(db, 'orders');
       const q = query(ordersRef, orderBy('createdAt', 'desc'), limit(1000));
@@ -77,7 +80,6 @@ function SalesDashboard({ onBack }) {
     } catch (error) {
       console.error('Error loading sales:', error);
     } finally {
-      setIsLoading(false);
       setIsDataReady(true);
     }
   };
@@ -119,7 +121,18 @@ function SalesDashboard({ onBack }) {
 
   const salesHistory = Object.values(salesByDate).sort((a, b) => b.date.localeCompare(a.date));
 
-  if (!isDataReady) return null;
+  if (!isDataReady) {
+    return (
+      <div className="std-container">
+        <PageHeader title="Sales Insights" onBack={onBack} />
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="std-container">

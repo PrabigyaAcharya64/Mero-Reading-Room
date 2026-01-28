@@ -3,7 +3,7 @@ import { collection, query, onSnapshot, doc, setDoc, updateDoc, addDoc, deleteDo
 import { db, functions } from '../../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
 import PageHeader from '../../components/PageHeader';
-import FullScreenLoader from '../../components/FullScreenLoader';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/DryInventory.css';
 import '../../styles/StandardLayout.css';
 
@@ -290,7 +290,14 @@ const DryInventory = ({ onBack }) => {
     };
 
     if (loading) {
-        return <FullScreenLoader text="Loading dry inventory..." />;
+        return (
+            <div className="std-container">
+                <PageHeader title="Dry Inventory" onBack={onBack} />
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+                    <LoadingSpinner />
+                </div>
+            </div>
+        );
     }
 
     return (

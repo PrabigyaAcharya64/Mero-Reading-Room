@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthProvider';
 import { LogOut } from 'lucide-react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
@@ -7,7 +8,7 @@ import MenuManagement from './MenuManagement';
 import OrderDashboard from './OrderDashboard';
 import SalesDashboard from './SalesDashboard';
 import NewOrders from './NewOrders';
-import EnhancedBackButton from '../../components/EnhancedBackButton';
+import ProxyOrder from './ProxyOrder';
 import PageHeader from '../../components/PageHeader';
 import InventoryLanding from '../inventory/InventoryLanding';
 import RawInventory from '../inventory/RawInventory';
@@ -20,9 +21,9 @@ const inventoryIcon = new URL('../../assets/inventory.svg', import.meta.url).hre
 const orderIcon = new URL('../../assets/order.svg', import.meta.url).href;
 const orderPlaceIcon = new URL('../../assets/order_place.svg', import.meta.url).href;
 
-function CanteenAdminLanding({ onBack }) {
+function CanteenAdminLanding() {
+  const navigate = useNavigate();
   const { user, userRole, signOutUser } = useAuth();
-  const [currentView, setCurrentView] = useState('landing');
   const [newOrdersCount, setNewOrdersCount] = useState(0);
   const previousOrderCount = useRef(0);
   const audioRef = useRef(new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'));
@@ -41,39 +42,11 @@ function CanteenAdminLanding({ onBack }) {
     return () => unsubscribe();
   }, []);
 
-  if (currentView === 'menu-management') {
-    return <MenuManagement onBack={() => setCurrentView('landing')} />;
-  }
-
-  if (currentView === 'order-dashboard') {
-    return <OrderDashboard onBack={() => setCurrentView('landing')} />;
-  }
-
-  if (currentView === 'new-orders') {
-    return <NewOrders onBack={() => setCurrentView('landing')} />;
-  }
-
-  if (currentView === 'sales-dashboard') {
-    return <SalesDashboard onBack={() => setCurrentView('landing')} />;
-  }
-
-  if (currentView === 'inventory') {
-    return <InventoryLanding onBack={() => setCurrentView('landing')} onNavigate={(view) => setCurrentView(view)} />;
-  }
-
-  if (currentView === 'raw-inventory') {
-    return <RawInventory onBack={() => setCurrentView('inventory')} />;
-  }
-
-  if (currentView === 'dry-inventory') {
-    return <DryInventory onBack={() => setCurrentView('inventory')} />;
-  }
-
-  return (
+  const LandingHome = () => (
     <div className="std-container">
       <PageHeader
         title="Canteen Administration"
-        onBack={onBack}
+        onBack={() => navigate('/')}
         rightElement={
           <button
             onClick={signOutUser}
@@ -93,7 +66,7 @@ function CanteenAdminLanding({ onBack }) {
             <button
               type="button"
               className="landing-service-card"
-              onClick={() => setCurrentView('new-orders')}
+              onClick={() => navigate('new-orders')}
               style={{ position: 'relative' }}
             >
               <span className="landing-service-card__icon">
@@ -125,7 +98,18 @@ function CanteenAdminLanding({ onBack }) {
             <button
               type="button"
               className="landing-service-card"
-              onClick={() => setCurrentView('menu-management')}
+              onClick={() => navigate('proxy-order')}
+            >
+              <span className="landing-service-card__icon">
+                <img src={orderPlaceIcon} alt="" aria-hidden="true" />
+              </span>
+              <span className="landing-service-card__label">Proxy Order</span>
+            </button>
+
+            <button
+              type="button"
+              className="landing-service-card"
+              onClick={() => navigate('menu-management')}
             >
               <span className="landing-service-card__icon">
                 <img src={foodIcon} alt="" aria-hidden="true" />
@@ -135,18 +119,18 @@ function CanteenAdminLanding({ onBack }) {
             <button
               type="button"
               className="landing-service-card"
-              onClick={() => setCurrentView('order-dashboard')}
+              onClick={() => navigate('order-dashboard')}
             >
               <span className="landing-service-card__icon">
                 <img src={orderIcon} alt="" aria-hidden="true" />
               </span>
               <span className="landing-service-card__label">Order History</span>
             </button>
-            {userRole === 'admin' && (
+            {(userRole === 'admin' || userRole === 'canteen') && (
               <button
                 type="button"
                 className="landing-service-card"
-                onClick={() => setCurrentView('sales-dashboard')}
+                onClick={() => navigate('sales-dashboard')}
               >
                 <span className="landing-service-card__icon">
                   <img src={reportIcon} alt="" aria-hidden="true" />
@@ -157,7 +141,7 @@ function CanteenAdminLanding({ onBack }) {
             <button
               type="button"
               className="landing-service-card"
-              onClick={() => setCurrentView('inventory')}
+              onClick={() => navigate('inventory')}
             >
               <span className="landing-service-card__icon">
                 <img src={inventoryIcon} alt="" aria-hidden="true" />
@@ -168,6 +152,20 @@ function CanteenAdminLanding({ onBack }) {
         </section>
       </main>
     </div>
+  );
+
+  return (
+    <Routes>
+      <Route path="/" element={<LandingHome />} />
+      <Route path="/menu-management" element={<MenuManagement onBack={() => navigate('../')} />} />
+      <Route path="/order-dashboard" element={<OrderDashboard onBack={() => navigate('../')} />} />
+      <Route path="/new-orders" element={<NewOrders onBack={() => navigate('../')} />} />
+      <Route path="/sales-dashboard" element={<SalesDashboard onBack={() => navigate('../')} />} />
+      <Route path="/proxy-order" element={<ProxyOrder onBack={() => navigate('../')} />} />
+      <Route path="/inventory" element={<InventoryLanding onBack={() => navigate('../')} onNavigate={(view) => navigate(`../${view}`)} />} />
+      <Route path="/raw-inventory" element={<RawInventory onBack={() => navigate('../inventory')} />} />
+      <Route path="/dry-inventory" element={<DryInventory onBack={() => navigate('../inventory')} />} />
+    </Routes>
   );
 }
 

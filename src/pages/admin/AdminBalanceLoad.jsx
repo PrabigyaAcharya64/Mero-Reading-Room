@@ -21,7 +21,7 @@ import {
     ZoomIn,
     History
 } from 'lucide-react';
-import FullScreenLoader from '../../components/FullScreenLoader';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/AdminBalanceLoad.css';
 
@@ -128,7 +128,16 @@ export default function AdminBalanceLoad({ onBack }) {
         }
     };
 
-    if (loading) return <FullScreenLoader text="Loading requests..." />;
+    if (loading) {
+        return (
+            <div className="std-container">
+                <PageHeader title="Balance Requests" onBack={onBack} />
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+                    <LoadingSpinner />
+                </div>
+            </div>
+        );
+    }
 
     const headerActions = (
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>

@@ -12,7 +12,8 @@ const CanteenCart = ({
   removeFromCart,
   userBalance,
   placeOrder,
-  orderMessage
+  orderMessage,
+  userName
 }) => {
   const [note, setNote] = useState('');
   const [placing, setPlacing] = useState(false);
@@ -34,7 +35,7 @@ const CanteenCart = ({
       <main className="std-body">
 
         <div className="cart-balance-container">
-          <span className="balance-label">Current Balance</span>
+          <span className="balance-label">{userName ? `${userName}'s Balance` : 'Current Balance'}</span>
           <span className="balance-value">Rs. {userBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </div>
 

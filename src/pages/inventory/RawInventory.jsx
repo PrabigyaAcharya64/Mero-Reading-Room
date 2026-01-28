@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, doc, updateDoc, increment, addDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import PageHeader from '../../components/PageHeader';
-import FullScreenLoader from '../../components/FullScreenLoader';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/RawInventory.css';
 import '../../styles/StandardLayout.css';
 
@@ -73,7 +73,14 @@ const RawInventory = ({ onBack }) => {
     };
 
     if (loading) {
-        return <FullScreenLoader text="Loading raw inventory..." />;
+        return (
+            <div className="std-container">
+                <PageHeader title="Raw Inventory" onBack={onBack} />
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+                    <LoadingSpinner />
+                </div>
+            </div>
+        );
     }
 
     return (
