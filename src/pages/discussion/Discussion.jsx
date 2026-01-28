@@ -343,20 +343,32 @@ const Discussion = ({ onBack }) => {
         }
     };
 
+<<<<<<< Updated upstream
+=======
+    if (loading) {
+        return (
+            <div className="std-container">
+                <div className="loading-container">
+                    <LoadingSpinner size="40" stroke="3" color="#333" />
+                </div>
+            </div>
+        );
+    }
+>>>>>>> Stashed changes
 
     // Render List of Slots
     if (viewMode === 'list') {
         return (
             <div className="std-container">
-                <PageHeader title="Discussion Room" onBack={onBack} />
+                <PageHeader title="Discussion" onBack={onBack} />
 
                 <main className="std-body">
                     <div className="discussion-card">
                         <h1 className="page-title">
-                            Discussion Room Slots
+                            Book a Slot
                         </h1>
                         <p className="page-subtitle">
-                            Select a time slot to book or view details.
+                            Reserve a 3-hour session for your group.
                         </p>
 
                         <div className="slots-list">
@@ -375,16 +387,16 @@ const Discussion = ({ onBack }) => {
                                             <h3 className="slot-label">{slot.label}</h3>
                                             {isBooked ? (
                                                 <p className="slot-status">
-                                                    Booked by: <strong>{booking.teamName}</strong>
-                                                    {isMyBooking && <span className="my-group-label">(Your Group)</span>}
+                                                    Reserved: <strong>{booking.teamName}</strong>
+                                                    {isMyBooking && <span className="my-group-label">YOU</span>}
                                                 </p>
                                             ) : (
-                                                <p className="slot-status" style={{ color: 'var(--discussion-gray)' }}>Available</p>
+                                                <p className="slot-status">Available</p>
                                             )}
                                         </div>
                                         <div className="slot-action">
                                             <span className="action-badge">
-                                                {isBooked ? (isMyBooking ? 'Manage' : 'View') : 'Book Now'}
+                                                {isBooked ? (isMyBooking ? 'Edit ›' : 'Details ›') : 'Book ›'}
                                             </span>
                                         </div>
                                     </div>
@@ -397,8 +409,6 @@ const Discussion = ({ onBack }) => {
         );
     }
 
-
-
     // Render Booking Form or Details
     const booking = bookings[selectedSlot?.id];
     const isBooked = !!booking;
@@ -406,145 +416,147 @@ const Discussion = ({ onBack }) => {
 
     return (
         <div className="std-container">
-            <PageHeader title="Discussion Room" onBack={() => setViewMode('list')} />
+            <PageHeader title="Room Details" onBack={() => setViewMode('list')} />
 
             <main className="std-body">
                 <div className="discussion-card">
                     <h2 className="page-title">{selectedSlot?.label}</h2>
                     <p className="page-subtitle">
-                        {isBooked ? `Booked by ${booking.teamName}` : 'Slot Available'}
+                        {isBooked ? `Group: ${booking.teamName}` : 'Session is open for booking'}
                     </p>
 
                     {/* BOOKING FORM */}
                     {!isBooked && (
                         <div className="form-container">
                             <form onSubmit={handleBookRoom}>
-                                <div className="input-group">
-                                    <label className="input-label">Group Name</label>
-                                    <input
-                                        type="text"
-                                        className="text-input"
-                                        value={groupName}
-                                        onChange={(e) => setGroupName(e.target.value)}
-                                        placeholder="Enter your group name"
-                                        required
-                                    />
-                                </div>
-
-                                <div className="input-group">
-                                    <label className="input-label">Group Members (Optional)</label>
-                                    <div className="member-add-row">
+                                <div className="ios-form-group">
+                                    <div className="input-group">
+                                        <label className="input-label">Group Name</label>
                                         <input
                                             type="text"
                                             className="text-input"
-                                            value={newMemberMrr}
-                                            onChange={(e) => setNewMemberMrr(e.target.value)}
-                                            placeholder="Enter MRR ID"
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    e.preventDefault();
-                                                    handleAddPendingMember(e);
-                                                }
-                                            }}
+                                            value={groupName}
+                                            onChange={(e) => setGroupName(e.target.value)}
+                                            placeholder="Required"
+                                            required
                                         />
-                                        <button
-                                            type="button"
-                                            className="btn btn-black"
-                                            onClick={handleAddPendingMember}
-                                            disabled={isSubmitting}
-                                        >
-                                            Add
-                                        </button>
                                     </div>
 
-                                    {pendingMembers.length > 0 && (
-                                        <div className="chips-container">
-                                            {pendingMembers.map((member, index) => (
-                                                <div key={index} className="chip">
-                                                    {member.name}
-                                                    <button
-                                                        type="button"
-                                                        className="chip-remove"
-                                                        onClick={() => handleRemovePendingMember(index)}
-                                                    >
-                                                        ×
-                                                    </button>
-                                                </div>
-                                            ))}
+                                    <div className="input-group">
+                                        <label className="input-label">Add Member (MRR ID)</label>
+                                        <div className="member-add-row">
+                                            <input
+                                                type="text"
+                                                className="text-input"
+                                                value={newMemberMrr}
+                                                onChange={(e) => setNewMemberMrr(e.target.value)}
+                                                placeholder="e.g. 1024"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        handleAddPendingMember(e);
+                                                    }
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="btn-ios-ghost"
+                                                onClick={handleAddPendingMember}
+                                                disabled={isSubmitting}
+                                            >
+                                                Add
+                                            </button>
                                         </div>
-                                    )}
+
+                                        {pendingMembers.length > 0 && (
+                                            <div className="chips-container">
+                                                {pendingMembers.map((member, index) => (
+                                                    <div key={index} className="chip">
+                                                        {member.name}
+                                                        <button
+                                                            type="button"
+                                                            className="chip-remove"
+                                                            onClick={() => handleRemovePendingMember(index)}
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {error && <div className="error-msg">{error}</div>}
 
-                                <button
-                                    type="submit"
-                                    className="btn btn-black btn-block"
-                                    disabled={isSubmitting}
-                                >
-                                    {isSubmitting ? 'Booking...' : 'Book Slot'}
-                                </button>
+                                <div className="ios-actions">
+                                    <button
+                                        type="submit"
+                                        className="btn-ios-primary"
+                                        disabled={isSubmitting}
+                                    >
+                                        {isSubmitting ? 'Processing...' : 'Book Room'}
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     )}
 
                     {/* DETAILS VIEW - MY TEAM */}
                     {isBooked && isMyTeam && (
-                        <div className="form-container" style={{ maxWidth: 'unset' }}>
-                            <div className="details-banner">
-                                <h3>Your Group: <strong>{booking.teamName}</strong></h3>
-                            </div>
-
-                            <h3 className="section-title">Group Members</h3>
-
-                            <div style={{ marginBottom: '1.875rem' }}>
+                        <div className="form-container">
+                            <h3 className="page-subtitle" style={{ padding: '0 8px', marginBottom: '8px' }}>Members</h3>
+                            
+                            <ul className="ios-list">
                                 {booking.members && booking.members.length > 0 && (
-                                    <ul className="members-list">
-                                        {booking.members.filter(m => m && (m.name || typeof m === 'string')).map((member, idx) => {
-                                            const name = member.name || (typeof member === 'string' ? member : 'Unknown');
-                                            const mrr = member.mrrNumber || '';
-                                            return (
-                                                <li key={idx} className="member-item">
-                                                    <div className="member-info">
-                                                        <span className="member-name">{name}</span>
-                                                        {mrr && <span className="member-mrr">MRR ID: {mrr}</span>}
-                                                    </div>
-                                                </li>
-                                            );
-                                        })}
-                                    </ul>
+                                    booking.members.filter(m => m && (m.name || typeof m === 'string')).map((member, idx) => {
+                                        const name = member.name || (typeof member === 'string' ? member : 'Unknown');
+                                        const mrr = member.mrrNumber || '';
+                                        return (
+                                            <li key={idx} className="ios-list-item">
+                                                <div className="member-info">
+                                                    <span className="member-name">{name}</span>
+                                                    {mrr && <span className="member-mrr">MRR #{mrr}</span>}
+                                                </div>
+                                            </li>
+                                        );
+                                    })
                                 )}
-                            </div>
+                            </ul>
 
-                            <div className="add-member-section">
-                                <h4 className="add-member-title">Add Group Member</h4>
-                                <div className="member-add-row">
-                                    <input
-                                        type="text"
-                                        className="text-input"
-                                        value={newMemberMrr}
-                                        onChange={(e) => setNewMemberMrr(e.target.value)}
-                                        placeholder="Enter MRR ID"
-                                    />
-                                    <button
-                                        className="btn btn-black"
-                                        onClick={handleAddMemberToExisting}
-                                        disabled={isSubmitting}
-                                    >
-                                        {isSubmitting ? '...' : 'Add'}
-                                    </button>
+                            <h3 className="page-subtitle" style={{ padding: '0 8px', marginBottom: '8px' }}>Management</h3>
+                            <div className="ios-form-group">
+                                <div className="input-group">
+                                    <label className="input-label">Add Member (MRR ID)</label>
+                                    <div className="member-add-row">
+                                        <input
+                                            type="text"
+                                            className="text-input"
+                                            value={newMemberMrr}
+                                            onChange={(e) => setNewMemberMrr(e.target.value)}
+                                            placeholder="Invite more"
+                                        />
+                                        <button
+                                            className="btn-ios-ghost"
+                                            onClick={handleAddMemberToExisting}
+                                            disabled={isSubmitting}
+                                        >
+                                            {isSubmitting ? '...' : 'Invite'}
+                                        </button>
+                                    </div>
                                 </div>
-                                {error && <p className="error-msg" style={{ marginTop: '0.625rem' }}>{error}</p>}
-                                {successMsg && <p className="success-msg" style={{ marginTop: '0.625rem' }}>{successMsg}</p>}
                             </div>
+                            
+                            {error && <p className="error-msg">{error}</p>}
+                            {successMsg && <p className="success-msg">{successMsg}</p>}
 
                             {booking.bookedBy === user.uid && (
-                                <div style={{ marginTop: '1.875rem', textAlign: 'center' }}>
+                                <div style={{ marginTop: '24px' }}>
                                     <button
-                                        className="btn btn-outline-red btn-small"
+                                        className="btn-ios-danger"
                                         onClick={handleCancelBooking}
                                     >
-                                        Cancel Booking
+                                        Cancel Session
                                     </button>
                                 </div>
                             )}
@@ -554,9 +566,10 @@ const Discussion = ({ onBack }) => {
                     {/* DETAILS VIEW - OTHERS */}
                     {isBooked && !isMyTeam && (
                         <div className="others-booking-view">
-                            <h2>Booked</h2>
+                            <h2>Session Booked</h2>
                             <p>
-                                This slot is attained by <strong>{booking.teamName}</strong>
+                                This slot is currently occupied by<br/>
+                                <strong style={{ color: 'var(--ios-text)' }}>{booking.teamName}</strong>
                             </p>
                         </div>
                     )}

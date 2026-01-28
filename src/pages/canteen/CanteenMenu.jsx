@@ -96,58 +96,74 @@ const CanteenMenu = ({
     }, [items.length]);
 
     return (
-      <div className="food-carousel" ref={carouselRef}>
-        {items.map((item, index) => {
-          const cardClasses = [
-            'food-card',
-            index === activeIndex ? 'active' : '',
-            variant === 'special' ? 'food-card--special' : ''
-          ].filter(Boolean).join(' ');
+      <div className="food-carousel-container">
+        <div className="food-carousel" ref={carouselRef}>
+          {items.map((item, index) => {
+            const cardClasses = [
+              'food-card',
+              index === activeIndex ? 'active' : '',
+              variant === 'special' ? 'food-card--special' : ''
+            ].filter(Boolean).join(' ');
 
-          return (
-            <div
-              key={item.id}
-              className={cardClasses}
-            >
-              <div className="food-card-image">
-                <img
-                  src={item.photoURL || "https://placehold.co/400x300?text=Food"}
-                  alt={item.name}
-                  onError={(e) => { e.target.src = "https://placehold.co/400x300?text=Food"; }}
-                />
-              </div>
-              <div className="card-content">
-                <h3 className="card-food-name">{item.name}</h3>
-                <p className="card-food-desc">{item.description || 'Delicious meal'}</p>
+            return (
+              <div
+                key={item.id}
+                className={cardClasses}
+              >
+                <div className="food-card-image">
+                  <img
+                    src={item.photoURL || "https://placehold.co/400x300?text=Food"}
+                    alt={item.name}
+                    onError={(e) => { e.target.src = "https://placehold.co/400x300?text=Food"; }}
+                  />
+                </div>
+                <div className="card-content">
+                  <h3 className="card-food-name">{item.name}</h3>
+                  <p className="card-food-desc">{item.description || 'Delicious meal'}</p>
 
-                <div className="card-footer">
-                  <span className="card-price">Rs. {Number(item.price).toFixed(2)}</span>
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    className="card-add-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addToCart(item);
-                    }}
-                    style={{ borderRadius: '20px', fontSize: '0.8rem', padding: '4px 12px' }}
-                  >
-                    Add to Cart
-                  </Button>
+                  <div className="card-footer">
+                    <span className="card-price">Rs. {Number(item.price).toFixed(2)}</span>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      className="card-add-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(item);
+                      }}
+                      style={{ borderRadius: '20px', fontSize: '0.8rem', padding: '4px 12px' }}
+                    >
+                      Add to Cart
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
     );
   };
 
   return (
     <div className="std-container">
-      <PageHeader title="Menu" onBack={onBack} />
+      <PageHeader
+        title="Menu"
+        onBack={onBack}
+        rightElement={
+          <div
+            className="cart-icon-wrapper"
+            onClick={() => onNavigate('cart')}
+            style={{ padding: '8px' }}
+          >
+            <img src={cartIcon} alt="Cart" className="cart-icon-image" />
+            <div className="cart-badge">{cart.length}</div>
+          </div>
+        }
+      />
 
       <main className="std-body">
+<<<<<<< Updated upstream
         {/* Main Content Container */}
         <div style={{ maxWidth: '600px', margin: '0 auto', backgroundColor: 'white', borderRadius: '20px', overflow: 'hidden', paddingBottom: '80px' }}>
           {/* Cart Icon */}
@@ -230,10 +246,53 @@ const CanteenMenu = ({
             )}
 
           </div>
+=======
+        <div className="menu-balance-container">
+          <span className="balance-label">Balance</span>
+          <span className="balance-value">Rs. {(userBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+>>>>>>> Stashed changes
         </div>
 
-      </main >
-    </div >
+        <div className="menu-scroll-container">
+          {/* Today's Special Section */}
+          {todaysMenu.length > 0 && (
+            <div className="menu-section-group menu-section-group--special" style={{ marginBottom: '2rem' }}>
+              <h1 className="todays-special-title">Today's Special</h1>
+
+              {todaysCategories.map(category => (
+                <div key={`today-${category}`} className="menu-category-section">
+                  <h2 className="category-title">{category}</h2>
+                  <FoodCarousel items={groupedTodaysMenu[category]} category={category} variant="special" />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {todaysMenu.length > 0 && fixedMenu.length > 0 && (
+            <div className="menu-separator" />
+          )}
+
+          {/* Fixed Menu Section */}
+          {fixedMenu.length > 0 && (
+            <div className="menu-section-group">
+              {todaysMenu.length === 0 && <h1 className="todays-special-title">Our Menu</h1>}
+              {fixedCategories.map(category => (
+                <div key={`fixed-${category}`} className="menu-category-section">
+                  <h2 className="category-title">{category}</h2>
+                  <FoodCarousel items={groupedFixedMenu[category]} category={category} />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {todaysMenu.length === 0 && fixedMenu.length === 0 && (
+            <div className="empty-state">
+              <p>No menu available right now.</p>
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
   );
 };
 

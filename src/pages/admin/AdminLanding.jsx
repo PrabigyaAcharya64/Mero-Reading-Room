@@ -1,5 +1,11 @@
+<<<<<<< Updated upstream
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
+=======
+import { useState, useEffect, useRef } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Menu, X } from 'lucide-react';
+>>>>>>> Stashed changes
 import { useAuth } from '../../auth/AuthProvider';
 import UserManagement from './UserManagement';
 import HostelManagement from './HostelManagement';
@@ -16,6 +22,7 @@ import Dashboard from './Dashboard';
 import { useLoading } from '../../context/GlobalLoadingContext';
 import { collection, query, where, onSnapshot, deleteDoc, doc, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+<<<<<<< Updated upstream
 
 function AdminLanding() {
   const { user, signOutUser } = useAuth();
@@ -23,11 +30,22 @@ function AdminLanding() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [newOrdersCount, setNewOrdersCount] = useState(0);
-  const [announcements, setAnnouncements] = useState([]);
-  const [showHistory, setShowHistory] = useState(false);
+=======
+import '../../styles/StandardLayout.css';
+import '../../styles/AdminSidebar.css';
 
+function AdminLanding({ onNavigateRoot }) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const displayName = user?.displayName || user?.email?.split('@')[0] || 'Admin';
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+>>>>>>> Stashed changes
+  const [unreadCount, setUnreadCount] = useState(0);
+
+<<<<<<< Updated upstream
   // Navigate using React Router with loading state
   const handleNavigate = (view) => {
     setIsLoading(true);
@@ -37,6 +55,24 @@ function AdminLanding() {
   const handlePageReady = () => {
     setIsLoading(false);
   };
+=======
+  // Handle responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (!mobile) setIsSidebarOpen(false); // Reset mobile drawer on resize to desktop
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Close sidebar on navigation (for all screens to keep it "clean")
+  useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [location.pathname]);
+>>>>>>> Stashed changes
 
   useEffect(() => {
     const q = query(collection(db, 'messages'), where('read', '==', false));
@@ -46,6 +82,7 @@ function AdminLanding() {
     return () => unsubscribe();
   }, []);
 
+<<<<<<< Updated upstream
   const previousOrderCount = useRef(0);
   const audioRef = useRef(new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'));
 
@@ -76,6 +113,14 @@ function AdminLanding() {
 
   // Determine active sidebar item from location
   const currentView = useMemo(() => {
+=======
+  // Navigate using React Router
+  const handleNavigate = (view) => {
+    navigate(`/admin/${view}`);
+  };
+
+  const getCurrentView = () => {
+>>>>>>> Stashed changes
     const path = location.pathname;
     if (path === '/admin' || path === '/admin/dashboard') return 'dashboard';
     if (path.includes('/admin/user-management')) return 'user-management';
@@ -90,9 +135,34 @@ function AdminLanding() {
   }, [location.pathname]);
 
 
-  return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f9fafb', position: 'relative' }}>
+  const getPageTitle = () => {
+    const view = getCurrentView();
+    const titles = {
+      'dashboard': 'Dashboard Overview',
+      'user-management': 'User Management',
+      'hostel': 'Hostel Management',
+      'canteen': 'Canteen Admin',
+      'messages': 'Admin Messages',
+      'create-announcement': 'Announcements',
+      'reading-rooms': 'Reading Room',
+      'balance-requests': 'Balance Requests'
+    };
+    return titles[view] || 'Admin Panel';
+  };
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  return (
+    <div className="admin-layout">
+      {/* Mobile Overlay */}
+      <div 
+        className={`sidebar-overlay ${isSidebarOpen && isMobile ? 'active' : ''}`}
+        onClick={() => setIsSidebarOpen(false)}
+      />
+
+<<<<<<< Updated upstream
       {/* Sidebar Wrapper for Hover Detection */}
       <div
         onMouseEnter={() => setIsSidebarHovered(true)}
@@ -137,6 +207,47 @@ function AdminLanding() {
           <Route path="/transaction-statement" element={<AdminTransactionStatement onDataLoaded={handlePageReady} />} />
         </Routes>
       </main>
+=======
+      <Sidebar
+        currentView={getCurrentView()}
+        onNavigate={handleNavigate}
+        isOpen={isSidebarOpen}
+        isMobile={isMobile}
+        onClose={() => setIsSidebarOpen(false)}
+      />
+
+      {/* Main Content Area */}
+      <div className={`admin-main-content ${isSidebarOpen ? 'sidebar-expanded' : 'sidebar-collapsed'}`}>
+        <header className="admin-header">
+          <button className="sidebar-toggle-btn" onClick={toggleSidebar} aria-label="Toggle Sidebar">
+            {isSidebarOpen && isMobile ? <X size={24} /> : <Menu size={24} />}
+          </button>
+          <h1 className="admin-header-title">{getPageTitle()}</h1>
+          
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500' }}>
+              Welcome, {displayName}
+            </span>
+          </div>
+        </header>
+
+        <main style={{ padding: '1.5rem', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
+          <Routes>
+            <Route path="/" element={<Dashboard onNavigate={handleNavigate} />} />
+            <Route path="/dashboard" element={<Dashboard onNavigate={handleNavigate} />} />
+            <Route path="/user-management" element={<UserManagement onNavigate={handleNavigate} />} />
+            <Route path="/hostel" element={<HostelManagement />} />
+            <Route path="/new-users" element={<NewUsers onBack={() => navigate('/admin/user-management')} />} />
+            <Route path="/all-members" element={<AllMembersView onBack={() => navigate('/admin/user-management')} />} />
+            <Route path="/canteen" element={<CanteenAdminLanding />} />
+            <Route path="/messages" element={<AdminMessages />} />
+            <Route path="/create-announcement" element={<CreateAnnouncement />} />
+            <Route path="/reading-rooms" element={<ReadingRoomManagement />} />
+            <Route path="/balance-requests" element={<AdminBalanceLoad />} />
+          </Routes>
+        </main>
+      </div>
+>>>>>>> Stashed changes
     </div>
   );
 }

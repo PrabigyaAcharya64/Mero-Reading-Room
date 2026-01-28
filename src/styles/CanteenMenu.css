@@ -1,112 +1,34 @@
-.canteen-menu-page {
-  height: 100vh;
-  overflow-y: auto;
-  background: white;
-  padding: 20px;
-  position: relative;
-  width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
-  box-sizing: border-box;
-  overflow-x: hidden;
-}
-
-.canteen-menu-container {
-  max-width: 100%;
-  margin: 0 auto;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-  padding: 24px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.menu-header {
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.header-title {
-  flex: 1;
-  text-align: center;
-  font-size: 25px;
-  font-weight: 800;
-  margin: 0;
-  font-family: var(--font-body);
-  color: #2c3e50;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.header-spacer {
-  flex: 1;
-}
-
-.cart-icon-container {
-  display: flex;
-  justify-content: flex-end;
-  padding: 10px 20px 0 20px;
-}
-
-.cart-icon-wrapper {
-  position: relative;
-  cursor: pointer;
-}
-
-.cart-icon-image {
-  width: 24px;
-  height: 24px;
-  display: block;
-}
-
-.cart-badge {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  background: linear-gradient(135deg, #ff4444 0%, #cc3333 100%);
-  color: white;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: bold;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-}
-
 .menu-balance-container {
-  margin: 8px 5px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin: 0 0 16px 0;
   padding: 16px 20px;
-  background: linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%);
-  border-radius: 12px;
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-lg);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-subtle);
 }
 
 .balance-label {
   font-family: var(--font-body);
   font-weight: 600;
-  color: #333;
+  color: var(--color-text-secondary);
   font-size: 14px;
 }
 
 .balance-value {
   font-family: var(--font-body);
   font-weight: 700;
-  color: #000;
+  color: var(--color-text-primary);
   font-size: 16px;
 }
 
 .menu-scroll-container {
-  padding: 5px 0;
+  padding: 0;
 }
 
 .menu-separator {
@@ -136,36 +58,13 @@
   width: 100%;
 }
 
-.section-header-banner {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.65rem 1.25rem;
-  border-radius: 0;
-  font-family: var(--font-heading, var(--font-body));
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  box-shadow: none;
-  border: none;
-  background: transparent;
-  color: inherit;
-}
-
-.section-header-banner--special {
-  background: transparent;
-  color: inherit;
-  border-color: transparent;
-}
-
-.menu-section-group--special {
-  padding: 10px 0;
-  text-align: center;
-}
-
 .todays-special-title {
-  margin: 0 auto 18px;
-  min-width: 240px;
+  text-align: center;
+  margin-bottom: 24px;
+  width: 100%;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--color-text-primary);
 }
 
 .category-title {
@@ -176,7 +75,7 @@
   text-transform: uppercase;
   letter-spacing: 1.2px;
   text-align: center;
-  color: #2c3e50;
+  color: var(--color-text-primary);
   position: relative;
   padding-bottom: 8px;
 }
@@ -189,7 +88,7 @@
   transform: translateX(-50%);
   width: 60px;
   height: 3px;
-  background: linear-gradient(90deg, #3498db, #2c3e50);
+  background: linear-gradient(90deg, #000, #333);
   border-radius: 2px;
 }
 
@@ -208,11 +107,12 @@
   overflow-x: auto;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
-  padding: 0 calc(50% - 175px);
+  padding: 0 calc(50% - 150px);
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   max-width: 100%;
   margin: 0 auto;
+  gap: 20px;
 }
 
 .food-carousel::-webkit-scrollbar {
@@ -221,15 +121,13 @@
 
 /* Food card */
 .food-card {
-  flex: 0 0 auto;
-  width: 350px;
-  background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
-  border-radius: 16px;
+  flex: 0 0 300px;
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-xl);
   padding: 20px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: var(--shadow-sm);
   scroll-snap-align: center;
-  margin-right: 20px;
   transition: all 0.3s ease;
   opacity: 0.7;
   transform: scale(0.92);
@@ -280,13 +178,13 @@
   font-size: 18px;
   font-weight: 700;
   margin: 0 0 5px 0;
-  color: #000;
+  color: var(--color-text-primary);
 }
 
 .card-food-desc {
   font-family: var(--font-body);
   font-size: 14px;
-  color: #666;
+  color: var(--color-text-secondary);
   margin: 0 0 12px 0;
   flex-grow: 1;
 }
@@ -300,14 +198,14 @@
 .card-price {
   font-weight: 700;
   font-size: 16px;
-  color: #000;
+  color: var(--color-accent);
 }
 
 .card-add-btn {
-  background-color: #000;
-  color: #fff;
+  background-color: var(--color-text-primary);
+  color: var(--color-background);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 8px 15px;
   font-weight: 600;
   font-size: 14px;
@@ -329,14 +227,38 @@
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .food-card {
-    width: 350px;
-  }
-
-  .category-title {
-    text-align: center;
+    width: 280px;
+    flex-basis: 280px;
   }
 
   .food-carousel {
-    padding: 0 calc(50% - 175px);
+    padding: 0 calc(50% - 140px);
   }
+}
+
+.cart-icon-wrapper {
+  position: relative;
+  cursor: pointer;
+}
+
+.cart-icon-image {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: var(--color-badge);
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
 }

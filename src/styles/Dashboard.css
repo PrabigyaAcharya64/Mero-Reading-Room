@@ -83,3 +83,23 @@
     color: var(--color-accent);
     font-weight: 700;
 }
+
+/* Responsive Dashboard Grid */
+.db-charts-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+@media (max-width: 1024px) {
+    .db-charts-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .db-charts-grid {
+        gap: 16px;
+    }
+}

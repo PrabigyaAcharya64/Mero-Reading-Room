@@ -123,6 +123,9 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .coh-status-badge.pending {
@@ -185,6 +188,9 @@
     color: var(--color-text-primary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .coh-details-grid {
@@ -206,6 +212,8 @@
     font-size: 0.875rem;
     color: var(--color-text-primary);
     font-weight: 500;
+    display: flex;
+    align-items: center;
 }
 
 /* Itemized Table */

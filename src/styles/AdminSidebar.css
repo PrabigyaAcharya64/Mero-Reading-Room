@@ -1,0 +1,325 @@
+/* AdminSidebar.css */
+
+:root {
+  --sidebar-width-expanded: 260px;
+  --sidebar-width-collapsed: 72px;
+  --header-height: 64px;
+}
+
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f9fafb;
+  position: relative;
+}
+
+/* Sidebar Styling */
+.sidebar-container {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  background-color: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  z-index: 1000;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Desktop behaviors */
+@media (min-width: 769px) {
+  .sidebar-container.expanded {
+    width: var(--sidebar-width-expanded);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.05);
+  }
+
+  .sidebar-container.collapsed {
+    width: var(--sidebar-width-collapsed);
+  }
+
+  .admin-main-content {
+    flex: 1;
+    min-width: 0;
+    transition: margin-left 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+  }
+
+  .admin-main-content.sidebar-expanded {
+    margin-left: var(--sidebar-width-expanded);
+  }
+
+  .admin-main-content.sidebar-collapsed {
+    margin-left: var(--sidebar-width-collapsed);
+  }
+}
+
+/* Mobile behaviors */
+@media (max-width: 768px) {
+  .sidebar-container {
+    width: var(--sidebar-width-expanded);
+    transform: translateX(-100%);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
+  }
+
+  .sidebar-container.mobile-drawer-open {
+    transform: translateX(0);
+  }
+
+  .admin-main-content {
+    margin-left: 0 !important;
+    width: 100%;
+  }
+
+  .mobile-sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+    z-index: 999;
+    opacity: 1;
+    transition: all 0.3s ease;
+  }
+}
+
+/* Inner Sidebar Components */
+.sidebar-header-mobile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 1.5rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.sidebar-header-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #111827;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sidebar-close-button {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.sidebar-menu-container {
+  flex: 1;
+  padding: 24px 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 12px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background-color: transparent;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: all 0.2s ease;
+  position: relative;
+  height: 48px;
+}
+
+.sidebar-item.active {
+  background-color: #f3f4f6;
+  color: #111827;
+  font-weight: 600;
+}
+
+.sidebar-item:hover:not(.active) {
+  background-color: #f9fafb;
+  color: #111827;
+}
+
+.sidebar-active-indicator {
+  position: absolute;
+  left: -12px;
+  width: 4px;
+  height: 20px;
+  background-color: #111827;
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar-active-indicator.expanded {
+  opacity: 1;
+}
+
+.sidebar-item-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.sidebar-item-icon.collapsed-icon {
+  margin-right: 0;
+}
+
+.sidebar-icon-img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.sidebar-icon-img.grayscale {
+  filter: grayscale(100%) opacity(0.7);
+}
+
+.sidebar-item-label {
+  white-space: nowrap;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  flex: 1;
+  margin-left: 12px;
+}
+
+.sidebar-item-label.hidden {
+  opacity: 0;
+  visibility: hidden;
+  width: 0;
+  margin: 0;
+}
+
+.sidebar-badge {
+  background-color: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.sidebar-badge.expanded {
+  padding: 2px 8px;
+  min-width: 20px;
+  position: relative;
+}
+
+.sidebar-badge.collapsed {
+  width: 8px;
+  height: 8px;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.sidebar-footer {
+  padding: 24px 12px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.logout-button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  width: 100%;
+  border: none;
+  background: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 12px;
+  transition: background-color 0.2s;
+}
+
+.logout-button:hover {
+  background-color: #fef2f2;
+}
+
+.collapsed-item-center {
+  justify-content: center !important;
+}
+
+/* Header Area */
+.admin-header {
+  height: var(--header-height);
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 900;
+}
+
+.sidebar-toggle-btn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.sidebar-toggle-btn:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.admin-header-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin-left: 1rem;
+}
+/* Admin Layout Scroll Fix Overrides */
+.admin-main-content .std-container,
+.admin-main-content .rrm-container,
+.admin-main-content .am-container,
+.admin-main-content .abl-container {
+  height: auto !important;
+  min-height: auto !important;
+  overflow: visible !important;
+}
+
+.admin-main-content .std-body,
+.admin-main-content .rrm-body,
+.admin-main-content .am-body {
+  height: auto !important;
+  min-height: auto !important;
+  overflow: visible !important;
+}
+
+/* Ensure the wrapper allows scrolling */
+.admin-main-content {
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* Prevent flex blowouts */
+}

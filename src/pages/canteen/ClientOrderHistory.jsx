@@ -68,8 +68,10 @@ function ClientOrderHistory({ onBack }) {
     <div className="std-container">
       <PageHeader title="Order History" onBack={onBack} />
 
-      <main className="coh-body">
-        <div className="coh-filter-bar">
+      <main className="std-body">
+        <div className="discussion-card">
+          <div className="coh-filter-bar">
+            {/* ... */}
           <h2 className="coh-filter-title">My Orders</h2>
           <div className="coh-segments">
             {['all', 'pending', 'completed', 'cancelled'].map((status) => (
@@ -185,6 +187,7 @@ function ClientOrderHistory({ onBack }) {
             })}
           </div>
         )}
+        </div>
       </main>
     </div>
   );

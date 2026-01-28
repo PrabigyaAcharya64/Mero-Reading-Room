@@ -6,8 +6,7 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--spacing-16) var(--spacing-24);
-  background-color: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
+  background-color: var(--color-background);
   border-bottom: 1px solid var(--color-border-subtle);
   z-index: 10;
   position: relative;
