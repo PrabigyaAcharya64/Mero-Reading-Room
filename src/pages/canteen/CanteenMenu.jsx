@@ -163,94 +163,9 @@ const CanteenMenu = ({
       />
 
       <main className="std-body">
-<<<<<<< Updated upstream
-        {/* Main Content Container */}
-        <div style={{ maxWidth: '600px', margin: '0 auto', backgroundColor: 'white', borderRadius: '20px', overflow: 'hidden', paddingBottom: '80px' }}>
-          {/* Cart Icon */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '10px 20px 0 20px' }}>
-            <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => onNavigate('cart')}>
-              <img
-                src={cartIcon}
-                alt="Cart"
-                style={{
-                  width: '24px',
-                  height: '24px',
-                  display: 'block'
-                }}
-              />
-              <div style={{
-                position: 'absolute',
-                top: '-8px',
-                right: '-8px',
-                backgroundColor: '#ff4444',
-                color: 'white',
-                borderRadius: '50%',
-                width: '18px',
-                height: '18px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '10px',
-                fontWeight: 'bold'
-              }}>
-                {cart.length}
-              </div>
-            </div>
-          </div>
-
-          {/* Balance */}
-          <div className="menu-balance-container">
-            <span className="balance-label">{userName ? `${userName}'s Balance` : 'Balance'}</span>
-            <span className="balance-value">Rs. {(userBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
-
-          {/* Menu Sections */}
-          <div className="menu-scroll-container">
-
-            {/* Today's Special Section */}
-            {todaysMenu.length > 0 && (
-              <div className="menu-section-group menu-section-group--special" style={{ marginBottom: '2rem' }}>
-                <div className="section-header-banner section-header-banner--special todays-special-title">
-                  Today's Special
-                </div>
-
-                {todaysCategories.map(category => (
-                  <div key={`today-${category}`} className="menu-category-section">
-                    <h2 className="category-title">{category}</h2>
-                    <FoodCarousel items={groupedTodaysMenu[category]} category={category} variant="special" />
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {todaysMenu.length > 0 && fixedMenu.length > 0 && (
-              <div className="menu-separator" />
-            )}
-
-            {/* Fixed Menu Section */}
-            {fixedMenu.length > 0 && (
-              <div className="menu-section-group">
-                {fixedCategories.map(category => (
-                  <div key={`fixed-${category}`} className="menu-category-section">
-                    <h2 className="category-title">{category}</h2>
-                    <FoodCarousel items={groupedFixedMenu[category]} category={category} />
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {todaysMenu.length === 0 && fixedMenu.length === 0 && (
-              <div className="empty-state">
-                <p>No menu available right now.</p>
-              </div>
-            )}
-
-          </div>
-=======
         <div className="menu-balance-container">
           <span className="balance-label">Balance</span>
           <span className="balance-value">Rs. {(userBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
->>>>>>> Stashed changes
         </div>
 
         <div className="menu-scroll-container">

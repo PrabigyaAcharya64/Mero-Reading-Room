@@ -3,11 +3,8 @@ import {
     LogOut,
     Bell,
     CreditCard,
-<<<<<<< Updated upstream
-    Receipt
-=======
+    Receipt,
     X
->>>>>>> Stashed changes
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider';
 import { db } from '../lib/firebase';

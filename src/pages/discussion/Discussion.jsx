@@ -343,18 +343,6 @@ const Discussion = ({ onBack }) => {
         }
     };
 
-<<<<<<< Updated upstream
-=======
-    if (loading) {
-        return (
-            <div className="std-container">
-                <div className="loading-container">
-                    <LoadingSpinner size="40" stroke="3" color="#333" />
-                </div>
-            </div>
-        );
-    }
->>>>>>> Stashed changes
 
     // Render List of Slots
     if (viewMode === 'list') {

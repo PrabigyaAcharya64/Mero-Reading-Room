@@ -1,10 +1,5 @@
-import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
-<<<<<<< Updated upstream
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-=======
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
->>>>>>> Stashed changes
 import GetStarted from '../pages/GetStarted';
 import Login from '../pages/Login';
 import SignUp from '../pages/SignUp';
@@ -66,100 +61,18 @@ function ProtectedRoute({ children, requiredRole }) {
         if (!loading) checkStatus();
     }, [user, userRole, loading]);
 
-<<<<<<< Updated upstream
     useEffect(() => {
         if (loading || checking) {
             setIsLoading(true);
-=======
-    // Determine which stack to render
-    const renderContent = () => {
-        // While auth is loading or we are checking verification for a user,
-        // we return null to keep the splash screen active and avoid partial renders.
-        if (authLoading || (user && checkingVerification)) {
-            return null;
-        }
-
-        if (user) {
-            if (needsAdditionalDetails) {
-                return (
-                    <PageTransition key="additional-details">
-                        <AdditionalDetails
-                            onComplete={() => {
-                                setNeedsAdditionalDetails(false);
-                                setMode('pending-verification');
-                            }}
-                        />
-                    </PageTransition>
-                );
-            }
-
-            if (isVerified === false) {
-                return (
-                    <PageTransition key="pending-verification">
-                        <PendingVerification />
-                    </PageTransition>
-                );
-            }
-
-            return (
-                <PageTransition key="app-stack">
-                    <AppStack userRole={userRole} onNavigateRoot={handleRootNavigate} />
-                </PageTransition>
-            );
->>>>>>> Stashed changes
+        } else {
+            setIsLoading(false);
         }
     }, [loading, checking, setIsLoading]);
 
     if (loading || checking) return null;
 
-<<<<<<< Updated upstream
     if (!user) {
         return <Navigate to="/login" state={{ from: location }} replace />;
-=======
-    return (
-        <AnimatePresence mode="wait">
-            {renderContent()}
-        </AnimatePresence>
-    );
-}
-
-export function AuthStack({ mode, onChangeMode }) {
-    const getContent = () => {
-        if (mode === 'login') {
-            return <Login onSwitch={() => onChangeMode('signup')} />;
-        }
-        if (mode === 'signup') {
-            return <SignUp onSwitch={() => onChangeMode('login')} onComplete={() => onChangeMode('additional-details')} />;
-        }
-        if (mode === 'additional-details' || mode === 'pending-verification') {
-            return mode === 'additional-details' ? <AdditionalDetails onComplete={() => onChangeMode('pending-verification')} /> : <PendingVerification />;
-        }
-        return <GetStarted onGetStarted={() => onChangeMode('signup')} onLogIn={() => onChangeMode('login')} />;
-    };
-
-    return (
-        <motion.div
-            key={mode}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            style={{ width: '100%', height: '100%' }}
-        >
-            {getContent()}
-        </motion.div>
-    );
-}
-
-export function AppStack({ userRole, onNavigateRoot }) {
-    if (userRole === 'admin') {
-        return (
-            <Routes>
-                <Route path="/admin/*" element={<AdminLanding onNavigateRoot={onNavigateRoot} />} />
-                <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
-            </Routes>
-        );
->>>>>>> Stashed changes
     }
 
     if (needsDetails && location.pathname !== '/onboarding/details') {
@@ -231,7 +144,3 @@ export function NavigationRoot() {
         </Routes>
     );
 }
-
-// Keeping components for backwards compatibility during refactor if needed
-export function AuthStack() { return <Navigate to="/intro" replace />; }
-export function AppStack() { return <Navigate to="/" replace />; }
