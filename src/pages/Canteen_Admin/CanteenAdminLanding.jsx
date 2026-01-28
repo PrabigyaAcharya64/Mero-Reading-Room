@@ -75,14 +75,16 @@ function CanteenAdminLanding() {
       <PageHeader
         title="Canteen Administration"
         rightElement={
-          <button
-            onClick={signOutUser}
-            className="std-header-back-btn"
-            style={{ color: '#ef4444', borderColor: '#ef4444' }}
-            title="Sign Out"
-          >
-            <LogOut size={20} />
-          </button>
+          userRole === 'canteen' ? (
+            <button
+              onClick={signOutUser}
+              className="std-header-back-btn"
+              style={{ color: '#ef4444', borderColor: '#ef4444' }}
+              title="Sign Out"
+            >
+              <LogOut size={20} />
+            </button>
+          ) : null
         }
       />
 

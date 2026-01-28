@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
     LogOut,
     Bell,
-    CreditCard
+    CreditCard,
+    Receipt
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider';
 import { db } from '../lib/firebase';
@@ -68,6 +69,7 @@ function Sidebar({ currentView, onNavigate, isOpen }) {
         },
         { id: 'create-announcement', label: 'Announcements', icon: null, isLucide: true, lucideIcon: Bell },
         { id: 'balance-requests', label: 'Balance Requests', icon: null, isLucide: true, lucideIcon: CreditCard },
+        { id: 'transaction-statement', label: 'Transaction Statement', icon: null, isLucide: true, lucideIcon: Receipt },
     ];
 
     const isExpanded = isOpen; // Control from parent (AdminLanding) will handle hover logic passed as 'isOpen' or we can add local state if needed, but per plan AdminLanding handles logic. 

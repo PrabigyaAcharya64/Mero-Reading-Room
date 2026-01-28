@@ -60,122 +60,127 @@ function Dashboard({ onNavigate, onDataLoaded }) {
     }, []);
 
     useEffect(() => {
-        fetchDashboardData().finally(() => {
-            onDataLoaded?.();
-        });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [timeRange]);
+        const fetchData = async () => {
+            try {
+                const ordersRef = collection(db, 'orders');
+                const transactionsRef = collection(db, 'transactions');
 
-    const fetchDashboardData = async () => {
-        try {
-            const ordersRef = collection(db, 'orders');
-            const ordersSnapshot = await getDocs(query(ordersRef, orderBy('createdAt', 'desc')));
-            const orders = ordersSnapshot.docs.map(doc => ({
-                ...doc.data(),
-                date: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date(doc.data().createdAt),
-                amount: doc.data().total || 0,
-                type: 'canteen'
-            }));
+                // Standard Batch Reveal Pattern: Promise.all for all initial fetches
+                const [ordersSnapshot, transactionsSnapshot] = await Promise.all([
+                    getDocs(query(ordersRef, orderBy('createdAt', 'desc'))),
+                    getDocs(query(transactionsRef, orderBy('date', 'desc')))
+                ]);
 
-            const transactionsRef = collection(db, 'transactions');
-            const transactionsSnapshot = await getDocs(query(transactionsRef, orderBy('date', 'desc')));
-            const transactions = transactionsSnapshot.docs.map(doc => {
-                const data = doc.data();
-                let transactionDate = new Date();
-                if (data.date) {
-                    if (typeof data.date === 'string') {
-                        transactionDate = new Date(data.date);
-                    } else if (data.date.toDate) {
-                        transactionDate = data.date.toDate();
+                const orders = ordersSnapshot.docs.map(doc => ({
+                    ...doc.data(),
+                    date: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date(doc.data().createdAt),
+                    amount: doc.data().total || 0,
+                    type: 'canteen'
+                }));
+
+                const transactions = transactionsSnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    let transactionDate = new Date();
+                    if (data.date) {
+                        if (typeof data.date === 'string') {
+                            transactionDate = new Date(data.date);
+                        } else if (data.date.toDate) {
+                            transactionDate = data.date.toDate();
+                        }
+                    }
+                    return {
+                        ...data,
+                        date: transactionDate,
+                        amount: data.amount || 0,
+                        type: 'reading_room'
+                    };
+                });
+
+                const now = new Date();
+                let cutoff = new Date();
+                if (timeRange === '7d') cutoff.setDate(now.getDate() - 7);
+                else if (timeRange === '30d') cutoff.setDate(now.getDate() - 30);
+                else if (timeRange === '6m') cutoff.setMonth(now.getMonth() - 6);
+                else if (timeRange === '12m') cutoff.setMonth(now.getMonth() - 12);
+                else if (timeRange === '3y') cutoff.setFullYear(now.getFullYear() - 3);
+
+                const filteredOrders = orders.filter(o => o.date >= cutoff);
+                const filteredTxns = transactions.filter(t => t.date >= cutoff);
+
+                const totalCanteen = filteredOrders.reduce((sum, order) => sum + order.amount, 0);
+                const totalReadingRoom = filteredTxns.reduce((sum, txn) => sum + txn.amount, 0);
+
+                const newChartData = [];
+                const allSales = [...filteredOrders, ...filteredTxns];
+
+                if (timeRange === '7d' || timeRange === '30d') {
+                    const daysToFetch = timeRange === '7d' ? 7 : 30;
+                    for (let i = daysToFetch - 1; i >= 0; i--) {
+                        const d = new Date();
+                        d.setDate(d.getDate() - i);
+                        const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        const dayData = { name: dateStr, readingRoom: 0, canteen: 0 };
+                        allSales.forEach(sale => {
+                            if (sale.date.toDateString() === d.toDateString()) {
+                                if (sale.type === 'canteen') dayData.canteen += sale.amount;
+                                else dayData.readingRoom += sale.amount;
+                            }
+                        });
+                        newChartData.push(dayData);
+                    }
+                } else if (timeRange === '6m' || timeRange === '12m') {
+                    const monthsToFetch = timeRange === '6m' ? 6 : 12;
+                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    for (let i = monthsToFetch - 1; i >= 0; i--) {
+                        const d = new Date();
+                        d.setMonth(d.getMonth() - i);
+                        const monthIdx = d.getMonth();
+                        const year = d.getFullYear();
+                        const monthData = { name: months[monthIdx], readingRoom: 0, canteen: 0 };
+                        allSales.forEach(sale => {
+                            if (sale.date.getMonth() === monthIdx && sale.date.getFullYear() === year) {
+                                if (sale.type === 'canteen') monthData.canteen += sale.amount;
+                                else monthData.readingRoom += sale.amount;
+                            }
+                        });
+                        newChartData.push(monthData);
+                    }
+                } else if (timeRange === '3y') {
+                    for (let i = 2; i >= 0; i--) {
+                        const d = new Date();
+                        d.setFullYear(d.getFullYear() - i);
+                        const year = d.getFullYear();
+                        const yearData = { name: year.toString(), readingRoom: 0, canteen: 0 };
+                        allSales.forEach(sale => {
+                            if (sale.date.getFullYear() === year) {
+                                if (sale.type === 'canteen') yearData.canteen += sale.amount;
+                                else yearData.readingRoom += sale.amount;
+                            }
+                        });
+                        newChartData.push(yearData);
                     }
                 }
-                return {
-                    ...data,
-                    date: transactionDate,
-                    amount: data.amount || 0,
-                    type: 'reading_room'
-                };
-            });
 
-            const now = new Date();
-            let cutoff = new Date();
-            if (timeRange === '7d') cutoff.setDate(now.getDate() - 7);
-            else if (timeRange === '30d') cutoff.setDate(now.getDate() - 30);
-            else if (timeRange === '6m') cutoff.setMonth(now.getMonth() - 6);
-            else if (timeRange === '12m') cutoff.setMonth(now.getMonth() - 12);
-            else if (timeRange === '3y') cutoff.setFullYear(now.getFullYear() - 3);
-
-            const filteredOrders = orders.filter(o => o.date >= cutoff);
-            const filteredTxns = transactions.filter(t => t.date >= cutoff);
-
-            const totalCanteen = filteredOrders.reduce((sum, order) => sum + order.amount, 0);
-            const totalReadingRoom = filteredTxns.reduce((sum, txn) => sum + txn.amount, 0);
-
-            setStats({
-                readingRoomSales: totalReadingRoom,
-                canteenSales: totalCanteen,
-                totalEarnings: totalCanteen + totalReadingRoom
-            });
-
-            const newChartData = [];
-            const allSales = [...filteredOrders, ...filteredTxns];
-
-            if (timeRange === '7d' || timeRange === '30d') {
-                const daysToFetch = timeRange === '7d' ? 7 : 30;
-                for (let i = daysToFetch - 1; i >= 0; i--) {
-                    const d = new Date();
-                    d.setDate(d.getDate() - i);
-                    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    const dayData = { name: dateStr, readingRoom: 0, canteen: 0 };
-                    allSales.forEach(sale => {
-                        if (sale.date.toDateString() === d.toDateString()) {
-                            if (sale.type === 'canteen') dayData.canteen += sale.amount;
-                            else dayData.readingRoom += sale.amount;
-                        }
-                    });
-                    newChartData.push(dayData);
-                }
-            } else if (timeRange === '6m' || timeRange === '12m') {
-                const monthsToFetch = timeRange === '6m' ? 6 : 12;
-                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                for (let i = monthsToFetch - 1; i >= 0; i--) {
-                    const d = new Date();
-                    d.setMonth(d.getMonth() - i);
-                    const monthIdx = d.getMonth();
-                    const year = d.getFullYear();
-                    const monthData = { name: months[monthIdx], readingRoom: 0, canteen: 0 };
-                    allSales.forEach(sale => {
-                        if (sale.date.getMonth() === monthIdx && sale.date.getFullYear() === year) {
-                            if (sale.type === 'canteen') monthData.canteen += sale.amount;
-                            else monthData.readingRoom += sale.amount;
-                        }
-                    });
-                    newChartData.push(monthData);
-                }
-            } else if (timeRange === '3y') {
-                for (let i = 2; i >= 0; i--) {
-                    const d = new Date();
-                    d.setFullYear(d.getFullYear() - i);
-                    const year = d.getFullYear();
-                    const yearData = { name: year.toString(), readingRoom: 0, canteen: 0 };
-                    allSales.forEach(sale => {
-                        if (sale.date.getFullYear() === year) {
-                            if (sale.type === 'canteen') yearData.canteen += sale.amount;
-                            else yearData.readingRoom += sale.amount;
-                        }
-                    });
-                    newChartData.push(yearData);
-                }
+                // Update all state together
+                setStats({
+                    readingRoomSales: totalReadingRoom,
+                    canteenSales: totalCanteen,
+                    totalEarnings: totalCanteen + totalReadingRoom
+                });
+                setChartData(newChartData);
+                setSalesBreakdown([
+                    { name: 'Reading Room', value: totalReadingRoom },
+                    { name: 'Canteen', value: totalCanteen }
+                ]);
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
             }
-            setChartData(newChartData);
-            setSalesBreakdown([
-                { name: 'Reading Room', value: totalReadingRoom },
-                { name: 'Canteen', value: totalCanteen }
-            ]);
-        } catch (error) {
-            console.error('Error fetching dashboard data:', error);
-        }
-    };
+        };
+
+        fetchData().finally(() => {
+            onDataLoaded?.();
+        });
+    }, [timeRange, onDataLoaded]);
 
 
     return (

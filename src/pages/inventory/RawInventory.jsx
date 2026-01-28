@@ -129,14 +129,12 @@ const RawInventory = ({ onBack, onDataLoaded }) => {
                                         <td>
                                             <div className="action-buttons-simple">
                                                 <button
-                                                    className="action-btn consume"
+                                                    className="consume-btn-simple"
                                                     onClick={() => handleConsume(item.id, item.currentQty)}
                                                     disabled={item.currentQty <= 0}
                                                     title="Consume Stock (-1)"
                                                 >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="action-icon">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-9 9.375-9-9.375M11.25 12V3.75" />
-                                                    </svg>
+                                                    Consumed -1
                                                 </button>
                                                 <button
                                                     className="action-btn delete"

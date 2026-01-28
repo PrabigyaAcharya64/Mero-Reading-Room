@@ -10,6 +10,7 @@ import AdminMessages from './AdminMessages';
 import CreateAnnouncement from './CreateAnnouncement';
 import ReadingRoomManagement from '../readingroom/ReadingRoomManagement';
 import AdminBalanceLoad from './AdminBalanceLoad';
+import AdminTransactionStatement from './AdminTransactionStatement';
 import Sidebar from '../../components/Sidebar';
 import Dashboard from './Dashboard';
 import { useLoading } from '../../context/GlobalLoadingContext';
@@ -84,15 +85,10 @@ function AdminLanding() {
     if (path.includes('/admin/create-announcement')) return 'create-announcement';
     if (path.includes('/admin/reading-rooms')) return 'reading-rooms';
     if (path.includes('/admin/balance-requests')) return 'balance-requests';
+    if (path.includes('/admin/transaction-statement')) return 'transaction-statement';
     return 'dashboard';
   }, [location.pathname]);
 
-  // Clear loading state when on dashboard
-  useEffect(() => {
-    if (location.pathname === '/admin' || location.pathname === '/admin/') {
-      setIsLoading(false);
-    }
-  }, [location.pathname, setIsLoading]);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f9fafb', position: 'relative' }}>
@@ -138,6 +134,7 @@ function AdminLanding() {
           <Route path="/create-announcement" element={<CreateAnnouncement onDataLoaded={handlePageReady} />} />
           <Route path="/reading-rooms" element={<ReadingRoomManagement onDataLoaded={handlePageReady} />} />
           <Route path="/balance-requests" element={<AdminBalanceLoad onDataLoaded={handlePageReady} />} />
+          <Route path="/transaction-statement" element={<AdminTransactionStatement onDataLoaded={handlePageReady} />} />
         </Routes>
       </main>
     </div>
