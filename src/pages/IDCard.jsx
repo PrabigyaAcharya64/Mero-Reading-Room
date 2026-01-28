@@ -3,9 +3,9 @@ import { useAuth } from '../auth/AuthProvider';
 import { db } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import Button from '../components/Button';
-import FullScreenLoader from '../components/FullScreenLoader';
 import EnhancedBackButton from '../components/EnhancedBackButton';
 import PageHeader from '../components/PageHeader';
+import { useLoading } from '../context/GlobalLoadingContext';
 import '../styles/IDCard.css';
 import '../styles/StandardLayout.css';
 
@@ -13,8 +13,8 @@ const logoUrl = new URL('../assets/logo.png', import.meta.url).href;
 
 function IDCard({ onBack }) {
   const { user, signOutUser } = useAuth();
+  const { setIsLoading } = useLoading();
   const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
@@ -23,12 +23,11 @@ function IDCard({ onBack }) {
 
   const fetchUserData = async () => {
     if (!user) {
-      setLoading(false);
       return;
     }
 
     try {
-      setLoading(true);
+      setIsLoading(true);
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
@@ -47,7 +46,7 @@ function IDCard({ onBack }) {
     } catch (error) {
       console.error('Error fetching user data:', error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -118,9 +117,6 @@ function IDCard({ onBack }) {
     }
   };
 
-  if (loading) {
-    return <FullScreenLoader text="Loading your profile..." />;
-  }
 
   if (!userData) {
     return (

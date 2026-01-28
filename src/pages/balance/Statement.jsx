@@ -2,26 +2,43 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Wallet, ArrowUpRight, ArrowDownLeft, Clock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
-import { collection, query, where, orderBy, onSnapshot, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, limit, getDocs } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { useLoading } from '../../context/GlobalLoadingContext';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/Statement.css';
 
 export default function Statement({ onBack }) {
     const { user, userBalance } = useAuth();
+    const { setIsLoading } = useLoading();
     const [transactions, setTransactions] = useState([]);
     const [requests, setRequests] = useState([]);
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (!user) return;
+        setIsLoading(true);
 
-        // Fetch transactions
         const txnQuery = query(
             collection(db, 'transactions'),
             where('userId', '==', user.uid),
             orderBy('createdAt', 'desc'),
             limit(50)
         );
+
+        const reqQuery = query(
+            collection(db, 'balanceRequests'),
+            where('userId', '==', user.uid),
+            orderBy('submittedAt', 'desc'),
+            limit(20)
+        );
+
+        // Standard Batch Reveal Pattern
+        Promise.all([
+            getDocs(txnQuery),
+            getDocs(reqQuery)
+        ]).finally(() => {
+            setIsLoading(false);
+        });
 
         const unsubscribeTxn = onSnapshot(txnQuery, (snapshot) => {
             const msgs = snapshot.docs.map(doc => ({
@@ -33,16 +50,6 @@ export default function Statement({ onBack }) {
         }, (error) => {
             console.error("Error fetching transactions:", error);
         });
-
-        // Fetch Requests (Pending/Rejected)
-        // Note: Approved requests usually become transactions, so we filter them differently or show duplicates?
-        // Better to show Pending and Rejected here to give visibility on "process"
-        const reqQuery = query(
-            collection(db, 'balanceRequests'),
-            where('userId', '==', user.uid),
-            orderBy('submittedAt', 'desc'),
-            limit(20)
-        );
 
         const unsubscribeReq = onSnapshot(reqQuery, (snapshot) => {
             const msgs = snapshot.docs.map(doc => ({
@@ -56,12 +63,9 @@ export default function Statement({ onBack }) {
             console.error("Error fetching requests:", error);
         });
 
-        const timer = setTimeout(() => setLoading(false), 800); // reduced flicker
-
         return () => {
             unsubscribeTxn();
             unsubscribeReq();
-            clearTimeout(timer);
         };
     }, [user]);
 
@@ -79,16 +83,6 @@ export default function Statement({ onBack }) {
         return dateB - dateA;
     });
 
-    if (loading) {
-        return (
-            <div className="std-container">
-                <PageHeader title="Account Statement" onBack={onBack} />
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-                    <LoadingSpinner />
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="stmt-container">

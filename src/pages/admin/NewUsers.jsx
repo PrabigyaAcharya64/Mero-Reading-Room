@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, orderBy, deleteField } from 'firebase/firestore';
-import LoadingSpinner from '../../components/LoadingSpinner';
 import Button from '../../components/Button';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
@@ -14,11 +13,10 @@ import '../../styles/StandardLayout.css';
 
 const userManagementIcon = new URL('../../assets/usermanagement.svg', import.meta.url).href;
 
-function NewUsers({ onBack }) {
+function NewUsers({ onBack, onDataLoaded }) {
 
   const { user } = useAuth();
   const [pendingUsers, setPendingUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -29,12 +27,17 @@ function NewUsers({ onBack }) {
   }, [searchQuery]);
 
   useEffect(() => {
-    loadUsers();
+    // Standard Batch Reveal Pattern: Promise.all for all initial fetches
+    Promise.all([
+      loadUsers()
+    ]).finally(() => {
+      onDataLoaded?.();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadUsers = async () => {
     try {
-      setLoading(true);
       const usersRef = collection(db, 'users');
 
       // Only get users who have submitted details but are NOT yet verified
@@ -58,8 +61,6 @@ function NewUsers({ onBack }) {
       setPendingUsers(pending);
     } catch (error) {
       console.error('Error loading users:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -173,13 +174,7 @@ function NewUsers({ onBack }) {
         </div>
 
 
-        {loading && (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '50px' }}>
-            <LoadingSpinner />
-          </div>
-        )}
-
-        {!loading && displayUsers.length === 0 ? (
+        {displayUsers.length === 0 ? (
           <div className="nu-empty">
             <p>No pending verification requests at this time.</p>
           </div>
@@ -279,7 +274,7 @@ function NewUsers({ onBack }) {
         )}
 
         {/* Pagination Controls */}
-        {!loading && filteredUsers.length > 0 && (
+        {filteredUsers.length > 0 && (
           <div className="nu-pagination">
             <button
               className="nu-pagination-btn"

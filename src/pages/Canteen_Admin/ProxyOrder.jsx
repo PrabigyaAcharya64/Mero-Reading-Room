@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db, functions } from '../../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
-import { doc, onSnapshot, collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, getDocs, limit, getDoc } from 'firebase/firestore';
 import { validateOrderNote } from '../../utils/validation';
 import { getBusinessDate } from '../../utils/dateUtils';
 import PageHeader from '../../components/PageHeader';
@@ -12,7 +12,7 @@ import { Search, User, CreditCard } from 'lucide-react';
 import '../../styles/CanteenLanding.css';
 import '../../styles/StandardLayout.css';
 
-const ProxyOrder = ({ onBack }) => {
+const ProxyOrder = ({ onBack, onDataLoaded }) => {
     const [currentView, setCurrentView] = useState('user-search'); // user-search, menu, cart
     const [mrrSearch, setMrrSearch] = useState('');
     const [searching, setSearching] = useState(false);
@@ -28,6 +28,15 @@ const ProxyOrder = ({ onBack }) => {
     useEffect(() => {
         const today = getBusinessDate();
         const todaysMenuRef = doc(db, 'todaysMenu', today);
+        const fixedQ = query(collection(db, 'menuItems'), where('isFixed', '==', true));
+
+        // Standard Batch Reveal Pattern - signal parent when loaded
+        Promise.all([
+            getDoc(todaysMenuRef),
+            getDocs(fixedQ)
+        ]).finally(() => {
+            onDataLoaded?.();
+        });
 
         const unsubscribe = onSnapshot(todaysMenuRef, (snapshot) => {
             if (snapshot.exists()) {
@@ -38,7 +47,6 @@ const ProxyOrder = ({ onBack }) => {
             }
         });
 
-        const fixedQ = query(collection(db, 'menuItems'), where('isFixed', '==', true));
         const unsubscribeFixed = onSnapshot(fixedQ, (snapshot) => {
             const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setFixedMenu(items);

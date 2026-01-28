@@ -8,6 +8,7 @@ import { functions } from '../../lib/firebase';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
+import { useLoading } from '../../context/GlobalLoadingContext';
 import '../../styles/ReadingRoomManagement.css';
 
 
@@ -71,11 +72,8 @@ const ELEMENT_CONFIG = {
     door: { width: 50, height: 75 },
     window: { width: 60, height: 60 }
 };
-
 function ReadingRoomManagement({ onBack }) {
-    const { user } = useAuth();
-    // Removed global loader to prevent flashing
-
+    const { setIsLoading } = useLoading();
     const [rooms, setRooms] = useState([]);
     const [selectedRoom, setSelectedRoom] = useState(null);
     const [showRoomModal, setShowRoomModal] = useState(false);
@@ -103,81 +101,39 @@ function ReadingRoomManagement({ onBack }) {
     const [seatAssignments, setSeatAssignments] = useState([]);
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [showStudentModal, setShowStudentModal] = useState(false);
-    const [isDataReady, setIsDataReady] = useState(false);
+    const [assignmentMode, setAssignmentMode] = useState(false);
 
-    useLayoutEffect(() => {
-        const fetchDataAndImages = async () => {
-            // Only show global loader on initial mount if rooms are empty
-            // or you can do it every time if desired.
-            // For "system stays hidden until ready", we do it here.
-            // setIsLoading(true); // Disable global loader
-            try {
-                await Promise.all([
-                    loadRooms(),
-                    loadVerifiedUsers(),
-                    loadSeatAssignments()
-                ]);
-            } catch (error) {
-                console.error("Initialization failed", error);
-            } finally {
-                // The individual load functions (like loadRooms) might need tweaking
-                // to NOT set loading=false internally if we want to wait for images.
-                // However, loadRooms calls `setRooms`. We need to intercept the image loading.
-                // Let's modify the flow:
-                // 1. Fetch data
-                // 2. Preload images
-                // 3. Hide loader
-
-                // Since loadRooms sets state, we can't easily wait for it unless we modify it to return data.
-                // But for now, let's assume valid data is in state or returned.
-                // ACTUALLY, strict requirement: "only appears after... Promise.all to pre-cache images".
-
-                // We need to inspect `loadRooms` to see if we can get the data to preload images.
-                // `loadRooms` updates `rooms` state. We can't await state updates easily in same cycle.
-                // Better to refactor `loadRooms` to return data or handle image preloading inside it.
-            }
-        };
-
-        // We'll refactor loadRooms to handle the image preloading logic directly or returns data.
-        // For minimal disruption, let's inline the logic or wrap it.
-
-        // NEW IMPLEMENTATION based on user request "Implementation in @ReadingRoomManagement.jsx"
-
+    useEffect(() => {
         const init = async () => {
-            // setIsLoading(true); // Disable global loader
-            setLoading(true); // Use local loader if possible, or just let it load
+            setIsLoading(true);
             try {
                 // Parallel fetch data
                 const [roomsData] = await Promise.all([
-                    fetchRoomsData(), // Helper to get data without setting state yet
+                    fetchRoomsData(),
                     loadVerifiedUsers(),
                     loadSeatAssignments()
                 ]);
 
-                // Identify images
-                // Assuming 'imageBbUrl' property based on user prompt, though I don't see it in current file.
-                // I will check if rooms have images. The current file doesn't seem to show imageBbUrl in `loadRooms`
-                // but the user prompt explicitly mentioned it. I will assume it exists on the data.
-
+                // Identify images for pre-caching
                 const imageUrls = roomsData.map(room => room.imageBbUrl).filter(Boolean);
 
-                await Promise.all(imageUrls.map(url => {
-                    return new Promise((resolve) => {
-                        const img = new Image();
-                        img.src = url;
-                        img.onload = resolve;
-                        img.onerror = resolve;
-                    });
-                }));
+                if (imageUrls.length > 0) {
+                    await Promise.all(imageUrls.map(url => {
+                        return new Promise((resolve) => {
+                            const img = new Image();
+                            img.src = url;
+                            img.onload = resolve;
+                            img.onerror = resolve;
+                        });
+                    }));
+                }
 
                 setRooms(roomsData);
 
             } catch (error) {
                 console.error("Loading failed", error);
             } finally {
-                // setIsLoading(false);
-                setLoading(false);
-                setIsDataReady(true);
+                setIsLoading(false);
             }
         }
 
@@ -549,7 +505,6 @@ function ReadingRoomManagement({ onBack }) {
 
     const selectedRoomData = getSelectedRoomData();
 
-    if (!isDataReady) return null;
 
     return (
         <div className="rrm-container">

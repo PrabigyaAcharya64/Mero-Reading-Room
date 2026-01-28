@@ -1,8 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/StandardLayout.css';
 
-function HostelManagement({ onBack }) {
+function HostelManagement({ onBack, onDataLoaded }) {
+    useEffect(() => {
+        onDataLoaded?.();
+    }, []);
+
     return (
         <div className="std-container">
             <PageHeader title="Hostel Management" onBack={onBack} />

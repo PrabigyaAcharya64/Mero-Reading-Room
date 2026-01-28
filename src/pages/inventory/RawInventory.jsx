@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, doc, updateDoc, increment, addDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, updateDoc, increment, addDoc, deleteDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import PageHeader from '../../components/PageHeader';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/RawInventory.css';
 import '../../styles/StandardLayout.css';
 
-const RawInventory = ({ onBack }) => {
+const RawInventory = ({ onBack, onDataLoaded }) => {
     const [inventoryItems, setInventoryItems] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
     const [newItem, setNewItem] = useState({
         itemName: '',
@@ -19,16 +18,22 @@ const RawInventory = ({ onBack }) => {
 
     useEffect(() => {
         const q = query(collection(db, 'raw_materials'));
+
+        // Standard Batch Reveal Pattern - signal parent when loaded
+        getDocs(q).finally(() => {
+            onDataLoaded?.();
+        });
+
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const items = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
             setInventoryItems(items);
-            setLoading(false);
         });
 
         return () => unsubscribe();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleConsume = async (id, currentQty) => {
@@ -72,16 +77,6 @@ const RawInventory = ({ onBack }) => {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="std-container">
-                <PageHeader title="Raw Inventory" onBack={onBack} />
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-                    <LoadingSpinner />
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="std-container">

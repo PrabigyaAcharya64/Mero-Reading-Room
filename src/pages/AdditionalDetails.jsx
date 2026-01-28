@@ -5,7 +5,7 @@ import { auth, db } from '../lib/firebase';
 import { doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
 import { updateProfile, signOut } from 'firebase/auth';
 import LoadingSpinner from '../components/LoadingSpinner';
-import FullScreenLoader from '../components/FullScreenLoader';
+import { useLoading } from '../context/GlobalLoadingContext';
 import Button from '../components/Button';
 import readingRoomIcon from '../assets/readingroom.svg';
 import hostelIcon from '../assets/hostel.svg';
@@ -14,6 +14,7 @@ import { uploadImageSecurely } from '../utils/imageUpload';
 function AdditionalDetails() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { setIsLoading } = useLoading();
   const [formData, setFormData] = useState({
     name: '',
     dateOfBirth: '',
@@ -25,7 +26,6 @@ function AdditionalDetails() {
   const [mrrNumber, setMrrNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [generatingMrr, setGeneratingMrr] = useState(true);
   const interestOptions = [
     {
       value: 'Reading Room',
@@ -57,7 +57,7 @@ function AdditionalDetails() {
 
   const generateMrrNumber = async () => {
     try {
-
+      setIsLoading(true);
       const usersRef = collection(db, 'users');
       const q = query(
         usersRef,
@@ -80,12 +80,12 @@ function AdditionalDetails() {
       }
 
       setMrrNumber(nextMrrNumber);
-      setGeneratingMrr(false);
     } catch (error) {
       console.error('Error generating MRR number:', error);
       const timestamp = Date.now().toString().slice(-6);
       setMrrNumber(`MRR${timestamp}`);
-      setGeneratingMrr(false);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -170,6 +170,7 @@ function AdditionalDetails() {
     setLoading(true);
 
     try {
+      setIsLoading(true);
       // Upload photo
       const photoUrl = await uploadPhoto();
 
@@ -197,19 +198,19 @@ function AdditionalDetails() {
       }, { merge: true });
 
       // Redirect to pending verification page
+      // We don't clear setIsLoading(true) here, let the next page handle the reveal if possible
+      // or if it's a fast redirect, the reveal animation will look better there.
       navigate('/onboarding/pending');
 
     } catch (error) {
       console.error('Error saving details:', error);
       setError(error instanceof Error ? error.message : 'Failed to save details. Please try again.');
+      setIsLoading(false);
     } finally {
       setLoading(false);
     }
   };
 
-  if (generatingMrr) {
-    return <FullScreenLoader text="Generating your MRR number..." />;
-  }
 
   return (
     <div className="auth-screen">

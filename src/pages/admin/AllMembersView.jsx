@@ -2,22 +2,33 @@ import React, { useState, useEffect } from 'react';
 import PageHeader from '../../components/PageHeader';
 import UserDetailView from './UserDetailView';
 import { db } from '../../lib/firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { formatBalance } from '../../utils/formatCurrency';
 import { formatDate } from '../../utils/dateFormat';
 import { Search, Edit2, User, ChevronRight } from 'lucide-react';
 import '../../styles/StandardLayout.css';
 import '../../styles/AllMembersView.css';
 
-function AllMembersView({ onBack }) {
+function AllMembersView({ onBack, onDataLoaded }) {
     const [users, setUsers] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUser, setSelectedUser] = useState(null);
-    const [loading, setLoading] = useState(true);
     const [seatAssignmentsMap, setSeatAssignmentsMap] = useState({});
 
     useEffect(() => {
-        const seatUnsub = onSnapshot(collection(db, 'seatAssignments'), (snapshot) => {
+        const usersQ = query(collection(db, 'users'), where('verified', '==', true));
+        const seatsRef = collection(db, 'seatAssignments');
+
+        // Standard Batch Reveal Pattern - signal parent when loaded
+        Promise.all([
+            getDocs(usersQ),
+            getDocs(seatsRef)
+        ]).finally(() => {
+            onDataLoaded?.();
+        });
+
+        // Real-time listeners
+        const seatUnsub = onSnapshot(seatsRef, (snapshot) => {
             const map = {};
             snapshot.forEach(doc => {
                 const data = doc.data();
@@ -25,20 +36,19 @@ function AllMembersView({ onBack }) {
             });
             setSeatAssignmentsMap(map);
         });
-        return () => seatUnsub();
-    }, []);
 
-    useEffect(() => {
-        const q = query(collection(db, 'users'), where('verified', '==', true));
-        const unsub = onSnapshot(q, (snapshot) => {
+        const userUnsub = onSnapshot(usersQ, (snapshot) => {
             const userData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             setUsers(userData);
-            setLoading(false);
         }, (error) => {
             console.error("Error fetching users:", error);
-            setLoading(false);
         });
-        return () => unsub();
+
+        return () => {
+            seatUnsub();
+            userUnsub();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const filteredUsers = users.filter((u) => {
@@ -99,10 +109,10 @@ function AllMembersView({ onBack }) {
                     </div>
                 </div>
 
-                {loading ? (
-                    <div className="amv-loading">
-                        <div className="amv-spinner"></div>
-                        <p>Accessing member records...</p>
+                {paginatedUsers.length === 0 && users.length > 0 ? (
+                    <div className="amv-empty">
+                        <User size={48} className="amv-empty-icon" />
+                        <p>No members match your search.</p>
                     </div>
                 ) : (
                     <>
@@ -177,12 +187,12 @@ function AllMembersView({ onBack }) {
                                             </td>
                                         </tr>
                                     ))}
-                                    {paginatedUsers.length === 0 && (
+                                    {users.length === 0 && (
                                         <tr>
                                             <td colSpan="7">
                                                 <div className="amv-empty">
                                                     <User size={48} className="amv-empty-icon" />
-                                                    <p>{searchQuery ? 'No members match your search.' : 'The directory is currently empty.'}</p>
+                                                    <p>The directory is currently empty.</p>
                                                 </div>
                                             </td>
                                         </tr>

@@ -24,12 +24,10 @@ import {
 } from 'lucide-react';
 import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/Dashboard.css';
 
-function Dashboard({ onNavigate }) {
-    const [loading, setLoading] = useState(true);
+function Dashboard({ onNavigate, onDataLoaded }) {
     const [timeRange, setTimeRange] = useState('6m');
     const [isSelectOpen, setIsSelectOpen] = useState(false);
     const selectRef = useRef(null);
@@ -62,12 +60,14 @@ function Dashboard({ onNavigate }) {
     }, []);
 
     useEffect(() => {
-        fetchDashboardData();
+        fetchDashboardData().finally(() => {
+            onDataLoaded?.();
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [timeRange]);
 
     const fetchDashboardData = async () => {
         try {
-            setLoading(true);
             const ordersRef = collection(db, 'orders');
             const ordersSnapshot = await getDocs(query(ordersRef, orderBy('createdAt', 'desc')));
             const orders = ordersSnapshot.docs.map(doc => ({
@@ -172,20 +172,11 @@ function Dashboard({ onNavigate }) {
                 { name: 'Reading Room', value: totalReadingRoom },
                 { name: 'Canteen', value: totalCanteen }
             ]);
-            setLoading(false);
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
-            setLoading(false);
         }
     };
 
-    if (loading) {
-        return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                <LoadingSpinner size="40" stroke="3" color="#333" />
-            </div>
-        );
-    }
 
     return (
         <div style={{ padding: '0', maxWidth: '1600px', margin: '0 auto' }}>

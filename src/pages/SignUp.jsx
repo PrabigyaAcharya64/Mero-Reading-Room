@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { updateProfile } from 'firebase/auth';
 import { useAuth } from '../auth/AuthProvider';
+import { useLoading } from '../context/GlobalLoadingContext';
 import { auth } from '../lib/firebase';
 import { validatePassword, validateEmail, validateName } from '../utils/validation';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -11,6 +12,7 @@ import '../styles/Auth.css';
 function SignUp() {
   const navigate = useNavigate();
   const { signUpEmail, signInWithGoogle } = useAuth();
+  const { setIsLoading } = useLoading();
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -66,8 +68,8 @@ function SignUp() {
 
     setSubmitting(true);
     setFeedback({ type: '', message: '' });
-
     try {
+      setIsLoading(true);
       await signUpEmail(emailValidation.sanitized, form.password);
 
       if (auth.currentUser && nameValidation.sanitized) {
@@ -77,6 +79,7 @@ function SignUp() {
       navigate('/');
     } catch (error) {
       setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'Unable to create your account.' });
+      setIsLoading(false);
     } finally {
       setSubmitting(false);
     }
@@ -86,10 +89,12 @@ function SignUp() {
     setSubmitting(true);
     setFeedback({ type: '', message: '' });
     try {
+      setIsLoading(true);
       await signInWithGoogle();
       navigate('/');
     } catch (error) {
       setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'Google sign-up is unavailable.' });
+      setIsLoading(false);
     } finally {
       setSubmitting(false);
     }

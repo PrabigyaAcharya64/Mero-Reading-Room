@@ -7,10 +7,9 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/DryInventory.css';
 import '../../styles/StandardLayout.css';
 
-const DryInventory = ({ onBack }) => {
+const DryInventory = ({ onBack, onDataLoaded }) => {
     const [inventoryItems, setInventoryItems] = useState([]);
     const [menuItemIds, setMenuItemIds] = useState(new Set());
-    const [loading, setLoading] = useState(true);
 
     // Sync Modal State
     const [showSyncModal, setShowSyncModal] = useState(false);
@@ -34,17 +33,25 @@ const DryInventory = ({ onBack }) => {
 
     useEffect(() => {
         const q = query(collection(db, 'canteen_items'));
+        const menuQ = query(collection(db, 'menuItems'), where('stockRefId', '!=', null));
+
+
+        Promise.all([
+            getDocs(q),
+            getDocs(menuQ)
+        ]).finally(() => {
+            onDataLoaded?.();
+        });
+
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const items = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
             setInventoryItems(items);
-            setLoading(false);
         });
 
         // Listen to menuItems to track what is currently "In Menu"
-        const menuQ = query(collection(db, 'menuItems'), where('stockRefId', '!=', null));
         const menuUnsubscribe = onSnapshot(menuQ, (snapshot) => {
             const stockIds = new Set();
             snapshot.docs.forEach(doc => {
@@ -60,6 +67,7 @@ const DryInventory = ({ onBack }) => {
             unsubscribe();
             menuUnsubscribe();
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleRemoveFromMenu = async (item) => {
@@ -103,28 +111,24 @@ const DryInventory = ({ onBack }) => {
         if (!selectedItem) return;
 
         try {
-            // First check if this item is already in menuItems (to update it) or if we need to create a new one
-            // Since we don't have the menu item ID stored in inventory (only the reverse), we query for it
             const menuQ = query(collection(db, 'menuItems'), where('stockRefId', '==', selectedItem.id));
             const menuSnapshot = await getDocs(menuQ);
 
             const menuData = {
-                name: selectedItem.itemName, // Mapped to 'name' for menuItems schema
+                name: selectedItem.itemName,
                 category: selectedItem.category,
                 price: Number(syncFormData.displayPrice),
                 description: syncFormData.productDescription,
-                photoURL: syncFormData.imageURL, // Mapped to 'photoURL' for menuItems schema
+                photoURL: syncFormData.imageURL,
                 stockRefId: selectedItem.id,
-                isFixed: true, // Inventory items are treated as fixed menu items
+                isFixed: true,
                 createdAt: new Date().toISOString()
             };
 
             if (!menuSnapshot.empty) {
-                // Update existing
                 const menuItemId = menuSnapshot.docs[0].id;
                 await setDoc(doc(db, 'menuItems', menuItemId), menuData, { merge: true });
             } else {
-                // Create new
                 await addDoc(collection(db, 'menuItems'), menuData);
             }
 
@@ -289,16 +293,6 @@ const DryInventory = ({ onBack }) => {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="std-container">
-                <PageHeader title="Dry Inventory" onBack={onBack} />
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-                    <LoadingSpinner />
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="std-container">

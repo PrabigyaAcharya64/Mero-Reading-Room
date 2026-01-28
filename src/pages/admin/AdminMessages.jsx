@@ -1,15 +1,12 @@
 import { collection, doc, onSnapshot, orderBy, query, updateDoc, getDocs } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { db } from '../../lib/firebase';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/AdminMessages.css';
 import '../../styles/StandardLayout.css';
 
-function AdminMessages({ onBack }) {
+function AdminMessages({ onBack, onDataLoaded }) {
     const [messages, setMessages] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [selectedMessage, setSelectedMessage] = useState(null);
     const [statusFilter, setStatusFilter] = useState('unread');
     const [categoryFilter, setCategoryFilter] = useState('All Categories');
@@ -40,28 +37,31 @@ function AdminMessages({ onBack }) {
     };
 
     useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const usersSnap = await getDocs(collection(db, 'users'));
-                const map = {};
-                usersSnap.forEach(doc => {
-                    const data = doc.data();
-                    if (data.email && data.mrrNumber) {
-                        map[data.email] = data.mrrNumber;
-                    }
-                });
-                setUserMap(map);
-            } catch (error) {
-                console.error("Error fetching users for MRR ID mapping:", error);
-            }
-        };
-        fetchUsers();
-    }, []);
+        const usersRef = collection(db, 'users');
+        const messagesRef = collection(db, 'messages');
+        const q = query(messagesRef, orderBy('createdAt', 'desc'));
 
-    useEffect(() => {
-        const q = query(collection(db, 'messages'), orderBy('createdAt', 'desc'));
+        // Standard Batch Reveal Pattern - signal parent when loaded
+        Promise.all([
+            getDocs(usersRef),
+            getDocs(q)
+        ]).finally(() => {
+            onDataLoaded?.();
+        });
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+        // Fetch users for MRR ID mapping
+        const unsubscribeUsers = onSnapshot(usersRef, (snapshot) => {
+            const map = {};
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.email && data.mrrNumber) {
+                    map[data.email] = data.mrrNumber;
+                }
+            });
+            setUserMap(map);
+        });
+
+        const unsubscribeMessages = onSnapshot(q, (snapshot) => {
             const msgs = snapshot.docs.map(docSnapshot => {
                 const data = docSnapshot.data();
                 let createdAt = null;
@@ -87,10 +87,13 @@ function AdminMessages({ onBack }) {
                 };
             });
             setMessages(msgs);
-            setLoading(false);
         });
 
-        return () => unsubscribe();
+        return () => {
+            unsubscribeUsers();
+            unsubscribeMessages();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleMessageClick = async (message) => {
@@ -169,96 +172,90 @@ function AdminMessages({ onBack }) {
                         </div>
 
                         {/* Messages List */}
-                        {loading ? (
-                            <div className="am-loading">
-                                <LoadingSpinner size="40" stroke="3" color="#666" />
-                                <p className="am-loading-text">Loading messages...</p>
-                            </div>
-                        ) : (
-                            (() => {
-                                const filtered = messages.filter(msg => {
-                                    // Status filter
-                                    if (statusFilter === 'unread' && msg.read) return false;
+                        {(() => {
+                            const filtered = messages.filter(msg => {
+                                // Status filter
+                                if (statusFilter === 'unread' && msg.read) return false;
 
-                                    // Category filter
-                                    if (categoryFilter !== 'All Categories') {
-                                        // Match either 'Problem' or 'Problems' if it comes from old data
-                                        const msgCat = (msg.category || msg.subject || '').toLowerCase();
-                                        const filterCat = categoryFilter.toLowerCase();
-                                        if (msgCat !== filterCat && !(filterCat === 'problem' && msgCat === 'problems')) return false;
-                                    }
-
-                                    // Search query
-                                    const mrrId = userMap[msg.email] || '';
-                                    const searchLower = searchQuery.toLowerCase();
-                                    const searchMatch = searchQuery === '' ||
-                                        mrrId.toLowerCase().includes(searchLower) ||
-                                        (msg.name && msg.name.toLowerCase().includes(searchLower)) ||
-                                        (msg.message && msg.message.toLowerCase().includes(searchLower)) ||
-                                        (msg.category && msg.category.toLowerCase().includes(searchLower)) ||
-                                        (msg.subject && msg.subject.toLowerCase().includes(searchLower));
-
-                                    return searchMatch;
-                                });
-
-                                if (filtered.length === 0) {
-                                    return (
-                                        <div className="am-empty">
-                                            {searchQuery || categoryFilter !== 'All Categories' ? 'No matching messages.' : (statusFilter === 'unread' ? 'No unread messages.' : 'No messages found.')}
-                                        </div>
-                                    );
+                                // Category filter
+                                if (categoryFilter !== 'All Categories') {
+                                    // Match either 'Problem' or 'Problems' if it comes from old data
+                                    const msgCat = (msg.category || msg.subject || '').toLowerCase();
+                                    const filterCat = categoryFilter.toLowerCase();
+                                    if (msgCat !== filterCat && !(filterCat === 'problem' && msgCat === 'problems')) return false;
                                 }
 
-                                return filtered.map(msg => {
-                                    const catStyle = getCategoryStyle(msg.category || msg.subject);
-                                    return (
-                                        <div
-                                            key={msg.id}
-                                            onClick={() => handleMessageClick(msg)}
-                                            className={`am-message-item ${!msg.read ? 'unread' : ''} ${selectedMessage?.id === msg.id ? 'selected' : ''}`}
-                                        >
-                                            <div className="am-message-header">
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        <span className={`am-message-name ${!msg.read ? 'unread' : ''}`}>{msg.name}</span>
-                                                        {msg.anonymous && (
-                                                            <span style={{ fontSize: '0.6rem', backgroundColor: '#f5f5f5', color: '#666', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
-                                                                ANON
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                                                        {userMap[msg.email] && !msg.anonymous && (
-                                                            <span style={{ fontSize: '0.75rem', color: '#666', fontWeight: 'bold' }}>
-                                                                {userMap[msg.email]}
-                                                            </span>
-                                                        )}
-                                                        <span style={{
-                                                            fontSize: '0.65rem',
-                                                            backgroundColor: catStyle.bg,
-                                                            color: catStyle.text,
-                                                            padding: '2px 8px',
-                                                            borderRadius: '12px',
-                                                            fontWeight: '700',
-                                                            textTransform: 'uppercase',
-                                                            border: `1px solid ${catStyle.border}`
-                                                        }}>
-                                                            {(msg.category || msg.subject || 'GENERAL').replace(/s$/, '')}
+                                // Search query
+                                const mrrId = userMap[msg.email] || '';
+                                const searchLower = searchQuery.toLowerCase();
+                                const searchMatch = searchQuery === '' ||
+                                    mrrId.toLowerCase().includes(searchLower) ||
+                                    (msg.name && msg.name.toLowerCase().includes(searchLower)) ||
+                                    (msg.message && msg.message.toLowerCase().includes(searchLower)) ||
+                                    (msg.category && msg.category.toLowerCase().includes(searchLower)) ||
+                                    (msg.subject && msg.subject.toLowerCase().includes(searchLower));
+
+                                return searchMatch;
+                            });
+
+                            if (filtered.length === 0) {
+                                return (
+                                    <div className="am-empty">
+                                        {searchQuery || categoryFilter !== 'All Categories' ? 'No matching messages.' : (statusFilter === 'unread' ? 'No unread messages.' : 'No messages found.')}
+                                    </div>
+                                );
+                            }
+
+                            return filtered.map(msg => {
+                                const catStyle = getCategoryStyle(msg.category || msg.subject);
+                                return (
+                                    <div
+                                        key={msg.id}
+                                        onClick={() => handleMessageClick(msg)}
+                                        className={`am-message-item ${!msg.read ? 'unread' : ''} ${selectedMessage?.id === msg.id ? 'selected' : ''}`}
+                                    >
+                                        <div className="am-message-header">
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <span className={`am-message-name ${!msg.read ? 'unread' : ''}`}>{msg.name}</span>
+                                                    {msg.anonymous && (
+                                                        <span style={{ fontSize: '0.6rem', backgroundColor: '#f5f5f5', color: '#666', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                                            ANON
                                                         </span>
-                                                    </div>
+                                                    )}
                                                 </div>
-                                                <span className="am-message-date">
-                                                    {msg.createdAt ? msg.createdAt.toLocaleDateString() : 'N/A'}
-                                                </span>
+                                                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                                                    {userMap[msg.email] && !msg.anonymous && (
+                                                        <span style={{ fontSize: '0.75rem', color: '#666', fontWeight: 'bold' }}>
+                                                            {userMap[msg.email]}
+                                                        </span>
+                                                    )}
+                                                    <span style={{
+                                                        fontSize: '0.65rem',
+                                                        backgroundColor: catStyle.bg,
+                                                        color: catStyle.text,
+                                                        padding: '2px 8px',
+                                                        borderRadius: '12px',
+                                                        fontWeight: '700',
+                                                        textTransform: 'uppercase',
+                                                        border: `1px solid ${catStyle.border}`
+                                                    }}>
+                                                        {(msg.category || msg.subject || 'GENERAL').replace(/s$/, '')}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <div className="am-message-preview">
-                                                {msg.message}
-                                            </div>
+                                            <span className="am-message-date">
+                                                {msg.createdAt ? msg.createdAt.toLocaleDateString() : 'N/A'}
+                                            </span>
                                         </div>
-                                    );
-                                });
-                            })()
-                        )}
+                                        <div className="am-message-preview">
+                                            {msg.message}
+                                        </div>
+                                    </div>
+                                );
+                            });
+                        })()
+                        }
                     </div>
 
                     {/* Message Detail */}

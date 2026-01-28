@@ -1,10 +1,13 @@
 import { useAuth } from '../auth/AuthProvider';
+import { useLoading } from '../context/GlobalLoadingContext';
 import Button from '../components/Button';
 
 function PendingVerification() {
   const { signOutUser } = useAuth();
+  const { setIsLoading } = useLoading();
 
   const handleReturnToLogin = async () => {
+    setIsLoading(true);
     await signOutUser();
     // Reload the page to return to login screen
     window.location.href = '/';

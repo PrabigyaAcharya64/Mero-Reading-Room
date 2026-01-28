@@ -12,10 +12,7 @@ import CanteenPreviewAdmin from './CanteenPreviewAdmin';
 import '../../styles/MenuManagement.css';
 import '../../styles/StandardLayout.css';
 import { uploadImageSecurely } from '../../utils/imageUpload';
-
-function MenuManagement({ onBack }) {
-  const { user } = useAuth();
-
+function MenuManagement({ onBack, onDataLoaded }) {
   const [menuItems, setMenuItems] = useState([]);
   const [todaysMenu, setTodaysMenu] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
@@ -29,17 +26,17 @@ function MenuManagement({ onBack }) {
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [pageLoading, setPageLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     const initData = async () => {
-      setPageLoading(true);
       await Promise.all([loadMenuItems(), loadTodaysMenu()]);
-      setPageLoading(false);
+      // Signal parent that data is loaded
+      onDataLoaded?.();
     };
     initData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -208,11 +205,6 @@ function MenuManagement({ onBack }) {
     <div className="std-container">
       <PageHeader title="Menu Management" onBack={onBack} />
 
-      {pageLoading && (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-          <LoadingSpinner />
-        </div>
-      )}
 
       <main className="std-body mm-grid-layout">
         {/* Sidebar: Add Form */}

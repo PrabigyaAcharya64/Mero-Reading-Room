@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
+import { useLoading } from '../context/GlobalLoadingContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Button from '../components/Button';
 import '../styles/Auth.css';
@@ -9,6 +10,7 @@ function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { signInEmail, signInWithGoogle, resetPassword } = useAuth();
+  const { setIsLoading } = useLoading();
   const [form, setForm] = useState({ email: '', password: '' });
   const [feedback, setFeedback] = useState({ type: '', message: '' });
   const [submitting, setSubmitting] = useState(false);
@@ -32,13 +34,14 @@ function Login() {
       return;
     }
 
-    setSubmitting(true);
-    setFeedback({ type: '', message: '' });
     try {
+      setIsLoading(true);
       await signInEmail(form.email, form.password);
+      // We don't clear loading here, let the next page handle the reveal
       navigate(from, { replace: true });
     } catch (error) {
       setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'Unable to sign in right now.' });
+      setIsLoading(false);
     } finally {
       setSubmitting(false);
     }
@@ -72,10 +75,13 @@ function Login() {
     setSubmitting(true);
     setFeedback({ type: '', message: '' });
     try {
+      setIsLoading(true);
       await signInWithGoogle();
+      // Next page handles reveal
       navigate(from, { replace: true });
     } catch (error) {
       setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'Unable to sign in with Google.' });
+      setIsLoading(false);
     } finally {
       setSubmitting(false);
     }

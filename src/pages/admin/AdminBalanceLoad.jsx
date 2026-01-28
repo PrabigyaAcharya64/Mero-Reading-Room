@@ -13,25 +13,30 @@ import {
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../../lib/firebase';
 import {
+    getDocs
+} from 'firebase/firestore';
+import {
     Check,
     X,
     Clock,
     CreditCard,
     ExternalLink,
     ZoomIn,
-    History
+    History,
+    Search
 } from 'lucide-react';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/AdminBalanceLoad.css';
 
-export default function AdminBalanceLoad({ onBack }) {
+export default function AdminBalanceLoad({ onBack, onDataLoaded }) {
     const [requests, setRequests] = useState([]);
     const [history, setHistory] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('pending');
     const [processingId, setProcessingId] = useState(null);
     const [selectedImage, setSelectedImage] = useState(null);
+    const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
@@ -40,7 +45,7 @@ export default function AdminBalanceLoad({ onBack }) {
     // Reset page when tab changes
     useEffect(() => {
         setCurrentPage(1);
-    }, [activeTab]);
+    }, [activeTab, searchQuery]);
 
     // Fetch Pending Requests
     useEffect(() => {
@@ -50,30 +55,40 @@ export default function AdminBalanceLoad({ onBack }) {
             orderBy('submittedAt', 'desc')
         );
 
+        // Standard Batch Reveal Pattern - signal parent when loaded
+        getDocs(q).finally(() => {
+            onDataLoaded?.();
+        });
+
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const msgs = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
             setRequests(msgs);
-            setLoading(false);
         }, (error) => {
             console.error("Error fetching balance requests:", error);
-            setLoading(false);
         });
 
         return () => unsubscribe();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Fetch History (Approved/Rejected)
     useEffect(() => {
         if (activeTab === 'history') {
+            setIsLoadingHistory(true);
             const q = query(
                 collection(db, 'balanceRequests'),
                 where('status', 'in', ['approved', 'rejected']),
                 orderBy('submittedAt', 'desc'),
                 limit(50)
             );
+
+            // Initial fetch to clear loading state
+            getDocs(q).finally(() => {
+                setIsLoadingHistory(false);
+            });
 
             const unsubscribe = onSnapshot(q, (snapshot) => {
                 const msgs = snapshot.docs.map(doc => ({
@@ -128,16 +143,6 @@ export default function AdminBalanceLoad({ onBack }) {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="std-container">
-                <PageHeader title="Balance Requests" onBack={onBack} />
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-                    <LoadingSpinner />
-                </div>
-            </div>
-        );
-    }
 
     const headerActions = (
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -230,55 +235,95 @@ export default function AdminBalanceLoad({ onBack }) {
                 )
             ) : (
                 <div className="abl-grid-history">
-                    {history.length === 0 ? (
-                        <div className="abl-empty">
-                            <h3 className="abl-empty-title">No History</h3>
-                            <p className="abl-empty-text">No past requests found.</p>
+                    {!isLoadingHistory && (
+                        <div className="abl-history-search-row">
+                            <div className="abl-search-wrapper">
+                                <Search className="abl-search-icon" size={18} />
+                                <input
+                                    type="text"
+                                    placeholder="Search by Transaction ID..."
+                                    className="abl-search-input"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    )}
+                    {isLoadingHistory ? (
+                        <div className="abl-history-loading">
+                            <LoadingSpinner size="35" color="var(--color-primary, #000)" />
                         </div>
                     ) : (
-                        <>
-                            {history.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((req) => (
-                                <div key={req.id} className="abl-card-history">
-                                    <div className="abl-history-header">
-                                        <div>
-                                            <span className={`abl-status-badge ${req.status}`}>
-                                                {req.status === 'approved' ? <Check size={12} /> : <X size={12} />} {req.status}
-                                            </span>
-                                            <span className="abl-history-date">{req.submittedAt?.toDate().toLocaleString()}</span>
+                        <div className="reveal-container active" style={{ gridColumn: '1 / -1' }}>
+                            {(() => {
+                                const filteredHistory = history.filter(req =>
+                                    req.transactionId?.toLowerCase().includes(searchQuery.toLowerCase())
+                                );
+
+                                if (filteredHistory.length === 0) {
+                                    return (
+                                        <div className="abl-empty">
+                                            <h3 className="abl-empty-title">
+                                                {searchQuery ? "No Matches Found" : "No History"}
+                                            </h3>
+                                            <p className="abl-empty-text">
+                                                {searchQuery ? `No requests found for "${searchQuery}"` : "No past requests found."}
+                                            </p>
                                         </div>
-                                        <button className="abl-view-receipt-sm" onClick={() => setSelectedImage(req.receiptUrl)}>View Receipt</button>
-                                    </div>
-                                    <div className="abl-history-content">
-                                        <div className="abl-history-user">
-                                            <strong>{req.userName}</strong>
-                                            <span>{req.userEmail}</span>
+                                    );
+                                }
+
+                                return (
+                                    <>
+                                        <div className="abl-grid-history-list">
+                                            {filteredHistory.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((req) => (
+                                                <div key={req.id} className="abl-card-history">
+                                                    <div className="abl-history-header">
+                                                        <div>
+                                                            <span className={`abl-status-badge ${req.status}`}>
+                                                                {req.status === 'approved' ? <Check size={12} /> : <X size={12} />} {req.status}
+                                                            </span>
+                                                            <span className="abl-history-date">{req.submittedAt?.toDate().toLocaleString()}</span>
+                                                        </div>
+                                                        <button className="abl-view-receipt-sm" onClick={() => setSelectedImage(req.receiptUrl)}>View Receipt</button>
+                                                    </div>
+                                                    <div className="abl-history-content">
+                                                        <div className="abl-history-user">
+                                                            <strong>{req.userName}</strong>
+                                                            <span>{req.userEmail}</span>
+                                                        </div>
+                                                        <div className="abl-history-amount">रु {req.amount}</div>
+                                                    </div>
+                                                    <div className="abl-history-footer">
+                                                        <span>Txn: <span className="abl-mono">{req.transactionId}</span></span>
+                                                        {req.rejectionReason && <span className="abl-reject-reason">Reason: {req.rejectionReason}</span>}
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
-                                        <div className="abl-history-amount">रु {req.amount}</div>
-                                    </div>
-                                    <div className="abl-history-footer">
-                                        <span>Txn: <span className="abl-mono">{req.transactionId}</span></span>
-                                        {req.rejectionReason && <span className="abl-reject-reason">Reason: {req.rejectionReason}</span>}
-                                    </div>
-                                </div>
-                            ))}
-                            {history.length > itemsPerPage && (
-                                <div className="abl-pagination">
-                                    <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="abl-page-btn">Prev</button>
-                                    <span className="abl-page-info">{currentPage} / {Math.ceil(history.length / itemsPerPage)}</span>
-                                    <button disabled={currentPage === Math.ceil(history.length / itemsPerPage)} onClick={() => setCurrentPage(p => p + 1)} className="abl-page-btn">Next</button>
-                                </div>
-                            )}
-                        </>
+                                        {filteredHistory.length > itemsPerPage && (
+                                            <div className="abl-pagination">
+                                                <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="abl-page-btn">Prev</button>
+                                                <span className="abl-page-info">{currentPage} / {Math.ceil(filteredHistory.length / itemsPerPage)}</span>
+                                                <button disabled={currentPage === Math.ceil(filteredHistory.length / itemsPerPage)} onClick={() => setCurrentPage(p => p + 1)} className="abl-page-btn">Next</button>
+                                            </div>
+                                        )}
+                                    </>
+                                );
+                            })()}
+                        </div>
                     )}
                 </div>
             )}
 
-            {selectedImage && (
-                <div className="abl-modal-overlay" onClick={() => setSelectedImage(null)}>
-                    <button onClick={() => setSelectedImage(null)} className="abl-close-btn"><X size={24} /></button>
-                    <img src={selectedImage} alt="Receipt Full" className="abl-modal-img" onClick={(e) => e.stopPropagation()} />
-                </div>
-            )}
-        </div>
+            {
+                selectedImage && (
+                    <div className="abl-modal-overlay" onClick={() => setSelectedImage(null)}>
+                        <button onClick={() => setSelectedImage(null)} className="abl-close-btn"><X size={24} /></button>
+                        <img src={selectedImage} alt="Receipt Full" className="abl-modal-img" onClick={(e) => e.stopPropagation()} />
+                    </div>
+                )
+            }
+        </div >
     );
 }

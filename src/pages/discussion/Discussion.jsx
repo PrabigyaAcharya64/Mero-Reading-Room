@@ -6,6 +6,7 @@ import { useAuth } from '../../auth/AuthProvider';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/Discussion.css';
 import '../../styles/StandardLayout.css';
+import { useLoading } from '../../context/GlobalLoadingContext';
 import PageHeader from '../../components/PageHeader';
 
 const SLOTS = [
@@ -18,7 +19,7 @@ const SLOTS = [
 
 const Discussion = ({ onBack }) => {
     const { user } = useAuth();
-    const [loading, setLoading] = useState(true);
+    const { setIsLoading } = useLoading();
 
     useEffect(() => {
         const verifyMembership = async () => {
@@ -89,12 +90,18 @@ const Discussion = ({ onBack }) => {
     };
 
     useEffect(() => {
+        setIsLoading(true);
         const dateStr = getLogicalDateString();
         // Query all bookings for this date
         const q = query(
             collection(db, 'discussion_rooms'),
             where('date', '==', dateStr)
         );
+
+        // Standard Batch Reveal Pattern
+        getDocs(q).finally(() => {
+            setIsLoading(false);
+        });
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const newBookings = {};
@@ -105,11 +112,9 @@ const Discussion = ({ onBack }) => {
                 }
             });
             setBookings(newBookings);
-            setLoading(false);
         }, (err) => {
             console.error("Error listening to bookings:", err);
             setError("Failed to load bookings.");
-            setLoading(false);
         });
 
         return () => unsubscribe();
@@ -338,13 +343,6 @@ const Discussion = ({ onBack }) => {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="loading-container">
-                <LoadingSpinner size="40" stroke="3" color="#333" />
-            </div>
-        );
-    }
 
     // Render List of Slots
     if (viewMode === 'list') {

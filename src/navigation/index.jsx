@@ -9,13 +9,14 @@ import LandingPage from '../pages/LandingPage';
 import AdminLanding from '../pages/admin/AdminLanding';
 import CanteenAdminLanding from '../pages/Canteen_Admin/CanteenAdminLanding';
 import { useAuth } from '../auth/AuthProvider';
+import { useLoading } from '../context/GlobalLoadingContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import FullScreenLoader from '../components/FullScreenLoader';
 
 // Protected Route Component
 function ProtectedRoute({ children, requiredRole }) {
     const { user, userRole, loading } = useAuth();
+    const { setIsLoading } = useLoading();
     const [isVerified, setIsVerified] = useState(null);
     const [needsDetails, setNeedsDetails] = useState(false);
     const [checking, setChecking] = useState(true);
@@ -60,7 +61,13 @@ function ProtectedRoute({ children, requiredRole }) {
         if (!loading) checkStatus();
     }, [user, userRole, loading]);
 
-    if (loading || checking) return <FullScreenLoader />;
+    useEffect(() => {
+        if (loading || checking) {
+            setIsLoading(true);
+        }
+    }, [loading, checking, setIsLoading]);
+
+    if (loading || checking) return null;
 
     if (!user) {
         return <Navigate to="/login" state={{ from: location }} replace />;
@@ -83,9 +90,14 @@ function ProtectedRoute({ children, requiredRole }) {
 
 export function NavigationRoot() {
     const { user, userRole, loading } = useAuth();
+    const { setIsLoading } = useLoading();
+
+    useEffect(() => {
+        if (loading) setIsLoading(true);
+    }, [loading, setIsLoading]);
 
     // Global loading state
-    if (loading) return <FullScreenLoader />;
+    if (loading) return null;
 
     return (
         <Routes>

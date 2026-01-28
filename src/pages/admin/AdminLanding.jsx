@@ -12,12 +12,13 @@ import ReadingRoomManagement from '../readingroom/ReadingRoomManagement';
 import AdminBalanceLoad from './AdminBalanceLoad';
 import Sidebar from '../../components/Sidebar';
 import Dashboard from './Dashboard';
+import { useLoading } from '../../context/GlobalLoadingContext';
 import { collection, query, where, onSnapshot, deleteDoc, doc, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import '../../styles/StandardLayout.css';
 
 function AdminLanding() {
   const { user, signOutUser } = useAuth();
+  const { setIsLoading } = useLoading();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
@@ -26,9 +27,14 @@ function AdminLanding() {
   const [announcements, setAnnouncements] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
 
-  // Navigate using React Router
+  // Navigate using React Router with loading state
   const handleNavigate = (view) => {
+    setIsLoading(true);
     navigate(view === 'dashboard' ? '/admin' : `/admin/${view}`);
+  };
+
+  const handlePageReady = () => {
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -81,6 +87,13 @@ function AdminLanding() {
     return 'dashboard';
   }, [location.pathname]);
 
+  // Clear loading state when on dashboard
+  useEffect(() => {
+    if (location.pathname === '/admin' || location.pathname === '/admin/') {
+      setIsLoading(false);
+    }
+  }, [location.pathname, setIsLoading]);
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f9fafb', position: 'relative' }}>
 
@@ -114,17 +127,17 @@ function AdminLanding() {
         position: 'relative'
       }}>
         <Routes>
-          <Route path="/" element={<Dashboard onNavigate={handleNavigate} />} />
+          <Route path="/" element={<Dashboard onNavigate={handleNavigate} onDataLoaded={handlePageReady} />} />
           <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
-          <Route path="/user-management" element={<UserManagement onNavigate={handleNavigate} />} />
-          <Route path="/hostel" element={<HostelManagement />} />
-          <Route path="/new-users" element={<NewUsers onBack={() => navigate('/admin/user-management')} />} />
-          <Route path="/all-members" element={<AllMembersView onBack={() => navigate('/admin/user-management')} />} />
-          <Route path="/canteen/*" element={<CanteenAdminLanding />} />
-          <Route path="/messages" element={<AdminMessages />} />
-          <Route path="/create-announcement" element={<CreateAnnouncement />} />
-          <Route path="/reading-rooms" element={<ReadingRoomManagement />} />
-          <Route path="/balance-requests" element={<AdminBalanceLoad />} />
+          <Route path="/user-management" element={<UserManagement onNavigate={handleNavigate} onDataLoaded={handlePageReady} />} />
+          <Route path="/hostel" element={<HostelManagement onBack={() => handleNavigate('dashboard')} onDataLoaded={handlePageReady} />} />
+          <Route path="/new-users" element={<NewUsers onBack={() => handleNavigate('user-management')} onDataLoaded={handlePageReady} />} />
+          <Route path="/all-members" element={<AllMembersView onBack={() => handleNavigate('user-management')} onDataLoaded={handlePageReady} />} />
+          <Route path="/canteen/*" element={<CanteenAdminLanding onDataLoaded={handlePageReady} />} />
+          <Route path="/messages" element={<AdminMessages onDataLoaded={handlePageReady} />} />
+          <Route path="/create-announcement" element={<CreateAnnouncement onDataLoaded={handlePageReady} />} />
+          <Route path="/reading-rooms" element={<ReadingRoomManagement onDataLoaded={handlePageReady} />} />
+          <Route path="/balance-requests" element={<AdminBalanceLoad onDataLoaded={handlePageReady} />} />
         </Routes>
       </main>
     </div>

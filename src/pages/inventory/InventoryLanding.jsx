@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/StandardLayout.css';
 
 const rawIcon = new URL('../../assets/raw.png', import.meta.url).href;
 const dryIcon = new URL('../../assets/dry.svg', import.meta.url).href;
 
-const InventoryLanding = ({ onBack, onNavigate }) => {
+const InventoryLanding = ({ onBack, onNavigate, onDataLoaded }) => {
+    useEffect(() => {
+        onDataLoaded?.();
+    }, []);
     return (
         <div className="std-container">
             <PageHeader title="Inventory Management" onBack={onBack} />
