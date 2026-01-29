@@ -166,11 +166,10 @@ export default function AdminBalanceLoad({ onBack, onDataLoaded }) {
 
     return (
         <div className="abl-container">
-            <PageHeader
-                title="Balance Requests"
-                onBack={onBack}
-                rightElement={headerActions}
-            />
+            {/* Tabs moved into content area for cleaner layout */}
+            <div style={{ padding: '16px 24px 0', backgroundColor: 'var(--color-background)' }}>
+                {headerActions}
+            </div>
 
             {activeTab === 'pending' ? (
                 requests.length === 0 ? (

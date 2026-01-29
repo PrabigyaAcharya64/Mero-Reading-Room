@@ -9,8 +9,8 @@ export const LoadingProvider = ({ children }) => {
     const [shouldShowContent, setShouldShowContent] = useState(false);
 
     const loadingStartTime = useRef(0);
-    const MIN_LOADING_TIME = 600;
-    const FADE_DURATION = 300;
+    const MIN_LOADING_TIME = 800; // Increased for a more premium feel
+    const FADE_DURATION = 400;
 
     const setIsLoading = useCallback((loading) => {
         if (loading) {
@@ -23,10 +23,13 @@ export const LoadingProvider = ({ children }) => {
             const elapsed = currentTime - loadingStartTime.current;
             const remaining = Math.max(0, MIN_LOADING_TIME - elapsed);
 
+            // Wait for minimum loading time to prevent flashes
             setTimeout(() => {
                 setIsFadingOut(true);
-                setShouldShowContent(true);
+                // Begin revealing content slightly before the loader is fully gone
+                setTimeout(() => setShouldShowContent(true), 100);
 
+                // Final cleanup after fade animation
                 setTimeout(() => {
                     setIsLoadingState(false);
                     setIsFadingOut(false);

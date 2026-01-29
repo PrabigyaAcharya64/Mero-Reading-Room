@@ -212,32 +212,32 @@ function CanteenClient({ onBack }) {
       <PageHeader title="Canteen" onBack={onBack} />
 
       <main className="std-body">
-        <div className="canteen-header">
-          <h1 className="header-title" style={{ flex: 1, textAlign: 'center', display: 'none' }}>Canteen</h1>
+        <div className="discussion-card">
+          <h1 className="page-title">Canteen Services</h1>
+          <p className="page-subtitle">
+            Order food or view your transaction history.
+          </p>
 
-          <div className="landing-balance" style={{ display: 'none', visibility: 'hidden' }}></div>
-        </div>
-
-        <div className="canteen-content">
-          <div className="canteen-buttons-wrapper">
+          <div className="landing-services__grid" style={{ marginTop: '24px' }}>
             <button
-              className="canteen-main-button"
+              type="button"
+              className="landing-service-card"
               onClick={() => setCurrentView('menu')}
             >
-              <div className="button-icon-wrapper">
-                <img src={foodIcon} alt="Menu" style={{ width: 48, height: 48, objectFit: 'contain' }} />
-              </div>
-              <span className="button-text">Menu</span>
+              <span className="landing-service-card__icon">
+                <img src={foodIcon} alt="" aria-hidden="true" style={{ width: '32px', height: '32px' }} />
+              </span>
+              <span className="landing-service-card__label">Menu</span>
             </button>
-
             <button
-              className="canteen-main-button"
+              type="button"
+              className="landing-service-card"
               onClick={() => setCurrentView('orders')}
             >
-              <div className="button-icon-wrapper">
-                <img src={orderIcon} alt="Orders" style={{ width: 48, height: 48, objectFit: 'contain' }} />
-              </div>
-              <span className="button-text">Orders</span>
+              <span className="landing-service-card__icon">
+                <img src={orderIcon} alt="" aria-hidden="true" style={{ width: '32px', height: '32px' }} />
+              </span>
+              <span className="landing-service-card__label">My Orders</span>
             </button>
           </div>
         </div>

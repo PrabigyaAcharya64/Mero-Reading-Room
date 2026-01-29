@@ -1,587 +1,388 @@
-/* Transaction Statement - Professional Interface */
+/* Transaction Statement - iOS Inspired Premium Interface */
 
+/* Base container with standard background */
 .txn-statement-container {
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    background-color: #f9fafb;
-    font-family: var(--font-system);
+    min-height: 100vh;
+    background-color: #F2F2F7; /* iOS System Background Secondary */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #000;
 }
 
-/* Header */
-.txn-statement-header {
-    background-color: #fff;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid #e5e7eb;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 30;
-}
 
-.txn-header-left {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.txn-back-btn {
-    padding: 0.5rem;
-    margin-left: -0.5rem;
-    border-radius: 9999px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    transition: background-color var(--transition-base);
-}
-
-.txn-back-btn:hover {
-    background-color: #f3f4f6;
-}
-
-.txn-statement-title {
-    font-weight: 700;
-    font-size: 1.125rem;
-    color: #111827;
-}
-
-/* Summary Header - "At a Glance" Stats */
-.txn-summary-section {
-    background-color: #fff;
-    padding: 1.5rem;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.txn-summary-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.txn-summary-card {
-    background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
-    border: 1px solid #e5e7eb;
-    border-radius: var(--radius-lg);
-    padding: 1.25rem;
-    transition: all var(--transition-base);
-}
-
-.txn-summary-card:hover {
-    box-shadow: var(--shadow-card);
-    transform: translateY(-2px);
-}
-
-.txn-summary-label {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 0.5rem;
-}
-
-.txn-summary-value {
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin-bottom: 0.25rem;
-}
-
-.txn-summary-value.inflow {
-    color: #16a34a;
-}
-
-.txn-summary-value.outflow {
-    color: #dc2626;
-}
-
-.txn-summary-value.balance {
-    color: #111827;
-}
-
-.txn-summary-subtext {
-    font-size: 0.75rem;
-    color: #9ca3af;
-}
-
-/* Advanced Filtering Bar */
+/* Filter Section - Segmented Control Feel */
 .txn-filter-bar {
-    background-color: #fff;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid #e5e7eb;
-    position: sticky;
-    top: 65px;
-    z-index: 20;
+    background-color: #F2F2F7;
+    padding: 24px 16px;
 }
 
 .txn-filter-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    max-width: 1200px;
+    max-width: 600px;
     margin: 0 auto;
-    align-items: center;
-}
-
-.txn-filter-group {
     display: flex;
-    gap: 0.75rem;
-    align-items: center;
+    flex-direction: column;
+    gap: 16px;
 }
 
-.txn-filter-label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #374151;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-/* Date Range Buttons */
+/* Date Presets as Segmented Control */
 .txn-date-presets {
     display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+    background-color: rgba(118, 118, 128, 0.12);
+    border-radius: 8px;
+    padding: 2px;
+    width: 100%;
 }
 
 .txn-date-preset-btn {
-    padding: 0.5rem 1rem;
-    background-color: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: var(--radius-md);
-    font-size: 0.875rem;
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 6px 4px;
+    border-radius: 7px;
+    font-size: 13px;
     font-weight: 500;
-    color: #374151;
+    color: #000;
     cursor: pointer;
-    transition: all var(--transition-base);
-    white-space: nowrap;
-}
-
-.txn-date-preset-btn:hover {
-    background-color: #f9fafb;
-    border-color: #d1d5db;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .txn-date-preset-btn.active {
-    background-color: #111827;
-    color: #fff;
-    border-color: #111827;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    background-color: #FFF;
+    box-shadow: 0 3px 1px rgba(0,0,0,0.04), 0 3px 8px rgba(0,0,0,0.12);
 }
 
-/* Custom Date Inputs */
-.txn-date-input {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #e5e7eb;
-    border-radius: var(--radius-md);
-    font-size: 0.875rem;
-    font-family: var(--font-system);
-    color: #374151;
-    background-color: #fff;
-    transition: border-color var(--transition-base);
-}
-
-.txn-date-input:focus {
-    outline: none;
-    border-color: #111827;
-}
-
-/* Transaction Type Dropdown */
-.txn-type-select {
-    padding: 0.5rem 1rem;
-    border: 1px solid #e5e7eb;
-    border-radius: var(--radius-md);
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #374151;
-    background-color: #fff;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    min-width: 150px;
-}
-
-.txn-type-select:hover {
-    border-color: #d1d5db;
-}
-
-.txn-type-select:focus {
-    outline: none;
-    border-color: #111827;
-}
-
-/* Search Bar */
+/* iOS Search Bar Style */
 .txn-search-wrapper {
     position: relative;
-    flex: 1;
-    max-width: 400px;
+    width: 100%;
 }
 
 .txn-search-input {
     width: 100%;
-    padding: 0.5rem 1rem 0.5rem 2.5rem;
-    border: 1px solid #e5e7eb;
-    border-radius: var(--radius-md);
-    font-size: 0.875rem;
-    font-family: var(--font-system);
-    color: #374151;
-    background-color: #fff;
-    transition: all var(--transition-base);
+    background-color: rgba(118, 118, 128, 0.12);
+    border: none;
+    border-radius: 10px;
+    padding: 8px 12px 8px 36px;
+    font-size: 17px;
+    color: #000;
+    outline: none;
 }
 
-.txn-search-input:focus {
-    outline: none;
-    border-color: #111827;
-    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+.txn-search-input::placeholder {
+    color: #8E8E93;
 }
 
 .txn-search-icon {
     position: absolute;
-    left: 0.75rem;
+    left: 10px;
     top: 50%;
     transform: translateY(-50%);
-    color: #9ca3af;
+    color: #8E8E93;
     pointer-events: none;
 }
 
-/* Main Content */
+/* Grouped List Style for Transactions */
 .txn-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 1.5rem;
+    padding: 0 16px 40px;
 }
 
 .txn-content-inner {
-    max-width: 1200px;
+    max-width: 600px;
     margin: 0 auto;
 }
 
-/* Transaction List */
-.txn-list {
-    display: grid;
-    gap: 0.75rem;
+.txn-date-group {
+    margin-top: 24px;
+}
+
+.txn-date-group-header {
+    padding: 0 0 8px 16px;
+    font-size: 13px;
+    font-weight: 400;
+    color: #8E8E93;
+    text-transform: uppercase;
+}
+
+.txn-list-section {
+    background-color: #FFF;
+    border-radius: 12px;
+    overflow: hidden;
 }
 
 .txn-item {
-    background-color: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: var(--radius-lg);
-    padding: 1rem 1.25rem;
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 1rem;
+    display: flex;
     align-items: center;
+    padding: 12px 16px;
+    background-color: #FFF;
     cursor: pointer;
-    transition: all var(--transition-base);
+    transition: background-color 0.2s;
+    position: relative;
 }
 
-.txn-item:hover {
-    box-shadow: var(--shadow-card);
-    border-color: #d1d5db;
+.txn-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 60px;
+    right: 0;
+    bottom: 0;
+    height: 0.5px;
+    background-color: #C6C6C8;
 }
 
-/* Transaction Icon */
+.txn-item:active {
+    background-color: #E5E5EA;
+}
+
+/* Icon Container */
 .txn-icon {
-    width: 2.75rem;
-    height: 2.75rem;
-    border-radius: var(--radius-md);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-right: 12px;
     flex-shrink: 0;
 }
 
+/* iOS Semantic Colors for Icons */
 .txn-icon.inflow {
-    background-color: #f0fdf4;
-    color: #16a34a;
+    background-color: #E8F5E9; /* Apple-ish green soft */
+    color: #34C759; /* iOS Green */
 }
 
 .txn-icon.outflow {
-    background-color: #fef2f2;
-    color: #dc2626;
+    background-color: #FFF5F5;
+    color: #FF3B30; /* iOS Red */
 }
 
-.txn-icon.pending {
-    background-color: #fef3c7;
-    color: #d97706;
-}
-
-/* Transaction Details (Middle Section) */
+/* Detail Section */
 .txn-details {
+    flex: 1;
     min-width: 0;
 }
 
 .txn-merchant-name {
-    font-weight: 700;
-    font-size: 1rem;
-    color: #111827;
-    margin: 0 0 0.25rem 0;
+    font-size: 17px;
+    font-weight: 500;
+    color: #000;
+    margin: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .txn-timestamp {
-    font-size: 0.75rem;
-    color: #6b7280;
-    margin-bottom: 0.25rem;
+    font-size: 15px;
+    color: #8E8E93;
+    margin-top: 2px;
 }
 
-.txn-meta-info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.txn-id-badge {
-    font-size: 0.7rem;
-    color: #6b7280;
-    background-color: #f3f4f6;
-    padding: 0.125rem 0.5rem;
-    border-radius: var(--radius-sm);
-    font-family: 'SF Mono', 'Monaco', monospace;
-}
-
-/* Status Badge */
-.txn-status-badge {
-    font-size: 0.7rem;
-    font-weight: 600;
-    padding: 0.25rem 0.625rem;
-    border-radius: var(--radius-full);
-    text-transform: capitalize;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-}
-
-.txn-status-badge.success {
-    background-color: #f0fdf4;
-    color: #16a34a;
-}
-
-.txn-status-badge.pending {
-    background-color: #fef3c7;
-    color: #d97706;
-}
-
-.txn-status-badge.failed {
-    background-color: #fef2f2;
-    color: #dc2626;
-}
-
-.txn-status-badge.rejected {
-    background-color: #fef2f2;
-    color: #dc2626;
-}
-
-/* Amount Section (Right) */
+/* Amount Section */
 .txn-amount-section {
     text-align: right;
+    margin-left: 12px;
 }
 
 .txn-amount {
-    font-size: 1.125rem;
-    font-weight: 700;
-    margin: 0;
+    font-size: 17px;
+    font-weight: 400;
 }
 
 .txn-amount.positive {
-    color: #16a34a;
+    color: #34C759;
 }
 
 .txn-amount.negative {
-    color: #111827;
+    color: #000;
 }
 
-/* Transaction Detail Drawer */
+/* Transaction Detail Drawer - Bottom Sheet for Mobile */
 .txn-drawer-overlay {
     position: fixed;
     inset: 0;
     background-color: rgba(0, 0, 0, 0.4);
-    z-index: 50;
-    animation: fadeIn 0.2s ease-out;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
+    z-index: 200;
+    animation: fadeIn 0.3s ease;
 }
 
 .txn-drawer {
     position: fixed;
+    left: 0;
     right: 0;
-    top: 0;
     bottom: 0;
-    width: 100%;
-    max-width: 480px;
-    background-color: #fff;
-    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
-    z-index: 51;
+    background-color: #F2F2F7;
+    border-radius: 12px 12px 0 0;
+    z-index: 201;
+    max-height: 90vh;
     overflow-y: auto;
-    animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    padding-bottom: constant(safe-area-inset-bottom);
+    padding-bottom: env(safe-area-inset-bottom);
+    transform: translateY(0);
+    animation: slideUp 0.4s cubic-bezier(0.3, 0.85, 0.4, 1);
 }
 
-@keyframes slideInRight {
-    from {
-        transform: translateX(100%);
-    }
-
-    to {
-        transform: translateX(0);
-    }
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
 }
 
 .txn-drawer-header {
-    padding: 1.5rem;
-    border-bottom: 1px solid #e5e7eb;
+    padding: 16px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     position: sticky;
     top: 0;
-    background-color: #fff;
+    background-color: #F2F2F7;
     z-index: 10;
 }
 
-.txn-drawer-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #111827;
-    margin: 0;
-}
-
 .txn-drawer-close {
-    padding: 0.5rem;
-    border-radius: 9999px;
+    position: absolute;
+    right: 16px;
+    background: rgba(0, 0, 0, 0.05);
     border: none;
-    background: transparent;
-    cursor: pointer;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
-    color: #6b7280;
-    transition: all var(--transition-base);
+    justify-content: center;
+    color: #8E8E93;
+    cursor: pointer;
 }
 
-.txn-drawer-close:hover {
-    background-color: #f3f4f6;
-    color: #111827;
+.txn-drawer-title {
+    font-size: 17px;
+    font-weight: 600;
 }
 
+/* Grouped List for Drawer Details */
 .txn-drawer-content {
-    padding: 1.5rem;
+    padding: 0 16px 32px;
 }
 
 .txn-drawer-section {
-    margin-bottom: 2rem;
+    margin-bottom: 24px;
 }
 
 .txn-drawer-section-title {
-    font-size: 0.875rem;
-    font-weight: 700;
-    color: #6b7280;
+    padding: 0 0 8px 16px;
+    font-size: 13px;
+    color: #8E8E93;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 1rem;
+}
+
+.txn-drawer-card {
+    background-color: #FFF;
+    border-radius: 10px;
+    overflow: hidden;
 }
 
 .txn-drawer-detail-row {
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    align-items: flex-start;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid #f3f4f6;
+    padding: 12px 16px;
+    min-height: 44px;
+    position: relative;
 }
 
-.txn-drawer-detail-row:last-child {
-    border-bottom: none;
+.txn-drawer-detail-row:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 16px;
+    right: 0;
+    bottom: 0;
+    height: 0.5px;
+    background-color: #C6C6C8;
 }
 
 .txn-drawer-label {
-    font-size: 0.875rem;
-    color: #6b7280;
-    font-weight: 500;
+    font-size: 15px;
+    color: #000;
 }
 
 .txn-drawer-value {
-    font-size: 0.875rem;
-    color: #111827;
-    font-weight: 600;
+    font-size: 15px;
+    color: #8E8E93;
+    font-weight: 400;
     text-align: right;
     max-width: 60%;
-    word-wrap: break-word;
 }
 
+.txn-drawer-value.positive { color: #34C759; }
+.txn-drawer-value.negative { color: #FF3B30; }
+
 .txn-drawer-value.large {
-    font-size: 1.5rem;
+    font-size: 34px;
     font-weight: 700;
+    color: #000;
+    width: 100%;
+    text-align: center;
+    padding: 20px 0;
 }
 
 .txn-drawer-value.mono {
-    font-family: 'SF Mono', 'Monaco', monospace;
-    font-size: 0.8rem;
+    font-family: -apple-system-monospaced, SFMono-Regular, monospace;
 }
 
 /* Empty State */
 .txn-empty-state {
+    padding: 60px 20px;
     text-align: center;
-    padding: 4rem 1rem;
-    color: #6b7280;
 }
 
 .txn-empty-icon {
-    margin: 0 auto 1rem;
-    opacity: 0.3;
+    color: #C7C7CC;
+    margin-bottom: 8px;
 }
 
 .txn-empty-text {
-    font-size: 1rem;
-    font-weight: 500;
-    color: #374151;
+    font-size: 17px;
+    color: #8E8E93;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-    .txn-filter-controls {
-        flex-direction: column;
-        align-items: stretch;
-    }
+/* Admin Specific: Custom Date Range Section */
+.txn-custom-date-container {
+    background-color: #FFF;
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
 
-    .txn-filter-group {
-        flex-direction: column;
-        align-items: stretch;
-    }
+.txn-date-input-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
 
-    .txn-search-wrapper {
-        max-width: none;
-    }
+.txn-date-input-row label {
+    font-size: 15px;
+    color: #8E8E93;
+}
 
-    .txn-summary-cards {
-        grid-template-columns: 1fr;
-    }
+.txn-date-input {
+    border: none;
+    background: transparent;
+    font-size: 17px;
+    color: #007AFF;
+    font-family: inherit;
+    outline: none;
+    text-align: right;
+}
 
-    .txn-item {
-        grid-template-columns: auto 1fr;
-    }
-
-    .txn-amount-section {
-        grid-column: 2;
-        text-align: left;
-        margin-top: 0.5rem;
-    }
-
+/* Responsive Desktop Tweaks */
+@media (min-width: 769px) {
     .txn-drawer {
-        max-width: 100%;
+        left: auto;
+        width: 400px;
+        top: 0;
+        border-radius: 0;
+        box-shadow: -5px 0 15px rgba(0,0,0,0.05);
     }
 }

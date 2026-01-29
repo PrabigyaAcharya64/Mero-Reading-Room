@@ -120,17 +120,13 @@ const Discussion = ({ onBack }) => {
         return () => unsubscribe();
     }, []);
 
-    // Check if a user is already part of 2 or more bookings for the day (as booker or member)
-    const getUserBookingCount = (uid) => {
-        return Object.values(bookings).filter(booking => {
+    // Check if a user is already part of any booking for the day (as booker or member)
+    const isUserAlreadyBooked = (uid) => {
+        return Object.values(bookings).some(booking => {
             if (booking.bookedBy === uid) return true;
             if (booking.members && booking.members.some(m => m.uid === uid)) return true;
             return false;
-        }).length;
-    };
-
-    const isUserAtMaxBookings = (uid) => {
-        return getUserBookingCount(uid) >= 2;
+        });
     };
 
     const lookupUserByMrr = async (mrr) => {
@@ -175,9 +171,9 @@ const Discussion = ({ onBack }) => {
         setIsSubmitting(false);
 
         if (member) {
-            // Check if user is already at max bookings (2 per day)
-            if (isUserAtMaxBookings(member.uid)) {
-                setError(`Member ${member.name} has already reached the maximum of 2 bookings for today.`);
+            // Check if user is already booked today
+            if (isUserAlreadyBooked(member.uid)) {
+                setError(`Member ${member.name} is already part of another group today.`);
                 return;
             }
 
@@ -202,25 +198,10 @@ const Discussion = ({ onBack }) => {
         setPendingMembers([]);
         setNewMemberMrr('');
 
-        // Count how many rooms are booked for this slot
-        const slotBookings = Object.values(bookings).filter(b => b.slotId === slot.id);
-        const bookedRoomCount = slotBookings.length;
-
-        // Check if user is part of any booking for this slot
-        const userBookingForSlot = slotBookings.find(booking =>
-            booking.bookedBy === user.uid ||
-            (booking.members && booking.members.some(m => m.uid === user.uid))
-        );
-
-        if (userBookingForSlot) {
-            // User is part of a booking in this slot, show details
+        if (bookings[slot.id]) {
             setViewMode('details');
-        } else if (bookedRoomCount < 7) {
-            // There are rooms available, allow booking
-            setViewMode('book');
         } else {
-            // All rooms are full
-            alert('All discussion rooms (D1-D7) are fully booked for this time slot. Please try another slot.');
+            setViewMode('book');
         }
     };
 
@@ -233,16 +214,16 @@ const Discussion = ({ onBack }) => {
             return;
         }
 
-        // 1. Check if current user is at max bookings (2 per day)
-        if (isUserAtMaxBookings(user.uid)) {
-            setError("You have already reached the maximum of 2 bookings for today.");
+        // 1. Check if current user is already booked today
+        if (isUserAlreadyBooked(user.uid)) {
+            setError("You are already part of a discussion group for today. You can only join one group per day.");
             return;
         }
 
-        // 2. Check if any pending members are at max bookings
+        // 2. Check if any pending members are already booked today
         for (const member of pendingMembers) {
-            if (isUserAtMaxBookings(member.uid)) {
-                setError(`Member ${member.name} has already reached the maximum of 2 bookings for today.`);
+            if (isUserAlreadyBooked(member.uid)) {
+                setError(`Member ${member.name} is already part of another group today.`);
                 return;
             }
         }
@@ -251,6 +232,9 @@ const Discussion = ({ onBack }) => {
         setError('');
 
         try {
+            const slotDocId = `${getLogicalDateString()}_${selectedSlot.id}`;
+            const slotRef = doc(db, 'discussion_rooms', slotDocId);
+
             // Fetch current user's MRR from Firestore
             const userDocRef = doc(db, 'users', user.uid);
             const userDocSnap = await getDoc(userDocRef);
@@ -269,26 +253,30 @@ const Discussion = ({ onBack }) => {
             // Combine leader with pending members
             const allMembers = [leaderMember, ...pendingMembers];
 
-            // Call backend function to book the room
-            const bookDiscussionRoom = httpsCallable(functions, 'bookDiscussionRoom');
-            const result = await bookDiscussionRoom({
-                date: getLogicalDateString(),
-                slotId: selectedSlot.id,
-                slotLabel: selectedSlot.label,
-                teamName: groupName,
-                members: allMembers
+            await runTransaction(db, async (transaction) => {
+                const sfDoc = await transaction.get(slotRef);
+                if (sfDoc.exists()) {
+                    throw new Error("This slot has just been booked by someone else.");
+                }
+
+                transaction.set(slotRef, {
+                    date: getLogicalDateString(),
+                    slotId: selectedSlot.id,
+                    slotLabel: selectedSlot.label,
+                    bookedBy: user.uid,
+                    bookerName: user.displayName || 'Unknown',
+                    teamName: groupName, // keeping field name for compatibility, UI shows "Group"
+                    members: allMembers,
+                    createdAt: new Date().toISOString()
+                });
             });
 
-            if (result.data.success) {
-                // Show success message with room assignment
-                alert(`Booking successful! Your room is ${result.data.roomId}`);
-                setGroupName('');
-                setPendingMembers([]);
-                setViewMode('details');
-            }
+            setGroupName('');
+            setPendingMembers([]);
+            setViewMode('details');
         } catch (err) {
             console.error("Booking failed:", err);
-            setError(err.message || 'Failed to book the room. Please try again.');
+            setError(err.message);
         } finally {
             setIsSubmitting(false);
         }
@@ -312,14 +300,14 @@ const Discussion = ({ onBack }) => {
 
         if (member) {
             try {
-                // Check if user is at max bookings (2 per day)
-                if (isUserAtMaxBookings(member.uid)) {
-                    setError(`Member ${member.name} has already reached the maximum of 2 bookings for today.`);
+                // Check if user is already booked today
+                if (isUserAlreadyBooked(member.uid)) {
+                    setError(`Member ${member.name} is already part of another group today.`);
                     setIsSubmitting(false);
                     return;
                 }
 
-                const slotDocId = `${getLogicalDateString()}_${selectedSlot.id}_${booking.roomId}`;
+                const slotDocId = `${getLogicalDateString()}_${selectedSlot.id}`;
                 const slotRef = doc(db, 'discussion_rooms', slotDocId);
 
                 await updateDoc(slotRef, {
@@ -343,7 +331,7 @@ const Discussion = ({ onBack }) => {
         if (window.confirm('Are you sure you want to cancel this booking? This action cannot be undone.')) {
             try {
                 const dateStr = getLogicalDateString();
-                const docId = `${dateStr}_${selectedSlot.id}_${booking.roomId}`;
+                const docId = `${dateStr}_${selectedSlot.id}`;
                 const docRef = doc(db, 'discussion_rooms', docId);
                 await deleteDoc(docRef);
                 setViewMode('list');
@@ -360,57 +348,43 @@ const Discussion = ({ onBack }) => {
     if (viewMode === 'list') {
         return (
             <div className="std-container">
-                <PageHeader title="Discussion Room" onBack={onBack} />
+                <PageHeader title="Discussion" onBack={onBack} />
 
                 <main className="std-body">
                     <div className="discussion-card">
                         <h1 className="page-title">
-                            Discussion Room Slots
+                            Book a Slot
                         </h1>
                         <p className="page-subtitle">
-                            Select a time slot to book or view details.
+                            Reserve a 3-hour session for your group.
                         </p>
 
                         <div className="slots-list">
                             {SLOTS.map(slot => {
-                                // Get all bookings for this slot
-                                const slotBookings = Object.values(bookings).filter(b => b.slotId === slot.id);
-                                const bookedRoomCount = slotBookings.length;
-                                const availableRoomCount = 7 - bookedRoomCount;
-
-                                // Check if user has a booking in this slot
-                                const userBooking = slotBookings.find(booking =>
-                                    booking.bookedBy === user.uid ||
-                                    (booking.members && booking.members.some(m => m.uid === user.uid))
-                                );
-
-                                const hasAvailableRooms = availableRoomCount > 0;
-                                const isMyBooking = !!userBooking;
+                                const booking = bookings[slot.id];
+                                const isBooked = !!booking;
+                                const isMyBooking = isBooked && (booking.bookedBy === user.uid || (booking.members && booking.members.some(m => m.uid === user.uid)));
 
                                 return (
                                     <div
                                         key={slot.id}
                                         onClick={() => handleSlotClick(slot)}
-                                        className={`slot-card ${!hasAvailableRooms ? 'booked' : ''} ${isMyBooking ? 'my-booking' : ''}`}
+                                        className={`slot-card ${isBooked ? 'booked' : ''} ${isMyBooking ? 'my-booking' : ''}`}
                                     >
                                         <div className="slot-info">
                                             <h3 className="slot-label">{slot.label}</h3>
-                                            {isMyBooking ? (
+                                            {isBooked ? (
                                                 <p className="slot-status">
-                                                    Your Room: <strong>{userBooking.roomId}</strong> - <strong>{userBooking.teamName}</strong>
-                                                    <span className="my-group-label"> (Your Group)</span>
+                                                    Reserved: <strong>{booking.teamName}</strong>
+                                                    {isMyBooking && <span className="my-group-label">YOU</span>}
                                                 </p>
                                             ) : (
-                                                <p className="slot-status" style={{ color: hasAvailableRooms ? 'var(--discussion-gray)' : 'inherit' }}>
-                                                    {availableRoomCount > 0
-                                                        ? `${availableRoomCount} of 7 rooms available`
-                                                        : 'All rooms booked'}
-                                                </p>
+                                                <p className="slot-status">Available</p>
                                             )}
                                         </div>
                                         <div className="slot-action">
                                             <span className="action-badge">
-                                                {isMyBooking ? 'Manage' : (hasAvailableRooms ? 'Book Now' : 'Full')}
+                                                {isBooked ? (isMyBooking ? 'Edit ›' : 'Details ›') : 'Book ›'}
                                             </span>
                                         </div>
                                     </div>
@@ -423,163 +397,154 @@ const Discussion = ({ onBack }) => {
         );
     }
 
-
-
     // Render Booking Form or Details
-    // Find the user's booking for this slot (if any)
-    const slotBookings = Object.values(bookings).filter(b => b.slotId === selectedSlot?.id);
-    const booking = slotBookings.find(b =>
-        b.bookedBy === user.uid ||
-        (b.members && b.members.some(m => m.uid === user.uid))
-    );
+    const booking = bookings[selectedSlot?.id];
     const isBooked = !!booking;
     const isMyTeam = isBooked && (booking.bookedBy === user.uid || (booking.members && booking.members.some(m => m.uid === user.uid)));
-    const bookedRoomCount = slotBookings.length;
-    const availableRoomCount = 7 - bookedRoomCount;
 
     return (
         <div className="std-container">
-            <PageHeader title="Discussion Room" onBack={() => setViewMode('list')} />
+            <PageHeader title="Room Details" onBack={() => setViewMode('list')} />
 
             <main className="std-body">
                 <div className="discussion-card">
                     <h2 className="page-title">{selectedSlot?.label}</h2>
                     <p className="page-subtitle">
-                        {isBooked
-                            ? `${booking.teamName} - Room ${booking.roomId}`
-                            : `${availableRoomCount} of 7 rooms available`}
+                        {isBooked ? `Group: ${booking.teamName}` : 'Session is open for booking'}
                     </p>
 
                     {/* BOOKING FORM */}
                     {!isBooked && (
                         <div className="form-container">
                             <form onSubmit={handleBookRoom}>
-                                <div className="input-group">
-                                    <label className="input-label">Group Name</label>
-                                    <input
-                                        type="text"
-                                        className="text-input"
-                                        value={groupName}
-                                        onChange={(e) => setGroupName(e.target.value)}
-                                        placeholder="Enter your group name"
-                                        required
-                                    />
-                                </div>
-
-                                <div className="input-group">
-                                    <label className="input-label">Group Members (Optional)</label>
-                                    <div className="member-add-row">
+                                <div className="ios-form-group">
+                                    <div className="input-group">
+                                        <label className="input-label">Group Name</label>
                                         <input
                                             type="text"
                                             className="text-input"
-                                            value={newMemberMrr}
-                                            onChange={(e) => setNewMemberMrr(e.target.value)}
-                                            placeholder="Enter MRR ID"
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    e.preventDefault();
-                                                    handleAddPendingMember(e);
-                                                }
-                                            }}
+                                            value={groupName}
+                                            onChange={(e) => setGroupName(e.target.value)}
+                                            placeholder="Required"
+                                            required
                                         />
-                                        <button
-                                            type="button"
-                                            className="btn btn-black"
-                                            onClick={handleAddPendingMember}
-                                            disabled={isSubmitting}
-                                        >
-                                            Add
-                                        </button>
                                     </div>
 
-                                    {pendingMembers.length > 0 && (
-                                        <div className="chips-container">
-                                            {pendingMembers.map((member, index) => (
-                                                <div key={index} className="chip">
-                                                    {member.name}
-                                                    <button
-                                                        type="button"
-                                                        className="chip-remove"
-                                                        onClick={() => handleRemovePendingMember(index)}
-                                                    >
-                                                        ×
-                                                    </button>
-                                                </div>
-                                            ))}
+                                    <div className="input-group">
+                                        <label className="input-label">Add Member (MRR ID)</label>
+                                        <div className="member-add-row">
+                                            <input
+                                                type="text"
+                                                className="text-input"
+                                                value={newMemberMrr}
+                                                onChange={(e) => setNewMemberMrr(e.target.value)}
+                                                placeholder="e.g. 1024"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        handleAddPendingMember(e);
+                                                    }
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="btn-ios-ghost"
+                                                onClick={handleAddPendingMember}
+                                                disabled={isSubmitting}
+                                            >
+                                                Add
+                                            </button>
                                         </div>
-                                    )}
+
+                                        {pendingMembers.length > 0 && (
+                                            <div className="chips-container">
+                                                {pendingMembers.map((member, index) => (
+                                                    <div key={index} className="chip">
+                                                        {member.name}
+                                                        <button
+                                                            type="button"
+                                                            className="chip-remove"
+                                                            onClick={() => handleRemovePendingMember(index)}
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {error && <div className="error-msg">{error}</div>}
 
-                                <button
-                                    type="submit"
-                                    className="btn btn-black btn-block"
-                                    disabled={isSubmitting}
-                                >
-                                    {isSubmitting ? 'Booking...' : 'Book Slot'}
-                                </button>
+                                <div className="ios-actions">
+                                    <button
+                                        type="submit"
+                                        className="btn-ios-primary"
+                                        disabled={isSubmitting}
+                                    >
+                                        {isSubmitting ? 'Processing...' : 'Book Room'}
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     )}
 
                     {/* DETAILS VIEW - MY TEAM */}
                     {isBooked && isMyTeam && (
-                        <div className="form-container" style={{ maxWidth: 'unset' }}>
-                            <div className="details-banner">
-                                <h3>Room <strong>{booking.roomId}</strong>: <strong>{booking.teamName}</strong></h3>
-                            </div>
-
-                            <h3 className="section-title">Group Members</h3>
-
-                            <div style={{ marginBottom: '1.875rem' }}>
+                        <div className="form-container">
+                            <h3 className="page-subtitle" style={{ padding: '0 8px', marginBottom: '8px' }}>Members</h3>
+                            
+                            <ul className="ios-list">
                                 {booking.members && booking.members.length > 0 && (
-                                    <ul className="members-list">
-                                        {booking.members.filter(m => m && (m.name || typeof m === 'string')).map((member, idx) => {
-                                            const name = member.name || (typeof member === 'string' ? member : 'Unknown');
-                                            const mrr = member.mrrNumber || '';
-                                            return (
-                                                <li key={idx} className="member-item">
-                                                    <div className="member-info">
-                                                        <span className="member-name">{name}</span>
-                                                        {mrr && <span className="member-mrr">MRR ID: {mrr}</span>}
-                                                    </div>
-                                                </li>
-                                            );
-                                        })}
-                                    </ul>
+                                    booking.members.filter(m => m && (m.name || typeof m === 'string')).map((member, idx) => {
+                                        const name = member.name || (typeof member === 'string' ? member : 'Unknown');
+                                        const mrr = member.mrrNumber || '';
+                                        return (
+                                            <li key={idx} className="ios-list-item">
+                                                <div className="member-info">
+                                                    <span className="member-name">{name}</span>
+                                                    {mrr && <span className="member-mrr">MRR #{mrr}</span>}
+                                                </div>
+                                            </li>
+                                        );
+                                    })
                                 )}
-                            </div>
+                            </ul>
 
-                            <div className="add-member-section">
-                                <h4 className="add-member-title">Add Group Member</h4>
-                                <div className="member-add-row">
-                                    <input
-                                        type="text"
-                                        className="text-input"
-                                        value={newMemberMrr}
-                                        onChange={(e) => setNewMemberMrr(e.target.value)}
-                                        placeholder="Enter MRR ID"
-                                    />
-                                    <button
-                                        className="btn btn-black"
-                                        onClick={handleAddMemberToExisting}
-                                        disabled={isSubmitting}
-                                    >
-                                        {isSubmitting ? '...' : 'Add'}
-                                    </button>
+                            <h3 className="page-subtitle" style={{ padding: '0 8px', marginBottom: '8px' }}>Management</h3>
+                            <div className="ios-form-group">
+                                <div className="input-group">
+                                    <label className="input-label">Add Member (MRR ID)</label>
+                                    <div className="member-add-row">
+                                        <input
+                                            type="text"
+                                            className="text-input"
+                                            value={newMemberMrr}
+                                            onChange={(e) => setNewMemberMrr(e.target.value)}
+                                            placeholder="Invite more"
+                                        />
+                                        <button
+                                            className="btn-ios-ghost"
+                                            onClick={handleAddMemberToExisting}
+                                            disabled={isSubmitting}
+                                        >
+                                            {isSubmitting ? '...' : 'Invite'}
+                                        </button>
+                                    </div>
                                 </div>
-                                {error && <p className="error-msg" style={{ marginTop: '0.625rem' }}>{error}</p>}
-                                {successMsg && <p className="success-msg" style={{ marginTop: '0.625rem' }}>{successMsg}</p>}
                             </div>
+                            
+                            {error && <p className="error-msg">{error}</p>}
+                            {successMsg && <p className="success-msg">{successMsg}</p>}
 
                             {booking.bookedBy === user.uid && (
-                                <div style={{ marginTop: '1.875rem', textAlign: 'center' }}>
+                                <div style={{ marginTop: '24px' }}>
                                     <button
-                                        className="btn btn-outline-red btn-small"
+                                        className="btn-ios-danger"
                                         onClick={handleCancelBooking}
                                     >
-                                        Cancel Booking
+                                        Cancel Session
                                     </button>
                                 </div>
                             )}
@@ -589,9 +554,10 @@ const Discussion = ({ onBack }) => {
                     {/* DETAILS VIEW - OTHERS */}
                     {isBooked && !isMyTeam && (
                         <div className="others-booking-view">
-                            <h2>Booked</h2>
+                            <h2>Session Booked</h2>
                             <p>
-                                This slot is attained by <strong>{booking.teamName}</strong>
+                                This slot is currently occupied by<br/>
+                                <strong style={{ color: 'var(--ios-text)' }}>{booking.teamName}</strong>
                             </p>
                         </div>
                     )}

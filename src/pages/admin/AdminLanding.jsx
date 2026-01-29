@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { Menu, X } from 'lucide-react';
 import { useAuth } from '../../auth/AuthProvider';
 import UserManagement from './UserManagement';
 import HostelManagement from './HostelManagement';
@@ -14,22 +15,51 @@ import AdminTransactionStatement from './AdminTransactionStatement';
 import Sidebar from '../../components/Sidebar';
 import Dashboard from './Dashboard';
 import { useLoading } from '../../context/GlobalLoadingContext';
-import { collection, query, where, onSnapshot, deleteDoc, doc, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import '../../styles/StandardLayout.css';
+import '../../styles/AdminSidebar.css';
 
 function AdminLanding() {
-  const { user, signOutUser } = useAuth();
+  const { user } = useAuth();
   const { setIsLoading } = useLoading();
   const navigate = useNavigate();
   const location = useLocation();
+  const displayName = user?.displayName || user?.email?.split('@')[0] || 'Admin';
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [newOrdersCount, setNewOrdersCount] = useState(0);
-  const [announcements, setAnnouncements] = useState([]);
-  const [showHistory, setShowHistory] = useState(false);
+
+  // Handle responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (!mobile) setIsSidebarOpen(false); 
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Close sidebar on navigation for mobile
+  useEffect(() => {
+    if (isMobile) setIsSidebarOpen(false);
+  }, [location.pathname, isMobile]);
 
   // Navigate using React Router with loading state
   const handleNavigate = (view) => {
+    if (view === '__hover_expand') {
+      setIsSidebarHovered(true);
+      return;
+    }
+    if (view === '__hover_collapse') {
+      setIsSidebarHovered(false);
+      return;
+    }
     setIsLoading(true);
     navigate(view === 'dashboard' ? '/admin' : `/admin/${view}`);
   };
@@ -38,6 +68,7 @@ function AdminLanding() {
     setIsLoading(false);
   };
 
+  // Queries for unread messages and new orders
   useEffect(() => {
     const q = query(collection(db, 'messages'), where('read', '==', false));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -62,18 +93,6 @@ function AdminLanding() {
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    const q = query(collection(db, 'announcements'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgs = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setAnnouncements(msgs);
-    });
-    return () => unsubscribe();
-  }, []);
-
   // Determine active sidebar item from location
   const currentView = useMemo(() => {
     const path = location.pathname;
@@ -89,54 +108,70 @@ function AdminLanding() {
     return 'dashboard';
   }, [location.pathname]);
 
+  const getPageTitle = () => {
+    const titles = {
+      'dashboard': 'Dashboard Overview',
+      'user-management': 'User Management',
+      'hostel': 'Hostel Management',
+      'canteen': 'Canteen Admin',
+      'messages': 'Admin Messages',
+      'create-announcement': 'Announcements',
+      'reading-rooms': 'Reading Room',
+      'balance-requests': 'Balance Requests',
+      'transaction-statement': 'Transaction Statement'
+    };
+    return titles[currentView] || 'Admin Panel';
+  };
+
+  const isExpanded = isMobile ? isSidebarOpen : isSidebarHovered;
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f9fafb', position: 'relative' }}>
+    <div className="admin-layout">
+      <Sidebar
+        currentView={currentView}
+        onNavigate={handleNavigate}
+        isOpen={isExpanded}
+        isMobile={isMobile}
+        onClose={() => setIsSidebarOpen(false)}
+      />
 
-      {/* Sidebar Wrapper for Hover Detection */}
-      <div
-        onMouseEnter={() => setIsSidebarHovered(true)}
-        onMouseLeave={() => setIsSidebarHovered(false)}
-        style={{
-          zIndex: 1000,
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          height: '100vh',
-          width: isSidebarHovered ? '260px' : '72px',
-          transition: 'width 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
-        }}
+      {/* Main Content Area */}
+      <div 
+        className={`admin-main-content ${!isMobile && isExpanded ? 'sidebar-expanded' : 'sidebar-collapsed'}`}
+        onMouseEnter={() => !isMobile && setIsSidebarHovered(false)} // Close if mouse enters content
       >
-        <Sidebar
-          currentView={currentView}
-          onNavigate={handleNavigate}
-          isOpen={isSidebarHovered}
-        />
-      </div>
+        <header className="admin-header">
+          {isMobile && (
+            <button className="sidebar-toggle-btn" onClick={() => setIsSidebarOpen(!isSidebarOpen)} aria-label="Toggle Sidebar">
+              {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          )}
+          <h1 className="admin-header-title">{getPageTitle()}</h1>
+          
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500' }}>
+              Welcome, {displayName}
+            </span>
+          </div>
+        </header>
 
-      <main style={{
-        marginLeft: '72px',
-        flex: 1,
-        width: 'calc(100% - 72px)',
-        overflowX: 'hidden',
-        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-        position: 'relative'
-      }}>
-        <Routes>
-          <Route path="/" element={<Dashboard onNavigate={handleNavigate} onDataLoaded={handlePageReady} />} />
-          <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
-          <Route path="/user-management" element={<UserManagement onNavigate={handleNavigate} onDataLoaded={handlePageReady} />} />
-          <Route path="/hostel" element={<HostelManagement onBack={() => handleNavigate('dashboard')} onDataLoaded={handlePageReady} />} />
-          <Route path="/new-users" element={<NewUsers onBack={() => handleNavigate('user-management')} onDataLoaded={handlePageReady} />} />
-          <Route path="/all-members" element={<AllMembersView onBack={() => handleNavigate('user-management')} onDataLoaded={handlePageReady} />} />
-          <Route path="/canteen/*" element={<CanteenAdminLanding onDataLoaded={handlePageReady} />} />
-          <Route path="/messages" element={<AdminMessages onDataLoaded={handlePageReady} />} />
-          <Route path="/create-announcement" element={<CreateAnnouncement onDataLoaded={handlePageReady} />} />
-          <Route path="/reading-rooms" element={<ReadingRoomManagement onDataLoaded={handlePageReady} />} />
-          <Route path="/balance-requests" element={<AdminBalanceLoad onDataLoaded={handlePageReady} />} />
-          <Route path="/transaction-statement" element={<AdminTransactionStatement onDataLoaded={handlePageReady} />} />
-        </Routes>
-      </main>
+        <main style={{ padding: '1.5rem', maxWidth: '1400px', margin: '0 auto', width: '100%', flex: 1 }}>
+          <Routes>
+            <Route path="/" element={<Dashboard onNavigate={handleNavigate} onDataLoaded={handlePageReady} />} />
+            <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
+            <Route path="/user-management" element={<UserManagement onNavigate={handleNavigate} onDataLoaded={handlePageReady} />} />
+            <Route path="/hostel" element={<HostelManagement onBack={() => handleNavigate('dashboard')} onDataLoaded={handlePageReady} />} />
+            <Route path="/new-users" element={<NewUsers onBack={() => handleNavigate('user-management')} onDataLoaded={handlePageReady} />} />
+            <Route path="/all-members" element={<AllMembersView onBack={() => handleNavigate('user-management')} onDataLoaded={handlePageReady} />} />
+            <Route path="/canteen/*" element={<CanteenAdminLanding onDataLoaded={handlePageReady} />} />
+            <Route path="/messages" element={<AdminMessages onDataLoaded={handlePageReady} />} />
+            <Route path="/create-announcement" element={<CreateAnnouncement onDataLoaded={handlePageReady} />} />
+            <Route path="/reading-rooms" element={<ReadingRoomManagement onDataLoaded={handlePageReady} />} />
+            <Route path="/balance-requests" element={<AdminBalanceLoad onDataLoaded={handlePageReady} />} />
+            <Route path="/transaction-statement" element={<AdminTransactionStatement onDataLoaded={handlePageReady} />} />
+          </Routes>
+        </main>
+      </div>
     </div>
   );
 }

@@ -185,9 +185,6 @@ function Dashboard({ onNavigate, onDataLoaded }) {
 
     return (
         <div style={{ padding: '0', maxWidth: '1600px', margin: '0 auto' }}>
-            <PageHeader
-                title="Overview"
-            />
             <div style={{ padding: '32px' }}>
                 <p style={{ color: '#6b7280', marginBottom: '32px' }}>Welcome back, Admin. Here's what's happening today.</p>
 
@@ -254,10 +251,18 @@ function Dashboard({ onNavigate, onDataLoaded }) {
                 </div>
 
                 {/* Main Content Grid - Original Responsive Settings */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: '24px', marginBottom: '32px' }}>
+                <div className="db-charts-grid">
 
                     {/* Main Chart Card */}
-                    <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '16px', border: '1px solid #e5e7eb', height: '400px' }}>
+                    <div style={{ 
+                        backgroundColor: '#fff', 
+                        padding: '24px', 
+                        borderRadius: '16px', 
+                        border: '1px solid #e5e7eb', 
+                        height: '400px',
+                        position: 'relative',
+                        minWidth: 0
+                    }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                             <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827' }}>Revenue Trends</h3>
 
@@ -325,7 +330,15 @@ function Dashboard({ onNavigate, onDataLoaded }) {
                     </div>
 
                     {/* Breakdown Chart Card */}
-                    <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '16px', border: '1px solid #e5e7eb', height: '400px' }}>
+                    <div style={{ 
+                        backgroundColor: '#fff', 
+                        padding: '24px', 
+                        borderRadius: '16px', 
+                        border: '1px solid #e5e7eb', 
+                        height: '400px',
+                        position: 'relative',
+                        minWidth: 0
+                    }}>
                         <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', marginBottom: '24px' }}>Revenue Sources</h3>
                         <ResponsiveContainer width="100%" height="60%">
                             <BarChart data={salesBreakdown} layout="vertical" margin={{ top: 0, right: 30, left: 20, bottom: 5 }}>

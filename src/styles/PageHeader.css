@@ -5,9 +5,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-16) var(--spacing-24);
-  background-color: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
+  padding: var(--spacing-20) var(--spacing-24);
+  background-color: var(--color-background);
   border-bottom: 1px solid var(--color-border-subtle);
   z-index: 10;
   position: relative;
@@ -101,8 +100,8 @@
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .std-header {
-    padding: var(--spacing-12) var(--spacing-16);
-    min-height: 56px;
+    padding: var(--spacing-20) var(--spacing-16);
+    min-height: 72px;
   }
 
   .std-header-title {

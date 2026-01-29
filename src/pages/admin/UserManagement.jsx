@@ -33,7 +33,6 @@ function UserManagement({ onBack, onNavigate, onDataLoaded }) {
 
     return (
         <div className="std-container">
-            <PageHeader title="User Management" onBack={onBack} />
 
             <main className="std-body">
                 {/* Landing Services / Buttons */}

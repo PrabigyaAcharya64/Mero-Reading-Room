@@ -3,24 +3,22 @@ import {
     LogOut,
     Bell,
     CreditCard,
-    Receipt
+    Receipt,
+    X
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider';
 import { db } from '../lib/firebase';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import '../styles/AdminSidebar.css'; // Import the CSS file
 
 const profileIcon = new URL('../assets/profile.svg', import.meta.url).href;
 const contactIcon = new URL('../assets/contact.svg', import.meta.url).href;
 const userManagementIcon = new URL('../assets/usermanagement.svg', import.meta.url).href;
 const hostelIcon = new URL('../assets/hostel.svg', import.meta.url).href;
-const reportsIcon = new URL('../assets/reports.svg', import.meta.url).href;
 const canteenIcon = new URL('../assets/canteen.svg', import.meta.url).href;
 const readingRoomIcon = new URL('../assets/readingroom.svg', import.meta.url).href;
-const orderPlaceIcon = new URL('../assets/order_place.svg', import.meta.url).href;
-const inventoryIcon = new URL('../assets/inventory.svg', import.meta.url).href;
-const idCardIcon = new URL(/* @vite-ignore */ '../assets/idcard.svg', import.meta.url).href;
 
-function Sidebar({ currentView, onNavigate, isOpen }) {
+function Sidebar({ currentView, onNavigate, isOpen, isMobile, onClose }) {
     const { signOutUser } = useAuth();
     const [unreadMessages, setUnreadMessages] = useState(0);
     const [pendingUsers, setPendingUsers] = useState(0);
@@ -72,199 +70,88 @@ function Sidebar({ currentView, onNavigate, isOpen }) {
         { id: 'transaction-statement', label: 'Transaction Statement', icon: null, isLucide: true, lucideIcon: Receipt },
     ];
 
-    const isExpanded = isOpen; // Control from parent (AdminLanding) will handle hover logic passed as 'isOpen' or we can add local state if needed, but per plan AdminLanding handles logic. 
-    // Actually, to support purely hover within component or parent, let's look at the plan. 
-    // Plan says: "Update Sidebar props to reflect isHovered or isExpanded". 
-    // Let's expect 'isExpanded' prop or handle hover locally? 
-    // AdminLanding will handle the hover state to coordinate with main content margin.
-    // So here we trust `isOpen` to mean "Expanded".
-    // Wait, typical Instagram sidebar:
-    // - Default: Icons only (mini).
-    // - Hover/Click: Expands.
-    // - Mobile: Hidden -> Drawer.
-
-    // Let's stick to the current props `isOpen` but interpret it differently based on screen size?
-    // No, better to add explicit props for clarity or just strictly follow the passed `isOpen` width.
-
-    // REVISED STRATEGY based on Plan:
-    // AdminLanding will pass `isOpen={isSidebarHovered || isSidebarOpen}` (conceptually).
-    // Actually, for "Instagram like", it's usually always visible as mini, then expands.
-    // So 'isOpen' (drawer toggle) might be for Mobile.
-    // For Desktop, we need a mode.
-
-    // Let's update styles to handle a "collapsed" but visible state if `isMini` is true, vs `hidden`.
-    // But to keep it simple and aligned accurately with the user request: "remove X icon and make side bar appear when hover".
-
-    // Implementation:
-    // We will assume `isOpen` controls the *width* expansion on Desktop.
-    // On Mobile, it controls visibility.
-    // But we need to distinguish Mobile vs Desktop.
-    // CSS Media Queries are best for this.
+    // On mobile, the sidebar is always "expanded" when open
+    const isExpanded = isMobile ? true : isOpen;
 
     return (
-        <aside
-            className={`sidebar-container ${isOpen ? 'expanded' : 'collapsed'}`}
-            style={{
-                width: isOpen ? '260px' : '72px', // Mini width 72px
-                height: '100vh',
-                backgroundColor: '#ffffff',
-                borderRight: '1px solid #e5e7eb',
-                display: 'flex',
-                flexDirection: 'column',
-                position: 'fixed',
-                left: 0,
-                top: 0,
-                zIndex: 1000,
-                transition: 'width 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                boxShadow: isOpen ? '4px 0 24px rgba(0,0,0,0.1)' : 'none',
-                overflowX: 'hidden', // Hide overflow text during transition
-                // Mobile behavior override would typically be in CSS, but inline styles are used here.
-                // For now, we implement the desktop logic requested. Mobile considerations might need a separate check or CSS file.
-                // Assuming Desktop primarily for this specific request.
-            }}
-        >
-            {/* Menu */}
-            <div style={{ flex: 1, padding: '24px 0', overflowY: 'auto', overflowX: 'hidden' }}>
-                <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '0 12px' }}>
-                    {menuItems.map((item) => {
-                        const isActive = currentView === item.id;
+        <>
+            {/* Mobile Overlay */}
+            {isMobile && isOpen && (
+                <div className="mobile-sidebar-overlay" onClick={onClose}></div>
+            )}
 
-                        return (
-                            <button
-                                key={item.id}
-                                onClick={() => onNavigate(item.id)}
-                                title={item.label} // Tooltip for collapsed state
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    padding: '12px',
-                                    borderRadius: '12px',
-                                    border: 'none',
-                                    backgroundColor: isActive ? '#f3f4f6' : 'transparent',
-                                    color: isActive ? '#111827' : '#6b7280',
-                                    fontSize: '14px',
-                                    fontWeight: isActive ? '600' : '500',
-                                    cursor: 'pointer',
-                                    width: '100%',
-                                    textAlign: 'left',
-                                    transition: 'background-color 0.2s ease, color 0.2s ease',
-                                    position: 'relative',
-                                    justifyContent: 'flex-start',
-                                    height: '44px'
-                                }}
-                            >
-                                {isActive && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        left: '-12px',
-                                        width: '4px',
-                                        height: '20px',
-                                        backgroundColor: '#000',
-                                        borderTopRightRadius: '4px',
-                                        borderBottomRightRadius: '4px',
-                                        opacity: isOpen ? 1 : 0,
-                                        transition: 'opacity 0.2s ease'
-                                    }} />
-                                )}
+            <aside
+                className={`sidebar-container ${isExpanded ? 'expanded' : 'collapsed'} ${isMobile ? 'mobile-drawer' : ''} ${isMobile && isOpen ? 'mobile-drawer-open' : ''}`}
+                onMouseEnter={() => !isMobile && onNavigate && onNavigate('__hover_expand')}
+                onMouseLeave={() => !isMobile && onNavigate && onNavigate('__hover_collapse')}
+            >
+                {/* Sidebar Header (Mobile only) */}
+                {isMobile && (
+                    <div className="sidebar-header-mobile">
+                        <span className="sidebar-header-title">ADMIN MENU</span>
+                        <button onClick={onClose} className="sidebar-close-button">
+                            <X size={24} />
+                        </button>
+                    </div>
+                )}
 
-                                {/* Icon - always in same position */}
-                                <div style={{
-                                    width: '20px',
-                                    height: '20px',
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                    flexShrink: 0,
-                                    marginRight: '12px'
-                                }}>
-                                    {item.isLucide ? (
-                                        <item.lucideIcon size={20} color={isActive ? '#000' : '#6b7280'} />
-                                    ) : (
-                                        <img
-                                            src={item.icon}
-                                            alt={item.label}
-                                            style={{
-                                                width: '20px',
-                                                height: '20px',
-                                                objectFit: 'contain',
-                                                filter: isActive ? 'none' : 'grayscale(100%) opacity(0.7)'
-                                            }}
-                                        />
+                {/* Menu Container */}
+                <div className="sidebar-menu-container">
+                    <nav className="sidebar-nav">
+                        {menuItems.map((item) => {
+                            const isActive = currentView === item.id;
+
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => onNavigate(item.id)}
+                                    title={!isExpanded ? item.label : ''}
+                                    className={`sidebar-item ${isActive ? 'active' : ''} ${!isExpanded ? 'collapsed-item-center' : ''}`}
+                                >
+                                    {isActive && (
+                                        <div className={`sidebar-active-indicator ${isExpanded ? 'expanded' : ''}`} />
                                     )}
-                                </div>
 
-                                {/* Label with fade transition */}
-                                <span style={{
-                                    whiteSpace: 'nowrap',
-                                    opacity: isOpen ? 1 : 0,
-                                    visibility: isOpen ? 'visible' : 'hidden',
-                                    transition: 'opacity 0.3s ease, visibility 0.3s ease',
-                                    flex: 1
-                                }}>
-                                    {item.label}
-                                </span>
+                                    <div className={`sidebar-item-icon ${isExpanded ? '' : 'collapsed-icon'}`}>
+                                        {item.isLucide ? (
+                                            <item.lucideIcon size={20} color={isActive ? '#000' : '#6b7280'} />
+                                        ) : (
+                                            <img
+                                                src={item.icon}
+                                                alt={item.label}
+                                                className={`sidebar-icon-img ${isActive ? '' : 'grayscale'}`}
+                                            />
+                                        )}
+                                    </div>
 
-                                {/* Badge */}
-                                {item.badge && (
-                                    <span style={{
-                                        backgroundColor: '#ef4444',
-                                        color: 'white',
-                                        fontSize: '10px',
-                                        fontWeight: 'bold',
-                                        padding: isOpen ? '2px 8px' : '4px',
-                                        borderRadius: '12px',
-                                        minWidth: isOpen ? '20px' : '8px',
-                                        height: isOpen ? 'auto' : '8px',
-                                        textAlign: 'center',
-                                        lineHeight: '1.4',
-                                        position: isOpen ? 'relative' : 'absolute',
-                                        top: isOpen ? 'auto' : '8px',
-                                        right: isOpen ? 'auto' : '8px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        opacity: isOpen ? 1 : 0.9,
-                                        transition: 'all 0.3s ease'
-                                    }}>
-                                        {isOpen ? item.badge : ''}
+                                    <span className={`sidebar-item-label ${isExpanded ? 'visible' : 'hidden'}`}>
+                                        {item.label}
                                     </span>
-                                )}
-                            </button>
-                        );
-                    })}
-                </nav>
-            </div>
 
-            {/* User / Logout */}
-            <div style={{
-                padding: '24px 12px',
-                borderTop: '1px solid #f3f4f6',
-                display: 'flex',
-                justifyContent: isOpen ? 'flex-start' : 'center'
-            }}>
-                <button
-                    onClick={signOutUser}
-                    title="Sign Out"
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        padding: '12px',
-                        width: '100%',
-                        border: 'none',
-                        background: 'none',
-                        color: '#ef4444',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        justifyContent: isOpen ? 'flex-start' : 'center'
-                    }}
-                >
-                    <LogOut size={20} />
-                    {isOpen && <span style={{ whiteSpace: 'nowrap' }}>Sign Out</span>}
-                </button>
-            </div>
-        </aside>
+                                    {item.badge && (
+                                        <span className={`sidebar-badge ${isExpanded ? 'expanded' : 'collapsed'}`}>
+                                            {isExpanded ? item.badge : ''}
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </nav>
+                </div>
+
+                {/* Logout Section */}
+                <div className="sidebar-footer">
+                    <button
+                        onClick={signOutUser}
+                        className={`logout-button ${!isExpanded ? 'collapsed-item-center' : ''}`}
+                        title="Sign Out"
+                    >
+                        <LogOut size={20} />
+                        {isExpanded && <span className="logout-label">Sign Out</span>}
+                    </button>
+                </div>
+            </aside>
+        </>
     );
 }
 
