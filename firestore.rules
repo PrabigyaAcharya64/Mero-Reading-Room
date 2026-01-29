@@ -365,6 +365,31 @@ service cloud.firestore {
 
     /* ======================
 
+       HOSTEL MANAGEMENT
+
+       ====================== */
+
+
+    match /hostelRooms/{roomId} {
+      // Allow all logged-in users to read hostel rooms (to browse availability)
+      allow read: if loggedIn();
+      
+      // Only admin can create, update, or delete rooms
+      allow write: if isAdmin();
+    }
+
+    match /hostelAssignments/{assignmentId} {
+      // Allow all logged-in users to read assignments (needed to check bed availability)
+      allow read: if loggedIn();
+      
+      // Only admin can create, update, or delete assignments
+      // (Typically created via Cloud Function during purchase)
+      allow write: if isAdmin();
+    }
+
+
+    /* ======================
+
        DEFAULT DENY
 
        ====================== */

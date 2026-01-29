@@ -9,10 +9,8 @@ function AppShell() {
     const { setIsLoading } = useLoading();
 
     useEffect(() => {
-        // Only trigger global loader if it's the initial auth loading
-        if (loading) {
-            setIsLoading(true);
-        }
+        // Sync global loading with auth loading state
+        setIsLoading(loading);
     }, [loading, setIsLoading]);
 
     if (loading) return null;

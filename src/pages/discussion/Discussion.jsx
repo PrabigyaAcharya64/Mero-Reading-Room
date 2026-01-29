@@ -120,13 +120,17 @@ const Discussion = ({ onBack }) => {
         return () => unsubscribe();
     }, []);
 
-    // Check if a user is already part of any booking for the day (as booker or member)
-    const isUserAlreadyBooked = (uid) => {
-        return Object.values(bookings).some(booking => {
+    // Check if a user is already part of 2 or more bookings for the day (as booker or member)
+    const getUserBookingCount = (uid) => {
+        return Object.values(bookings).filter(booking => {
             if (booking.bookedBy === uid) return true;
             if (booking.members && booking.members.some(m => m.uid === uid)) return true;
             return false;
-        });
+        }).length;
+    };
+
+    const isUserAtMaxBookings = (uid) => {
+        return getUserBookingCount(uid) >= 2;
     };
 
     const lookupUserByMrr = async (mrr) => {
@@ -171,9 +175,9 @@ const Discussion = ({ onBack }) => {
         setIsSubmitting(false);
 
         if (member) {
-            // Check if user is already booked today
-            if (isUserAlreadyBooked(member.uid)) {
-                setError(`Member ${member.name} is already part of another group today.`);
+            // Check if user is already at max bookings (2 per day)
+            if (isUserAtMaxBookings(member.uid)) {
+                setError(`Member ${member.name} has already reached the maximum of 2 bookings for today.`);
                 return;
             }
 
@@ -198,10 +202,25 @@ const Discussion = ({ onBack }) => {
         setPendingMembers([]);
         setNewMemberMrr('');
 
-        if (bookings[slot.id]) {
+        // Count how many rooms are booked for this slot
+        const slotBookings = Object.values(bookings).filter(b => b.slotId === slot.id);
+        const bookedRoomCount = slotBookings.length;
+
+        // Check if user is part of any booking for this slot
+        const userBookingForSlot = slotBookings.find(booking =>
+            booking.bookedBy === user.uid ||
+            (booking.members && booking.members.some(m => m.uid === user.uid))
+        );
+
+        if (userBookingForSlot) {
+            // User is part of a booking in this slot, show details
             setViewMode('details');
-        } else {
+        } else if (bookedRoomCount < 7) {
+            // There are rooms available, allow booking
             setViewMode('book');
+        } else {
+            // All rooms are full
+            alert('All discussion rooms (D1-D7) are fully booked for this time slot. Please try another slot.');
         }
     };
 
@@ -214,16 +233,16 @@ const Discussion = ({ onBack }) => {
             return;
         }
 
-        // 1. Check if current user is already booked today
-        if (isUserAlreadyBooked(user.uid)) {
-            setError("You are already part of a discussion group for today. You can only join one group per day.");
+        // 1. Check if current user is at max bookings (2 per day)
+        if (isUserAtMaxBookings(user.uid)) {
+            setError("You have already reached the maximum of 2 bookings for today.");
             return;
         }
 
-        // 2. Check if any pending members are already booked today
+        // 2. Check if any pending members are at max bookings
         for (const member of pendingMembers) {
-            if (isUserAlreadyBooked(member.uid)) {
-                setError(`Member ${member.name} is already part of another group today.`);
+            if (isUserAtMaxBookings(member.uid)) {
+                setError(`Member ${member.name} has already reached the maximum of 2 bookings for today.`);
                 return;
             }
         }
@@ -232,9 +251,6 @@ const Discussion = ({ onBack }) => {
         setError('');
 
         try {
-            const slotDocId = `${getLogicalDateString()}_${selectedSlot.id}`;
-            const slotRef = doc(db, 'discussion_rooms', slotDocId);
-
             // Fetch current user's MRR from Firestore
             const userDocRef = doc(db, 'users', user.uid);
             const userDocSnap = await getDoc(userDocRef);
@@ -253,30 +269,26 @@ const Discussion = ({ onBack }) => {
             // Combine leader with pending members
             const allMembers = [leaderMember, ...pendingMembers];
 
-            await runTransaction(db, async (transaction) => {
-                const sfDoc = await transaction.get(slotRef);
-                if (sfDoc.exists()) {
-                    throw new Error("This slot has just been booked by someone else.");
-                }
-
-                transaction.set(slotRef, {
-                    date: getLogicalDateString(),
-                    slotId: selectedSlot.id,
-                    slotLabel: selectedSlot.label,
-                    bookedBy: user.uid,
-                    bookerName: user.displayName || 'Unknown',
-                    teamName: groupName, // keeping field name for compatibility, UI shows "Group"
-                    members: allMembers,
-                    createdAt: new Date().toISOString()
-                });
+            // Call backend function to book the room
+            const bookDiscussionRoom = httpsCallable(functions, 'bookDiscussionRoom');
+            const result = await bookDiscussionRoom({
+                date: getLogicalDateString(),
+                slotId: selectedSlot.id,
+                slotLabel: selectedSlot.label,
+                teamName: groupName,
+                members: allMembers
             });
 
-            setGroupName('');
-            setPendingMembers([]);
-            setViewMode('details');
+            if (result.data.success) {
+                // Show success message with room assignment
+                alert(`Booking successful! Your room is ${result.data.roomId}`);
+                setGroupName('');
+                setPendingMembers([]);
+                setViewMode('details');
+            }
         } catch (err) {
             console.error("Booking failed:", err);
-            setError(err.message);
+            setError(err.message || 'Failed to book the room. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
@@ -300,14 +312,14 @@ const Discussion = ({ onBack }) => {
 
         if (member) {
             try {
-                // Check if user is already booked today
-                if (isUserAlreadyBooked(member.uid)) {
-                    setError(`Member ${member.name} is already part of another group today.`);
+                // Check if user is at max bookings (2 per day)
+                if (isUserAtMaxBookings(member.uid)) {
+                    setError(`Member ${member.name} has already reached the maximum of 2 bookings for today.`);
                     setIsSubmitting(false);
                     return;
                 }
 
-                const slotDocId = `${getLogicalDateString()}_${selectedSlot.id}`;
+                const slotDocId = `${getLogicalDateString()}_${selectedSlot.id}_${booking.roomId}`;
                 const slotRef = doc(db, 'discussion_rooms', slotDocId);
 
                 await updateDoc(slotRef, {
@@ -331,7 +343,7 @@ const Discussion = ({ onBack }) => {
         if (window.confirm('Are you sure you want to cancel this booking? This action cannot be undone.')) {
             try {
                 const dateStr = getLogicalDateString();
-                const docId = `${dateStr}_${selectedSlot.id}`;
+                const docId = `${dateStr}_${selectedSlot.id}_${booking.roomId}`;
                 const docRef = doc(db, 'discussion_rooms', docId);
                 await deleteDoc(docRef);
                 setViewMode('list');
@@ -361,30 +373,44 @@ const Discussion = ({ onBack }) => {
 
                         <div className="slots-list">
                             {SLOTS.map(slot => {
-                                const booking = bookings[slot.id];
-                                const isBooked = !!booking;
-                                const isMyBooking = isBooked && (booking.bookedBy === user.uid || (booking.members && booking.members.some(m => m.uid === user.uid)));
+                                // Get all bookings for this slot
+                                const slotBookings = Object.values(bookings).filter(b => b.slotId === slot.id);
+                                const bookedRoomCount = slotBookings.length;
+                                const availableRoomCount = 7 - bookedRoomCount;
+
+                                // Check if user has a booking in this slot
+                                const userBooking = slotBookings.find(booking =>
+                                    booking.bookedBy === user.uid ||
+                                    (booking.members && booking.members.some(m => m.uid === user.uid))
+                                );
+
+                                const hasAvailableRooms = availableRoomCount > 0;
+                                const isMyBooking = !!userBooking;
 
                                 return (
                                     <div
                                         key={slot.id}
                                         onClick={() => handleSlotClick(slot)}
-                                        className={`slot-card ${isBooked ? 'booked' : ''} ${isMyBooking ? 'my-booking' : ''}`}
+                                        className={`slot-card ${!hasAvailableRooms ? 'booked' : ''} ${isMyBooking ? 'my-booking' : ''}`}
                                     >
                                         <div className="slot-info">
                                             <h3 className="slot-label">{slot.label}</h3>
-                                            {isBooked ? (
+                                            {isMyBooking ? (
                                                 <p className="slot-status">
-                                                    Booked by: <strong>{booking.teamName}</strong>
-                                                    {isMyBooking && <span className="my-group-label">(Your Group)</span>}
+                                                    Your Room: <strong>{userBooking.roomId}</strong> - <strong>{userBooking.teamName}</strong>
+                                                    <span className="my-group-label"> (Your Group)</span>
                                                 </p>
                                             ) : (
-                                                <p className="slot-status" style={{ color: 'var(--discussion-gray)' }}>Available</p>
+                                                <p className="slot-status" style={{ color: hasAvailableRooms ? 'var(--discussion-gray)' : 'inherit' }}>
+                                                    {availableRoomCount > 0
+                                                        ? `${availableRoomCount} of 7 rooms available`
+                                                        : 'All rooms booked'}
+                                                </p>
                                             )}
                                         </div>
                                         <div className="slot-action">
                                             <span className="action-badge">
-                                                {isBooked ? (isMyBooking ? 'Manage' : 'View') : 'Book Now'}
+                                                {isMyBooking ? 'Manage' : (hasAvailableRooms ? 'Book Now' : 'Full')}
                                             </span>
                                         </div>
                                     </div>
@@ -400,9 +426,16 @@ const Discussion = ({ onBack }) => {
 
 
     // Render Booking Form or Details
-    const booking = bookings[selectedSlot?.id];
+    // Find the user's booking for this slot (if any)
+    const slotBookings = Object.values(bookings).filter(b => b.slotId === selectedSlot?.id);
+    const booking = slotBookings.find(b =>
+        b.bookedBy === user.uid ||
+        (b.members && b.members.some(m => m.uid === user.uid))
+    );
     const isBooked = !!booking;
     const isMyTeam = isBooked && (booking.bookedBy === user.uid || (booking.members && booking.members.some(m => m.uid === user.uid)));
+    const bookedRoomCount = slotBookings.length;
+    const availableRoomCount = 7 - bookedRoomCount;
 
     return (
         <div className="std-container">
@@ -412,7 +445,9 @@ const Discussion = ({ onBack }) => {
                 <div className="discussion-card">
                     <h2 className="page-title">{selectedSlot?.label}</h2>
                     <p className="page-subtitle">
-                        {isBooked ? `Booked by ${booking.teamName}` : 'Slot Available'}
+                        {isBooked
+                            ? `${booking.teamName} - Room ${booking.roomId}`
+                            : `${availableRoomCount} of 7 rooms available`}
                     </p>
 
                     {/* BOOKING FORM */}
@@ -492,7 +527,7 @@ const Discussion = ({ onBack }) => {
                     {isBooked && isMyTeam && (
                         <div className="form-container" style={{ maxWidth: 'unset' }}>
                             <div className="details-banner">
-                                <h3>Your Group: <strong>{booking.teamName}</strong></h3>
+                                <h3>Room <strong>{booking.roomId}</strong>: <strong>{booking.teamName}</strong></h3>
                             </div>
 
                             <h3 className="section-title">Group Members</h3>

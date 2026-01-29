@@ -499,9 +499,6 @@ exports.checkStatusExpiration = onSchedule("0 0 * * *", async (event) => {
     return null;
 });
 
-/**
- * Callable function to verify if a user is eligible for discussion room booking.
- */
 exports.verifyDiscussionEligibility = onCall(async (request) => {
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
@@ -543,6 +540,126 @@ exports.verifyDiscussionEligibility = onCall(async (request) => {
     } catch (error) {
         console.error("Error verifying eligibility:", error);
         throw new HttpsError('internal', 'Unable to verify eligibility at this time.');
+    }
+});
+
+/**
+ * Callable function to book a discussion room
+ * Supports 7 rooms (D1-D7) with automatic assignment
+ * Maximum 2 bookings per day per user
+ */
+exports.bookDiscussionRoom = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Must be authenticated to book a discussion room.');
+    }
+
+    const { date, slotId, slotLabel, teamName, members } = request.data;
+    const userId = request.auth.uid;
+
+    if (!date || !slotId || !slotLabel || !teamName || !Array.isArray(members)) {
+        throw new HttpsError('invalid-argument', 'Missing required booking details.');
+    }
+
+    const ROOMS = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7'];
+    const db = admin.firestore();
+
+    try {
+        const result = await db.runTransaction(async (transaction) => {
+            // 1. Get all bookings for this date
+            const bookingsQuery = db.collection('discussion_rooms').where('date', '==', date);
+            const allBookingsSnapshot = await transaction.get(bookingsQuery);
+
+            // 2. Count user's bookings for the day (leader or member)
+            let userBookingCount = 0;
+            const memberUids = members.map(m => m.uid);
+            const allParticipantUids = [userId, ...memberUids];
+
+            // Track which members already have 2+ bookings
+            const memberBookingCounts = {};
+            allParticipantUids.forEach(uid => {
+                memberBookingCounts[uid] = 0;
+            });
+
+            // Track occupied rooms for this slot
+            const occupiedRoomsForSlot = new Set();
+
+            allBookingsSnapshot.forEach(doc => {
+                const booking = doc.data();
+
+                // Track occupied rooms for this specific slot
+                if (booking.slotId === slotId) {
+                    occupiedRoomsForSlot.add(booking.roomId);
+                }
+
+                // Count bookings for each participant
+                if (booking.bookedBy && memberBookingCounts.hasOwnProperty(booking.bookedBy)) {
+                    memberBookingCounts[booking.bookedBy]++;
+                }
+                if (booking.members && Array.isArray(booking.members)) {
+                    booking.members.forEach(member => {
+                        if (member.uid && memberBookingCounts.hasOwnProperty(member.uid)) {
+                            memberBookingCounts[member.uid]++;
+                        }
+                    });
+                }
+            });
+
+            // 3. Check if user or any member has reached max bookings (2 per day)
+            for (const [uid, count] of Object.entries(memberBookingCounts)) {
+                if (count >= 2) {
+                    // Find the member's name for better error message
+                    const member = members.find(m => m.uid === uid);
+                    const userName = uid === userId ? 'You' : (member ? member.name : 'A member');
+                    throw new HttpsError('failed-precondition',
+                        `${userName} ${uid === userId ? 'have' : 'has'} already reached the maximum of 2 bookings per day.`);
+                }
+            }
+
+            // 4. Find first available room for this slot
+            let assignedRoom = null;
+            for (const room of ROOMS) {
+                if (!occupiedRoomsForSlot.has(room)) {
+                    assignedRoom = room;
+                    break;
+                }
+            }
+
+            if (!assignedRoom) {
+                throw new HttpsError('resource-exhausted',
+                    'All discussion rooms (D1-D7) are fully booked for this time slot. Please try another slot.');
+            }
+
+            // 5. Create the booking
+            const bookingDocId = `${date}_${slotId}_${assignedRoom}`;
+            const bookingRef = db.collection('discussion_rooms').doc(bookingDocId);
+
+            transaction.set(bookingRef, {
+                date: date,
+                slotId: slotId,
+                slotLabel: slotLabel,
+                roomId: assignedRoom,
+                bookedBy: userId,
+                bookerName: request.auth.token.name || request.auth.token.email?.split('@')[0] || 'User',
+                teamName: teamName,
+                members: members,
+                createdAt: new Date().toISOString()
+            });
+
+            return {
+                success: true,
+                roomId: assignedRoom,
+                bookingId: bookingDocId
+            };
+        });
+
+        return result;
+
+    } catch (error) {
+        console.error('Error booking discussion room:', error);
+        if (error instanceof HttpsError) {
+            throw error;
+        }
+        throw new HttpsError('internal', error.message || 'Failed to book discussion room.');
     }
 });
 
@@ -1013,5 +1130,333 @@ exports.approveBalanceLoad = onCall(async (request) => {
             throw error;
         }
         throw new HttpsError('internal', 'Details: ' + error.message);
+    }
+});
+/**
+ * Callable function to process hostel room purchase
+ * Handles balance deduction, room assignment, and payment tracking
+ */
+exports.processHostelPurchase = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Must be authenticated to purchase hostel room.');
+    }
+
+    const { buildingId, roomType, months } = request.data;
+    const userId = request.auth.uid;
+
+    if (!buildingId || !roomType || !months || months < 1) {
+        throw new HttpsError('invalid-argument', 'Missing or invalid purchase details.');
+    }
+
+    const db = admin.firestore();
+
+    try {
+        const result = await db.runTransaction(async (transaction) => {
+            // 1. Get user data
+            const userRef = db.collection('users').doc(userId);
+            const userDoc = await transaction.get(userRef);
+
+            if (!userDoc.exists) {
+                throw new HttpsError('not-found', 'User profile not found.');
+            }
+
+            const userData = userDoc.data();
+            const currentBalance = userData.balance || 0;
+            const isFirstTime = !userData.hostelRegistrationPaid;
+
+            // 2. Get room configuration from hostelRooms collection
+            const roomsSnapshot = await transaction.get(
+                db.collection('hostelRooms')
+                    .where('buildingId', '==', buildingId)
+                    .where('type', '==', roomType)
+            );
+
+            if (roomsSnapshot.empty) {
+                throw new HttpsError('not-found', `No rooms found for the selected type in ${buildingId}.`);
+            }
+
+            const availableRooms = roomsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const monthlyRate = availableRooms[0].price;
+
+            // 3. Calculate costs
+            const monthlyTotal = monthlyRate * months;
+            const registrationFee = isFirstTime ? 4000 : 0;
+            const deposit = isFirstTime ? 5000 : 0;
+            const totalCost = monthlyTotal + registrationFee + deposit;
+
+            if (currentBalance < totalCost) {
+                throw new HttpsError('failed-precondition',
+                    `Insufficient balance. You need रु ${totalCost - currentBalance} more.`);
+            }
+
+            // 4. Find available bed
+            const assignmentsSnapshot = await transaction.get(db.collection('hostelAssignments'));
+            const occupiedBeds = new Map();
+
+            assignmentsSnapshot.docs.forEach(doc => {
+                const assignment = doc.data();
+                if (assignment.status === 'active') {
+                    const key = `${assignment.roomId}_${assignment.bedNumber}`;
+                    occupiedBeds.set(key, true);
+                }
+            });
+
+            let assignedRoom = null;
+            let assignedBed = null;
+
+            // Find first available bed
+            for (const room of availableRooms) {
+                for (let bedNum = 1; bedNum <= room.capacity; bedNum++) {
+                    const key = `${room.id}_${bedNum}`;
+                    if (!occupiedBeds.has(key)) {
+                        assignedRoom = room;
+                        assignedBed = bedNum;
+                        break;
+                    }
+                }
+                if (assignedRoom) break;
+            }
+
+            if (!assignedRoom) {
+                throw new HttpsError('resource-exhausted',
+                    `No beds available in ${roomType} rooms. Please try a different room type.`);
+            }
+
+            // 5. Deduct balance
+            const newBalance = currentBalance - totalCost;
+            const nextPaymentDue = new Date();
+            nextPaymentDue.setDate(nextPaymentDue.getDate() + (months * 30));
+
+            transaction.update(userRef, {
+                balance: newBalance,
+                currentHostelRoom: {
+                    buildingId: assignedRoom.buildingId,
+                    buildingName: assignedRoom.buildingName,
+                    roomId: assignedRoom.id,
+                    roomLabel: assignedRoom.label,
+                    roomType: assignedRoom.type,
+                    bedNumber: assignedBed
+                },
+                hostelNextPaymentDue: nextPaymentDue.toISOString(),
+                hostelRegistrationPaid: true,
+                hostelDepositPaid: isFirstTime ? 5000 : userData.hostelDepositPaid,
+                hostelMonthlyRate: monthlyRate,
+                updatedAt: new Date().toISOString()
+            });
+
+            // 6. Create hostel assignment
+            const assignmentRef = db.collection('hostelAssignments').doc();
+            transaction.set(assignmentRef, {
+                userId: userId,
+                userName: userData.name || userData.displayName || 'User',
+                userMrrNumber: userData.mrrNumber || 'N/A',
+                buildingId: assignedRoom.buildingId,
+                buildingName: assignedRoom.buildingName,
+                roomId: assignedRoom.id,
+                roomLabel: assignedRoom.label,
+                roomType: assignedRoom.type,
+                bedNumber: assignedBed,
+                monthlyRate: monthlyRate,
+                assignedAt: new Date().toISOString(),
+                nextPaymentDue: nextPaymentDue.toISOString(),
+                status: 'active'
+            });
+
+            // 7. Create transaction record
+            const transactionRef = db.collection('transactions').doc();
+            const transactionDetails = isFirstTime
+                ? `Hostel ${assignedRoom.buildingName} - ${assignedRoom.label} (${months} month${months > 1 ? 's' : ''}) + Registration + Deposit`
+                : `Hostel ${assignedRoom.buildingName} - ${assignedRoom.label} (${months} month${months > 1 ? 's' : ''})`;
+
+            transaction.set(transactionRef, {
+                type: 'hostel',
+                amount: totalCost,
+                details: transactionDetails,
+                userId: userId,
+                userName: userData.name || userData.displayName || 'User',
+                date: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+                buildingId: assignedRoom.buildingId,
+                roomType: assignedRoom.type,
+                months: months,
+                breakdown: {
+                    monthlyRate: monthlyRate,
+                    monthlyTotal: monthlyTotal,
+                    registrationFee: registrationFee,
+                    deposit: deposit
+                }
+            });
+
+            return {
+                success: true,
+                newBalance: newBalance,
+                transactionId: transactionRef.id,
+                assignmentId: assignmentRef.id,
+                roomInfo: {
+                    buildingId: assignedRoom.buildingId,
+                    buildingName: assignedRoom.buildingName,
+                    roomId: assignedRoom.id,
+                    roomLabel: assignedRoom.label,
+                    roomType: assignedRoom.type,
+                    bedNumber: assignedBed,
+                    monthlyRate: monthlyRate
+                },
+                nextPaymentDue: nextPaymentDue.toISOString()
+            };
+        });
+
+        return result;
+
+    } catch (error) {
+        console.error('Error processing hostel purchase:', error);
+        if (error instanceof HttpsError) {
+            throw error;
+        }
+        throw new HttpsError('internal', error.message || 'Failed to process hostel purchase.');
+    }
+});
+
+/**
+ * Callable function to get roommates for a given room
+ */
+exports.getHostelRoommates = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Must be authenticated.');
+    }
+
+    const { roomId } = request.data;
+
+    if (!roomId) {
+        throw new HttpsError('invalid-argument', 'Missing room ID.');
+    }
+
+    const db = admin.firestore();
+
+    try {
+        const assignmentsSnapshot = await db.collection('hostelAssignments')
+            .where('roomId', '==', roomId)
+            .where('status', '==', 'active')
+            .get();
+
+        const roommates = [];
+        assignmentsSnapshot.forEach(doc => {
+            const assignment = doc.data();
+            roommates.push({
+                userId: assignment.userId,
+                userName: assignment.userName,
+                userMrrNumber: assignment.userMrrNumber,
+                bedNumber: assignment.bedNumber
+            });
+        });
+
+        // Sort by bed number
+        roommates.sort((a, b) => a.bedNumber - b.bedNumber);
+
+        return { success: true, roommates };
+
+    } catch (error) {
+        console.error('Error fetching roommates:', error);
+        throw new HttpsError('internal', 'Failed to fetch roommates.');
+    }
+});
+
+/**
+ * Callable function to renew hostel subscription
+ */
+exports.renewHostelSubscription = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Must be authenticated.');
+    }
+
+    const { months } = request.data;
+    const userId = request.auth.uid;
+
+    if (!months || months < 1) {
+        throw new HttpsError('invalid-argument', 'Invalid number of months.');
+    }
+
+    const db = admin.firestore();
+
+    try {
+        const result = await db.runTransaction(async (transaction) => {
+            const userRef = db.collection('users').doc(userId);
+            const userDoc = await transaction.get(userRef);
+
+            if (!userDoc.exists) {
+                throw new HttpsError('not-found', 'User not found.');
+            }
+
+            const userData = userDoc.data();
+
+            if (!userData.currentHostelRoom) {
+                throw new HttpsError('failed-precondition', 'No active hostel booking found.');
+            }
+
+            const currentBalance = userData.balance || 0;
+            const monthlyRate = userData.hostelMonthlyRate || 0;
+            const renewalCost = monthlyRate * months;
+
+            if (currentBalance < renewalCost) {
+                throw new HttpsError('failed-precondition',
+                    `Insufficient balance. You need रु ${renewalCost - currentBalance} more.`);
+            }
+
+            // Calculate new payment due date
+            const currentDue = new Date(userData.hostelNextPaymentDue);
+            const now = new Date();
+            const baseDate = currentDue > now ? currentDue : now;
+            const newDueDate = new Date(baseDate);
+            newDueDate.setDate(newDueDate.getDate() + (months * 30));
+
+            // Update user
+            const newBalance = currentBalance - renewalCost;
+            transaction.update(userRef, {
+                balance: newBalance,
+                hostelNextPaymentDue: newDueDate.toISOString(),
+                updatedAt: new Date().toISOString()
+            });
+
+            // Update assignment
+            const assignmentQuery = db.collection('hostelAssignments')
+                .where('userId', '==', userId)
+                .where('status', '==', 'active');
+            const assignmentSnapshot = await transaction.get(assignmentQuery);
+
+            if (!assignmentSnapshot.empty) {
+                const assignmentRef = assignmentSnapshot.docs[0].ref;
+                transaction.update(assignmentRef, {
+                    nextPaymentDue: newDueDate.toISOString()
+                });
+            }
+
+            // Create transaction
+            const transactionRef = db.collection('transactions').doc();
+            transaction.set(transactionRef, {
+                type: 'hostel_renewal',
+                amount: renewalCost,
+                details: `Hostel Renewal - ${userData.currentHostelRoom.roomLabel} (${months} month${months > 1 ? 's' : ''})`,
+                userId: userId,
+                userName: userData.name || userData.displayName || 'User',
+                date: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+                months: months
+            });
+
+            return {
+                success: true,
+                newBalance: newBalance,
+                nextPaymentDue: newDueDate.toISOString(),
+                transactionId: transactionRef.id
+            };
+        });
+
+        return result;
+
+    } catch (error) {
+        console.error('Error renewing hostel subscription:', error);
+        if (error instanceof HttpsError) {
+            throw error;
+        }
+        throw new HttpsError('internal', 'Failed to renew subscription.');
     }
 });

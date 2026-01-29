@@ -62,9 +62,9 @@ function ProtectedRoute({ children, requiredRole }) {
     }, [user, userRole, loading]);
 
     useEffect(() => {
-        if (loading || checking) {
-            setIsLoading(true);
-        }
+        // Sync global loading with local checking states
+        const isChecking = loading || checking;
+        setIsLoading(isChecking);
     }, [loading, checking, setIsLoading]);
 
     if (loading || checking) return null;
@@ -92,9 +92,7 @@ export function NavigationRoot() {
     const { user, userRole, loading } = useAuth();
     const { setIsLoading } = useLoading();
 
-    useEffect(() => {
-        if (loading) setIsLoading(true);
-    }, [loading, setIsLoading]);
+
 
     // Global loading state
     if (loading) return null;

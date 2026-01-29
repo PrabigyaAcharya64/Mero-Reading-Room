@@ -4,6 +4,7 @@ import { db } from '../../lib/firebase';
 import { doc, getDoc, onSnapshot, collection, query, where } from 'firebase/firestore';
 import PageHeader from '../../components/PageHeader';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import EnhancedBackButton from '../../components/EnhancedBackButton';
 import '../../styles/StandardLayout.css';
 
 
@@ -68,14 +69,18 @@ const ToiletIcon = ({ size = 40 }) => (
 );
 
 function ReadingRoomDashboard({ onBack }) {
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const [loading, setLoading] = useState(true);
     const [userData, setUserData] = useState(null);
     const [roomData, setRoomData] = useState(null);
     const [assignments, setAssignments] = useState([]);
 
     useEffect(() => {
-        if (!user) return;
+        if (authLoading) return;
+        if (!user) {
+            setLoading(false);
+            return;
+        }
 
         const unsubUser = onSnapshot(doc(db, 'users', user.uid), (snap) => {
             if (snap.exists()) {
@@ -85,15 +90,25 @@ function ReadingRoomDashboard({ onBack }) {
                 if (!data.currentSeat) {
                     setLoading(false);
                 }
+            } else {
+                setLoading(false);
             }
         });
 
         return () => unsubUser();
-    }, [user]);
+    }, [user, authLoading]);
 
     useEffect(() => {
+        if (!userData) return;
+
         const roomId = userData?.currentSeat?.roomId;
-        if (!roomId) return;
+        // If we have user data but no room ID (and we passed the !currentSeat check in previous effect),
+        // it means we have a seat object but no ID, or something inconsistent. 
+        // We should stop loading and let the UI handle the missing data state (or show "Layout not available").
+        if (!roomId) {
+            setLoading(false);
+            return;
+        }
 
         let unsubAssignments = () => { };
 
@@ -121,7 +136,7 @@ function ReadingRoomDashboard({ onBack }) {
 
         loadRoomData();
         return () => unsubAssignments();
-    }, [userData?.currentSeat?.roomId]);
+    }, [userData]);
 
 
     if (loading) {
