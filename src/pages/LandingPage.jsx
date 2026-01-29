@@ -13,6 +13,7 @@ import ReadingRoomBuy from './readingroom/ReadingRoomBuy';
 import ReadingRoomEnrollment from './readingroom/ReadingRoomEnrollment';
 import ReadingRoomDashboard from './readingroom/ReadingRoomDashboard';
 import Discussion from './discussion/Discussion';
+import Hostel from './hostel';
 import LoadBalance from './balance/LoadBalance';
 import Confirmation from './balance/Confirmation';
 import Statement from './balance/Statement';
@@ -194,7 +195,7 @@ function LandingPage({ onBack }) {
               </span>
               <span className="landing-service-card__label">Reading Room</span>
             </button>
-            <button type="button" className="landing-service-card">
+            <button type="button" className="landing-service-card" onClick={() => navigate('/hostel')}>
               <span className="landing-service-card__icon">
                 <img src={hostelIcon} alt="" aria-hidden="true" />
               </span>
@@ -241,7 +242,7 @@ function LandingPage({ onBack }) {
             <Bell size={20} />
             <h2>Notices</h2>
           </div>
-          
+
           <div className="landing-announcements">
             {announcements.length === 0 ? (
               <div className="landing-announcements__empty">
@@ -313,6 +314,7 @@ function LandingPage({ onBack }) {
       />
       <Route path="/reading-room/dashboard" element={<ReadingRoomDashboard onBack={() => navigate('/')} />} />
       <Route path="/discussion" element={<Discussion onBack={() => navigate('/')} />} />
+      <Route path="/hostel/*" element={<Hostel onBack={() => navigate('/')} />} />
       <Route
         path="/load-balance"
         element={
