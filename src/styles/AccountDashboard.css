@@ -1,0 +1,388 @@
+/* AccountDashboard.css */
+
+/* Page Container */
+.account-dashboard {
+    padding: 0;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.account-dashboard-content {
+    padding: 24px 32px;
+}
+
+/* Top Bar */
+.account-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.account-title-section h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 4px 0;
+}
+
+.account-title-section p {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin: 0;
+}
+
+.manage-expenses-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #111827;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.manage-expenses-btn:hover {
+    background: #374151;
+    transform: translateY(-1px);
+}
+
+/* Time Range Picker */
+.time-range-picker {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    padding: 4px;
+    background: #f3f4f6;
+    border-radius: 12px;
+    width: fit-content;
+}
+
+.time-range-btn {
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.time-range-btn.active {
+    background: white;
+    color: #111827;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.time-range-btn:hover:not(.active) {
+    color: #111827;
+}
+
+/* Custom Date Inputs */
+.custom-date-picker {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-left: 12px;
+    padding-left: 12px;
+    border-left: 1px solid #e5e7eb;
+}
+
+.custom-date-picker input {
+    padding: 8px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #111827;
+}
+
+/* KPI Cards Grid */
+.kpi-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.kpi-card {
+    background: #fff;
+    padding: 24px;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+.kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+}
+
+.kpi-card.earning::before {
+    background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.kpi-card.expense::before {
+    background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+.kpi-card.profit::before {
+    background: linear-gradient(90deg, #6366f1, #818cf8);
+}
+
+.kpi-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.kpi-card-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #6b7280;
+    margin-bottom: 4px;
+}
+
+.kpi-card-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.kpi-card-icon {
+    padding: 10px;
+    border-radius: 12px;
+}
+
+.kpi-card.earning .kpi-card-icon {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.kpi-card.expense .kpi-card-icon {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.kpi-card.profit .kpi-card-icon {
+    background: #eef2ff;
+    color: #4f46e5;
+}
+
+.kpi-card-trend {
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.kpi-card-trend.positive {
+    color: #10b981;
+}
+
+.kpi-card-trend.negative {
+    color: #ef4444;
+}
+
+.kpi-card-trend.neutral {
+    color: #6b7280;
+}
+
+/* Charts Grid */
+.charts-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 1024px) {
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.chart-card {
+    background: #fff;
+    padding: 24px;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.chart-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.chart-card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.chart-card-subtitle {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-top: 2px;
+}
+
+.chart-container {
+    height: 300px;
+}
+
+.chart-container.small {
+    height: 250px;
+}
+
+/* Comparison Grid */
+.comparison-chart-section {
+    margin-top: 24px;
+}
+
+.comparison-chart-section .chart-card {
+    height: 350px;
+}
+
+/* Legend Cards (for pie chart) */
+.pie-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.pie-legend-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: #f9fafb;
+    border-radius: 8px;
+}
+
+.pie-legend-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #4b5563;
+}
+
+.pie-legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.pie-legend-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+}
+
+/* Skeleton Loaders */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.skeleton-kpi {
+    height: 120px;
+}
+
+.skeleton-chart {
+    height: 300px;
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    color: #9ca3af;
+}
+
+.empty-state-icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-state-text {
+    font-size: 16px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.empty-state-subtext {
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+    .account-dashboard-content {
+        padding: 16px;
+    }
+
+    .account-top-bar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .time-range-picker {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .custom-date-picker {
+        flex-direction: column;
+        align-items: flex-start;
+        border-left: none;
+        padding-left: 0;
+        margin-left: 0;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #e5e7eb;
+        width: 100%;
+    }
+
+    .kpi-cards-grid {
+        grid-template-columns: 1fr;
+    }
+}

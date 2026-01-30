@@ -4,8 +4,7 @@ import { db } from '../../lib/firebase';
 import { collection, query, orderBy, onSnapshot, where, getDocs } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Button from '../../components/Button';
-import PageHeader from '../../components/PageHeader';
-import { Search, Package, MapPin, Receipt, Clock, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Search, Package, MapPin, Receipt, Clock, ChevronRight, ChevronLeft, ArrowLeft } from 'lucide-react';
 import '../../styles/OrderDashboard.css';
 import '../../styles/StandardLayout.css';
 
@@ -32,10 +31,7 @@ function OrderDashboard({ onBack, onDataLoaded }) {
       q = query(ordersRef, where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
     }
 
-    // Standard Batch Reveal Pattern - signal parent when loaded
-    getDocs(q).finally(() => {
-      onDataLoaded?.();
-    });
+    let hasLoaded = false;
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const ordersData = snapshot.docs.map((doc) => ({
@@ -43,6 +39,11 @@ function OrderDashboard({ onBack, onDataLoaded }) {
         ...doc.data(),
       }));
       setOrders(ordersData);
+
+      if (!hasLoaded) {
+        hasLoaded = true;
+        onDataLoaded?.();
+      }
     }, (error) => {
       console.error('Error listening to orders:', error);
     });
@@ -80,9 +81,33 @@ function OrderDashboard({ onBack, onDataLoaded }) {
 
   return (
     <div className="std-container">
-      <PageHeader title="Orders History" onBack={onBack} />
+
 
       <main className="od-body">
+        {onBack && (
+          <div style={{ marginBottom: '1rem' }}>
+            <button
+              onClick={onBack}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.5rem 1rem',
+                backgroundColor: 'transparent',
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                color: '#374151',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <ArrowLeft size={16} /> Back
+            </button>
+          </div>
+        )}
         <section>
           <div className="od-toolbar">
             <h2 className="od-section-title">History ({filteredOrders.length})</h2>

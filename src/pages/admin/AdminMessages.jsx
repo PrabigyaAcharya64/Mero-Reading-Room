@@ -41,13 +41,14 @@ function AdminMessages({ onBack, onDataLoaded }) {
         const messagesRef = collection(db, 'messages');
         const q = query(messagesRef, orderBy('createdAt', 'desc'));
 
-        // Standard Batch Reveal Pattern - signal parent when loaded
-        Promise.all([
-            getDocs(usersRef),
-            getDocs(q)
-        ]).finally(() => {
-            onDataLoaded?.();
-        });
+        let usersLoaded = false;
+        let messagesLoaded = false;
+
+        const checkIfLoaded = () => {
+            if (usersLoaded && messagesLoaded) {
+                onDataLoaded?.();
+            }
+        };
 
         // Fetch users for MRR ID mapping
         const unsubscribeUsers = onSnapshot(usersRef, (snapshot) => {
@@ -59,6 +60,8 @@ function AdminMessages({ onBack, onDataLoaded }) {
                 }
             });
             setUserMap(map);
+            usersLoaded = true;
+            checkIfLoaded();
         });
 
         const unsubscribeMessages = onSnapshot(q, (snapshot) => {
@@ -87,6 +90,8 @@ function AdminMessages({ onBack, onDataLoaded }) {
                 };
             });
             setMessages(msgs);
+            messagesLoaded = true;
+            checkIfLoaded();
         });
 
         return () => {

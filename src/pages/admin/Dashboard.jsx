@@ -180,7 +180,8 @@ function Dashboard({ onNavigate, onDataLoaded }) {
         fetchData().finally(() => {
             onDataLoaded?.();
         });
-    }, [timeRange, onDataLoaded]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [timeRange]);
 
 
     return (
@@ -254,11 +255,11 @@ function Dashboard({ onNavigate, onDataLoaded }) {
                 <div className="db-charts-grid">
 
                     {/* Main Chart Card */}
-                    <div style={{ 
-                        backgroundColor: '#fff', 
-                        padding: '24px', 
-                        borderRadius: '16px', 
-                        border: '1px solid #e5e7eb', 
+                    <div style={{
+                        backgroundColor: '#fff',
+                        padding: '24px',
+                        borderRadius: '16px',
+                        border: '1px solid #e5e7eb',
                         height: '400px',
                         position: 'relative',
                         minWidth: 0
@@ -330,11 +331,11 @@ function Dashboard({ onNavigate, onDataLoaded }) {
                     </div>
 
                     {/* Breakdown Chart Card */}
-                    <div style={{ 
-                        backgroundColor: '#fff', 
-                        padding: '24px', 
-                        borderRadius: '16px', 
-                        border: '1px solid #e5e7eb', 
+                    <div style={{
+                        backgroundColor: '#fff',
+                        padding: '24px',
+                        borderRadius: '16px',
+                        border: '1px solid #e5e7eb',
                         height: '400px',
                         position: 'relative',
                         minWidth: 0

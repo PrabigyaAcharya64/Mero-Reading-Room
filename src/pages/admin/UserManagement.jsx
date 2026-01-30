@@ -13,10 +13,7 @@ function UserManagement({ onBack, onNavigate, onDataLoaded }) {
     useEffect(() => {
         const pendingQ = query(collection(db, 'users'), orderBy('submittedAt', 'desc'));
 
-        // Standard Batch Reveal Pattern - signal parent when loaded
-        getDocs(pendingQ).finally(() => {
-            onDataLoaded?.();
-        });
+        let hasLoaded = false;
 
         const unsubPending = onSnapshot(pendingQ, (snapshot) => {
             const count = snapshot.docs.filter(doc => {
@@ -24,8 +21,17 @@ function UserManagement({ onBack, onNavigate, onDataLoaded }) {
                 return data.mrrNumber && data.submittedAt && data.verified !== true;
             }).length;
             setPendingCount(count);
+
+            if (!hasLoaded) {
+                hasLoaded = true;
+                onDataLoaded?.();
+            }
         }, (error) => {
             console.error("Error fetching pending users:", error);
+            if (!hasLoaded) {
+                hasLoaded = true;
+                onDataLoaded?.();
+            }
         });
         return () => unsubPending();
         // eslint-disable-next-line react-hooks/exhaustive-deps

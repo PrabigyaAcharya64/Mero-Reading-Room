@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthProvider';
 import { LogOut } from 'lucide-react';
@@ -64,18 +64,19 @@ function CanteenAdminLanding() {
   };
 
   // Callback for child pages to signal data is loaded
-  const handlePageReady = () => {
+  const handlePageReady = useCallback(() => {
     setIsLoading(false);
-  };
+  }, [setIsLoading]);
 
 
 
   const LandingHome = () => (
     <div className="std-container">
-      <PageHeader
-        title="Canteen Administration"
-        rightElement={
-          userRole === 'canteen' ? (
+      {/* Only show PageHeader for standalone canteen role, not when accessed from admin panel */}
+      {userRole === 'canteen' && (
+        <PageHeader
+          title="Canteen Administration"
+          rightElement={
             <button
               onClick={signOutUser}
               className="std-header-back-btn"
@@ -84,9 +85,9 @@ function CanteenAdminLanding() {
             >
               <LogOut size={20} />
             </button>
-          ) : null
-        }
-      />
+          }
+        />
+      )}
 
       <main className="std-body">
         <section className="landing-services">
@@ -191,7 +192,7 @@ function CanteenAdminLanding() {
       <Route path="/new-orders" element={<NewOrders onBack={() => navigate(baseUrl)} onDataLoaded={handlePageReady} />} />
       <Route path="/sales-dashboard" element={<SalesDashboard onBack={() => navigate(baseUrl)} onDataLoaded={handlePageReady} />} />
       <Route path="/proxy-order" element={<ProxyOrder onBack={() => navigate(baseUrl)} onDataLoaded={handlePageReady} />} />
-      <Route path="/inventory" element={<InventoryLanding onBack={() => navigate(baseUrl)} onNavigate={(view) => handleNavigation(view)} onDataLoaded={handlePageReady} />} />
+      <Route path="/inventory" element={<InventoryLanding onBack={() => navigate(baseUrl)} onNavigate={(view) => handleNavigation(`${baseUrl}/${view}`)} onDataLoaded={handlePageReady} />} />
       <Route path="/raw-inventory" element={<RawInventory onBack={() => navigate(`${baseUrl}/inventory`)} onDataLoaded={handlePageReady} />} />
       <Route path="/dry-inventory" element={<DryInventory onBack={() => navigate(`${baseUrl}/inventory`)} onDataLoaded={handlePageReady} />} />
     </Routes>

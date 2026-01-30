@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, doc, setDoc, updateDoc, addDoc, deleteDoc, serverTimestamp, where, getDocs } from 'firebase/firestore';
+import { collection, query, doc, setDoc, updateDoc, addDoc, deleteDoc, serverTimestamp, where, getDocs } from 'firebase/firestore';
 import { db, functions } from '../../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
-import PageHeader from '../../components/PageHeader';
+import { ArrowLeft } from 'lucide-react';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/DryInventory.css';
 import '../../styles/StandardLayout.css';
@@ -31,28 +31,24 @@ const DryInventory = ({ onBack, onDataLoaded }) => {
         category: 'Snacks'
     });
 
-    useEffect(() => {
-        const q = query(collection(db, 'canteen_items'));
-        const menuQ = query(collection(db, 'menuItems'), where('stockRefId', '!=', null));
-
-
-        Promise.all([
-            getDocs(q),
-            getDocs(menuQ)
-        ]).finally(() => {
-            onDataLoaded?.();
-        });
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+    const fetchInventory = async () => {
+        try {
+            const q = query(collection(db, 'canteen_items'));
+            const snapshot = await getDocs(q);
             const items = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
             setInventoryItems(items);
-        });
+        } catch (error) {
+            console.error("Error fetching inventory:", error);
+        }
+    };
 
-        // Listen to menuItems to track what is currently "In Menu"
-        const menuUnsubscribe = onSnapshot(menuQ, (snapshot) => {
+    const fetchMenuItems = async () => {
+        try {
+            const menuQ = query(collection(db, 'menuItems'), where('stockRefId', '!=', null));
+            const snapshot = await getDocs(menuQ);
             const stockIds = new Set();
             snapshot.docs.forEach(doc => {
                 const data = doc.data();
@@ -61,12 +57,22 @@ const DryInventory = ({ onBack, onDataLoaded }) => {
                 }
             });
             setMenuItemIds(stockIds);
-        });
+        } catch (error) {
+            console.error("Error fetching menu items:", error);
+        }
+    };
 
-        return () => {
-            unsubscribe();
-            menuUnsubscribe();
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                await Promise.all([fetchInventory(), fetchMenuItems()]);
+            } catch (error) {
+                console.error("Error initializing data:", error);
+            } finally {
+                onDataLoaded?.();
+            }
         };
+        loadData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -78,6 +84,8 @@ const DryInventory = ({ onBack, onDataLoaded }) => {
 
                 const deletePromises = menuSnapshot.docs.map(d => deleteDoc(d.ref));
                 await Promise.all(deletePromises);
+
+                await fetchMenuItems();
             } catch (error) {
                 console.error("Error removing from menu:", error);
                 alert("Failed to remove from menu.");
@@ -140,6 +148,7 @@ const DryInventory = ({ onBack, onDataLoaded }) => {
             });
 
             handleCloseSync();
+            await Promise.all([fetchInventory(), fetchMenuItems()]);
         } catch (error) {
             console.error("Error syncing to menu:", error);
         }
@@ -157,6 +166,8 @@ const DryInventory = ({ onBack, onDataLoaded }) => {
 
                 const deletePromises = menuSnapshot.docs.map(d => deleteDoc(d.ref));
                 await Promise.all(deletePromises);
+
+                await Promise.all([fetchInventory(), fetchMenuItems()]);
             } catch (error) {
                 console.error("Error deleting item:", error);
                 alert("Failed to delete item.");
@@ -258,6 +269,7 @@ const DryInventory = ({ onBack, onDataLoaded }) => {
 
             setShowEditModal(false);
             setEditingItem(null);
+            await fetchInventory(); // Refresh inventory
         } catch (error) {
             console.error("Error updating item:", error);
             alert("Failed to update item.");
@@ -286,6 +298,8 @@ const DryInventory = ({ onBack, onDataLoaded }) => {
             setShowAddModal(false);
             setNewItem({ itemName: '', salePrice: '', stockCount: '', category: 'Snacks' });
             setImageFile(null);
+
+            await fetchInventory(); // Refresh inventory
         } catch (error) {
             console.error("Error adding item:", error);
         } finally {
@@ -296,16 +310,39 @@ const DryInventory = ({ onBack, onDataLoaded }) => {
 
     return (
         <div className="std-container">
-            <PageHeader title="Dry Inventory" onBack={onBack} rightElement={
-                <button
-                    className="add-item-btn-simple"
-                    onClick={() => setShowAddModal(true)}
-                >
-                    + Add Product
-                </button>
-            } />
-
             <main className="std-body">
+                {onBack && (
+                    <div style={{ marginBottom: '1rem' }}>
+                        <button
+                            onClick={onBack}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                padding: '0.5rem 1rem',
+                                backgroundColor: 'transparent',
+                                border: '1px solid #ddd',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '0.875rem',
+                                color: '#374151',
+                                transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                            <ArrowLeft size={16} /> Back
+                        </button>
+                    </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+                    <button
+                        className="add-item-btn-simple"
+                        onClick={() => setShowAddModal(true)}
+                    >
+                        + Add Product
+                    </button>
+                </div>
 
                 <div className="inventory-table-container simple-container">
                     <table className="inventory-table-simple">

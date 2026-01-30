@@ -19,13 +19,14 @@ function AllMembersView({ onBack, onDataLoaded }) {
         const usersQ = query(collection(db, 'users'), where('verified', '==', true));
         const seatsRef = collection(db, 'seatAssignments');
 
-        // Standard Batch Reveal Pattern - signal parent when loaded
-        Promise.all([
-            getDocs(usersQ),
-            getDocs(seatsRef)
-        ]).finally(() => {
-            onDataLoaded?.();
-        });
+        let seatsLoaded = false;
+        let usersLoaded = false;
+
+        const checkIfLoaded = () => {
+            if (seatsLoaded && usersLoaded) {
+                onDataLoaded?.();
+            }
+        };
 
         // Real-time listeners
         const seatUnsub = onSnapshot(seatsRef, (snapshot) => {
@@ -35,11 +36,15 @@ function AllMembersView({ onBack, onDataLoaded }) {
                 if (data.userId) map[data.userId] = data;
             });
             setSeatAssignmentsMap(map);
+            seatsLoaded = true;
+            checkIfLoaded();
         });
 
         const userUnsub = onSnapshot(usersQ, (snapshot) => {
             const userData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             setUsers(userData);
+            usersLoaded = true;
+            checkIfLoaded();
         }, (error) => {
             console.error("Error fetching users:", error);
         });

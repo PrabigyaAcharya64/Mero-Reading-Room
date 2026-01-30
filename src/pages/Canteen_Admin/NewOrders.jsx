@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { db } from '../../lib/firebase';
 import { collection, query, where, onSnapshot, updateDoc, doc, serverTimestamp, getDoc, getDocs } from 'firebase/firestore';
+import { ArrowLeft } from 'lucide-react';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
-import PageHeader from '../../components/PageHeader';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Button from '../../components/Button';
 import '../../styles/NewOrders.css';
@@ -19,13 +19,14 @@ function NewOrders({ onBack, onDataLoaded }) {
         const qNew = query(collection(db, 'orders'), where('status', '==', 'pending'));
         const qPreparing = query(collection(db, 'orders'), where('status', '==', 'preparing'));
 
-        // Standard Batch Reveal Pattern - signal parent when loaded
-        Promise.all([
-            getDocs(qNew),
-            getDocs(qPreparing)
-        ]).finally(() => {
-            onDataLoaded?.();
-        });
+        let newLoaded = false;
+        let preparingLoaded = false;
+
+        const checkIfLoaded = () => {
+            if (newLoaded && preparingLoaded) {
+                onDataLoaded?.();
+            }
+        };
 
         const unsubscribeNew = onSnapshot(qNew, async (snapshot) => {
             let orders = await Promise.all(snapshot.docs.map(async (docSnapshot) => {
@@ -57,6 +58,8 @@ function NewOrders({ onBack, onDataLoaded }) {
 
             orders.sort((a, b) => getMillis(a.createdAt) - getMillis(b.createdAt));
             setNewOrders(orders);
+            newLoaded = true;
+            checkIfLoaded();
         });
 
         const unsubscribePreparing = onSnapshot(qPreparing, async (snapshot) => {
@@ -89,6 +92,8 @@ function NewOrders({ onBack, onDataLoaded }) {
 
             orders.sort((a, b) => getMillis(a.updatedAt) - getMillis(b.updatedAt));
             setPreparingOrders(orders);
+            preparingLoaded = true;
+            checkIfLoaded();
         });
 
         return () => {
@@ -135,9 +140,31 @@ function NewOrders({ onBack, onDataLoaded }) {
 
     return (
         <div className="std-container">
-            <PageHeader title="New Orders" onBack={onBack} />
-
             <main className="std-body">
+                {onBack && (
+                    <div style={{ marginBottom: '1rem' }}>
+                        <button
+                            onClick={onBack}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                padding: '0.5rem 1rem',
+                                backgroundColor: 'transparent',
+                                border: '1px solid #ddd',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '0.875rem',
+                                color: '#374151',
+                                transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                            <ArrowLeft size={16} /> Back
+                        </button>
+                    </div>
+                )}
 
                 <div className="no-grid">
 

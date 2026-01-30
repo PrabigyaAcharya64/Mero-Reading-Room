@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { useAuth } from '../../auth/AuthProvider';
@@ -12,6 +12,7 @@ import CreateAnnouncement from './CreateAnnouncement';
 import ReadingRoomManagement from '../readingroom/ReadingRoomManagement';
 import AdminBalanceLoad from './AdminBalanceLoad';
 import AdminTransactionStatement from './AdminTransactionStatement';
+import AccountDashboard from './AccountDashboard';
 import Sidebar from '../../components/Sidebar';
 import Dashboard from './Dashboard';
 import { useLoading } from '../../context/GlobalLoadingContext';
@@ -38,7 +39,7 @@ function AdminLanding() {
     const handleResize = () => {
       const mobile = window.innerWidth <= 768;
       setIsMobile(mobile);
-      if (!mobile) setIsSidebarOpen(false); 
+      if (!mobile) setIsSidebarOpen(false);
     };
 
     window.addEventListener('resize', handleResize);
@@ -64,9 +65,9 @@ function AdminLanding() {
     navigate(view === 'dashboard' ? '/admin' : `/admin/${view}`);
   };
 
-  const handlePageReady = () => {
+  const handlePageReady = useCallback(() => {
     setIsLoading(false);
-  };
+  }, [setIsLoading]);
 
   // Queries for unread messages and new orders
   useEffect(() => {
@@ -105,6 +106,7 @@ function AdminLanding() {
     if (path.includes('/admin/reading-rooms')) return 'reading-rooms';
     if (path.includes('/admin/balance-requests')) return 'balance-requests';
     if (path.includes('/admin/transaction-statement')) return 'transaction-statement';
+    if (path.includes('/admin/account-dashboard')) return 'account-dashboard';
     return 'dashboard';
   }, [location.pathname]);
 
@@ -118,7 +120,8 @@ function AdminLanding() {
       'create-announcement': 'Announcements',
       'reading-rooms': 'Reading Room',
       'balance-requests': 'Balance Requests',
-      'transaction-statement': 'Transaction Statement'
+      'transaction-statement': 'Transaction Statement',
+      'account-dashboard': 'Account'
     };
     return titles[currentView] || 'Admin Panel';
   };
@@ -136,7 +139,7 @@ function AdminLanding() {
       />
 
       {/* Main Content Area */}
-      <div 
+      <div
         className={`admin-main-content ${!isMobile && isExpanded ? 'sidebar-expanded' : 'sidebar-collapsed'}`}
         onMouseEnter={() => !isMobile && setIsSidebarHovered(false)} // Close if mouse enters content
       >
@@ -146,13 +149,7 @@ function AdminLanding() {
               {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           )}
-          <h1 className="admin-header-title">{getPageTitle()}</h1>
-          
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500' }}>
-              Welcome, {displayName}
-            </span>
-          </div>
+          <h1 className="admin-header-title" style={{ textAlign: 'center', flex: 1 }}>{getPageTitle()}</h1>
         </header>
 
         <main style={{ padding: '1.5rem', maxWidth: '1400px', margin: '0 auto', width: '100%', flex: 1 }}>
@@ -169,6 +166,7 @@ function AdminLanding() {
             <Route path="/reading-rooms" element={<ReadingRoomManagement onDataLoaded={handlePageReady} />} />
             <Route path="/balance-requests" element={<AdminBalanceLoad onDataLoaded={handlePageReady} />} />
             <Route path="/transaction-statement" element={<AdminTransactionStatement onDataLoaded={handlePageReady} />} />
+            <Route path="/account-dashboard" element={<AccountDashboard onDataLoaded={handlePageReady} />} />
           </Routes>
         </main>
       </div>

@@ -28,11 +28,15 @@ function NewUsers({ onBack, onDataLoaded }) {
 
   useEffect(() => {
     // Standard Batch Reveal Pattern: Promise.all for all initial fetches
-    Promise.all([
-      loadUsers()
-    ]).finally(() => {
-      onDataLoaded?.();
-    });
+    (async () => {
+      try {
+        await loadUsers();
+      } catch (error) {
+        console.error("Error loading users:", error);
+      } finally {
+        onDataLoaded?.();
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

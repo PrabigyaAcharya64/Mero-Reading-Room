@@ -55,10 +55,7 @@ export default function AdminBalanceLoad({ onBack, onDataLoaded }) {
             orderBy('submittedAt', 'desc')
         );
 
-        // Standard Batch Reveal Pattern - signal parent when loaded
-        getDocs(q).finally(() => {
-            onDataLoaded?.();
-        });
+        let hasLoaded = false;
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const msgs = snapshot.docs.map(doc => ({
@@ -66,8 +63,17 @@ export default function AdminBalanceLoad({ onBack, onDataLoaded }) {
                 ...doc.data()
             }));
             setRequests(msgs);
+
+            if (!hasLoaded) {
+                hasLoaded = true;
+                onDataLoaded?.();
+            }
         }, (error) => {
             console.error("Error fetching balance requests:", error);
+            if (!hasLoaded) {
+                hasLoaded = true;
+                onDataLoaded?.();
+            }
         });
 
         return () => unsubscribe();
@@ -77,6 +83,7 @@ export default function AdminBalanceLoad({ onBack, onDataLoaded }) {
     // Fetch History (Approved/Rejected)
     useEffect(() => {
         if (activeTab === 'history') {
+            // Only set loading if not already loading (prevents reset)
             setIsLoadingHistory(true);
             const q = query(
                 collection(db, 'balanceRequests'),
@@ -156,7 +163,12 @@ export default function AdminBalanceLoad({ onBack, onDataLoaded }) {
                 </button>
                 <button
                     className={`abl-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('history')}
+                    onClick={() => {
+                        if (activeTab !== 'history') {
+                            setIsLoadingHistory(true);
+                        }
+                        setActiveTab('history');
+                    }}
                 >
                     History
                 </button>

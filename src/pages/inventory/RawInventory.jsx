@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, doc, updateDoc, increment, addDoc, deleteDoc, serverTimestamp, getDocs } from 'firebase/firestore';
+import { collection, query, doc, updateDoc, increment, addDoc, deleteDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import PageHeader from '../../components/PageHeader';
+import { ArrowLeft } from 'lucide-react';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/RawInventory.css';
 import '../../styles/StandardLayout.css';
@@ -16,23 +16,31 @@ const RawInventory = ({ onBack, onDataLoaded }) => {
         lowStockThreshold: '5'
     });
 
-    useEffect(() => {
-        const q = query(collection(db, 'raw_materials'));
-
-        // Standard Batch Reveal Pattern - signal parent when loaded
-        getDocs(q).finally(() => {
-            onDataLoaded?.();
-        });
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+    const fetchInventory = async () => {
+        try {
+            const q = query(collection(db, 'raw_materials'));
+            const snapshot = await getDocs(q);
             const items = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
             setInventoryItems(items);
-        });
+        } catch (error) {
+            console.error("Error fetching inventory:", error);
+        }
+    };
 
-        return () => unsubscribe();
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                await fetchInventory();
+            } catch (error) {
+                console.error("Error initializing data:", error);
+            } finally {
+                onDataLoaded?.();
+            }
+        };
+        loadData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -44,6 +52,7 @@ const RawInventory = ({ onBack, onDataLoaded }) => {
             await updateDoc(itemRef, {
                 currentQty: increment(-1)
             });
+            await fetchInventory();
         } catch (error) {
             console.error("Error updating stock:", error);
         }
@@ -53,6 +62,7 @@ const RawInventory = ({ onBack, onDataLoaded }) => {
         if (window.confirm(`Are you sure you want to delete "${itemName}"? This cannot be undone.`)) {
             try {
                 await deleteDoc(doc(db, 'raw_materials', id));
+                await fetchInventory();
             } catch (error) {
                 console.error("Error deleting item:", error);
             }
@@ -62,16 +72,32 @@ const RawInventory = ({ onBack, onDataLoaded }) => {
     const handleAddItem = async (e) => {
         e.preventDefault();
         try {
+            const qty = Number(newItem.currentQty);
+            const price = Number(newItem.unitPrice);
+
+            // Add to raw_materials
             await addDoc(collection(db, 'raw_materials'), {
                 itemName: newItem.itemName,
-                currentQty: Number(newItem.currentQty),
-                unitPrice: Number(newItem.unitPrice),
+                currentQty: qty,
+                unitPrice: price,
                 lowStockThreshold: Number(newItem.lowStockThreshold),
                 lastPurchased: new Date().toISOString().split('T')[0],
                 createdAt: serverTimestamp()
             });
+
+            // Also record purchase for expense tracking
+            await addDoc(collection(db, 'inventory_purchases'), {
+                itemName: newItem.itemName,
+                quantity: qty,
+                unitPrice: price,
+                totalCost: qty * price,
+                purchaseDate: serverTimestamp(),
+                createdAt: serverTimestamp()
+            });
+
             setShowAddModal(false);
             setNewItem({ itemName: '', currentQty: '', unitPrice: '', lowStockThreshold: '5' });
+            await fetchInventory();
         } catch (error) {
             console.error("Error adding item:", error);
         }
@@ -80,16 +106,39 @@ const RawInventory = ({ onBack, onDataLoaded }) => {
 
     return (
         <div className="std-container">
-            <PageHeader title="Raw Inventory" onBack={onBack} rightElement={
-                <button
-                    className="add-item-btn-simple"
-                    onClick={() => setShowAddModal(true)}
-                >
-                    + Add Item
-                </button>
-            } />
-
             <main className="std-body">
+                {onBack && (
+                    <div style={{ marginBottom: '1rem' }}>
+                        <button
+                            onClick={onBack}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                padding: '0.5rem 1rem',
+                                backgroundColor: 'transparent',
+                                border: '1px solid #ddd',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '0.875rem',
+                                color: '#374151',
+                                transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                            <ArrowLeft size={16} /> Back
+                        </button>
+                    </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+                    <button
+                        className="add-item-btn-simple"
+                        onClick={() => setShowAddModal(true)}
+                    >
+                        + Add Item
+                    </button>
+                </div>
 
                 <div className="inventory-table-container simple-container">
                     <table className="inventory-table-simple">
