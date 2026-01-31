@@ -6,9 +6,7 @@ export default defineConfig({
   define: {
     'global': 'window',
   },
-  resolve: {
-    mainFields: ['browser', 'module', 'main'],
-  },
+
   optimizeDeps: {
     include: [],
     esbuildOptions: {
