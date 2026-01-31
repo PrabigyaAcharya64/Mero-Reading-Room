@@ -1,34 +1,27 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
   define: {
     'global': 'window',
   },
-  resolve: {
-    alias: {
-      // Explicit Firebase aliases to help Vite resolve the correct ESM entry points
-      'firebase/app': path.resolve(__dirname, 'node_modules/firebase/app/dist/esm/index.esm.js'),
-      'firebase/auth': path.resolve(__dirname, 'node_modules/firebase/auth/dist/esm/index.esm.js'),
-      'firebase/firestore': path.resolve(__dirname, 'node_modules/firebase/firestore/dist/esm/index.esm.js'),
-      'firebase/storage': path.resolve(__dirname, 'node_modules/firebase/storage/dist/esm/index.esm.js'),
-    }
-  },
   optimizeDeps: {
     include: [
       'firebase/app',
       'firebase/auth',
       'firebase/firestore',
-      'firebase/storage'
+      'firebase/storage',
+      '@firebase/app',
+      '@firebase/auth',
+      '@firebase/firestore',
+      '@firebase/storage'
     ],
     esbuildOptions: {
       supported: {
         bigint: true
       }
-    },
-    exclude: []
+    }
   },
   server: {
     host: '0.0.0.0',
@@ -42,7 +35,6 @@ export default defineConfig({
       transformMixedEsModules: true
     },
     rollupOptions: {
-      external: [],
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
