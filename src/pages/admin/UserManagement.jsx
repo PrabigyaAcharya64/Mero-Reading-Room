@@ -4,11 +4,19 @@ import PageHeader from '../../components/PageHeader';
 import '../../styles/StandardLayout.css';
 import { db } from '../../lib/firebase';
 import { collection, query, onSnapshot, orderBy, getDocs } from 'firebase/firestore';
+import { useLoading } from '../../context/GlobalLoadingContext';
 
 const newUserIcon = new URL('../../assets/newuser.svg', import.meta.url).href;
 const usersIcon = new URL(/* @vite-ignore */ '../../assets/users.svg', import.meta.url).href;
+
 function UserManagement({ onBack, onNavigate, onDataLoaded }) {
+    const { setIsLoading } = useLoading();
     const [pendingCount, setPendingCount] = useState(0);
+
+    // Set loading true on mount (handles page refresh case)
+    useEffect(() => {
+        setIsLoading(true);
+    }, []);
 
     useEffect(() => {
         const pendingQ = query(collection(db, 'users'), orderBy('submittedAt', 'desc'));
@@ -92,4 +100,3 @@ function UserManagement({ onBack, onNavigate, onDataLoaded }) {
 }
 
 export default UserManagement;
-

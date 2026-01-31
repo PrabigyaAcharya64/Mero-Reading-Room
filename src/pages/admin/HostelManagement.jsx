@@ -43,6 +43,11 @@ const HostelManagement = ({ onBack, onDataLoaded }) => {
     });
 
     useEffect(() => {
+        // Set loading true on mount (handles page refresh case)
+        setIsLoading(true);
+    }, []);
+
+    useEffect(() => {
         const loadInitialData = async () => {
             await fetchRooms();
             if (onDataLoaded) onDataLoaded();

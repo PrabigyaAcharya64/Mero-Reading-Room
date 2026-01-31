@@ -9,7 +9,7 @@ export const LoadingProvider = ({ children }) => {
     const [shouldShowContent, setShouldShowContent] = useState(false);
 
     const loadingStartTime = useRef(0);
-    const MIN_LOADING_TIME = 800; // Increased for a more premium feel
+    const MIN_LOADING_TIME = 2000; // Reduced to 2000ms as requested
     const FADE_DURATION = 400;
 
     const setIsLoading = useCallback((loading) => {

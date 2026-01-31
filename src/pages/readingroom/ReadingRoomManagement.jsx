@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, setDoc, getDoc } from 'firebase/firestore';
 import { ArrowLeft } from 'lucide-react';
+import { useLoading } from '../../context/GlobalLoadingContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Button from '../../components/Button';
 import '../../styles/ReadingRoomManagement.css';
@@ -71,6 +72,7 @@ const ELEMENT_CONFIG = {
 };
 function ReadingRoomManagement({ onBack, onDataLoaded }) {
     const { user } = useAuth();
+    const { setIsLoading } = useLoading();
     const displayName = user?.displayName || user?.email?.split('@')[0] || 'Admin';
 
     const [rooms, setRooms] = useState([]);
@@ -101,6 +103,13 @@ function ReadingRoomManagement({ onBack, onDataLoaded }) {
     const [showStudentModal, setShowStudentModal] = useState(false);
     const [assignmentMode, setAssignmentMode] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [canvasScale, setCanvasScale] = useState(1);
+    const canvasWrapperRef = useRef(null);
+
+    // Set loading true on mount (handles page refresh case)
+    useEffect(() => {
+        setIsLoading(true);
+    }, []);
 
     useEffect(() => {
         (async () => {
@@ -285,8 +294,6 @@ function ReadingRoomManagement({ onBack, onDataLoaded }) {
                 selectedRoomType: room.type
             }, { merge: true });
 
-            console.log('User document updated successfully for userId:', userId, existingAssignment ? '(reassignment - payment dates preserved)' : '(new assignment)');
-
             setMessage(`Assigned ${student.name} to ${seat.label}${existingAssignment ? ' (payment dates preserved)' : ''} `);
             loadSeatAssignments();
             setAssignmentMode(false);
@@ -330,8 +337,6 @@ function ReadingRoomManagement({ onBack, onDataLoaded }) {
                 seatRemovedAt: new Date().toISOString(),  // Track when they were removed
                 seatRemovedBy: user?.uid || 'admin'  // Track who removed them
             });
-
-            console.log('Seat unassigned. User can re-purchase without admission fee or re-enrollment:', assignment.userId);
 
             setMessage('Student unassigned successfully');
             loadSeatAssignments();
@@ -506,6 +511,47 @@ function ReadingRoomManagement({ onBack, onDataLoaded }) {
         setMessage('');
         setSearchQuery(''); // Add this line to reset search
     };
+
+    // Calculate canvas scale for responsiveness
+    useEffect(() => {
+        if (!showRoomModal || !selectedRoom) return;
+
+        const calculateScale = () => {
+            const room = rooms.find(r => r.id === selectedRoom);
+            if (!room) return;
+
+            const wrapper = canvasWrapperRef.current;
+            if (!wrapper) return;
+
+            const wrapperWidth = wrapper.clientWidth - 40; // Account for padding
+            const roomWidth = room.width || 800; // Default width fallback
+
+            if (wrapperWidth > 0 && roomWidth > 0) {
+                // Scale down if room is wider than container
+                const scale = roomWidth > wrapperWidth ? wrapperWidth / roomWidth : 1;
+                setCanvasScale(Math.min(scale, 1)); // Never scale up, only down
+            }
+        };
+
+        // Use ResizeObserver for more robust sizing
+        const observer = new ResizeObserver(() => {
+            // Wrap in requestAnimationFrame to avoid "ResizeObserver loop limit exceeded"
+            window.requestAnimationFrame(calculateScale);
+        });
+
+        if (canvasWrapperRef.current) {
+            observer.observe(canvasWrapperRef.current);
+        }
+
+        // Initial calculation with a small delay to ensure DOM is ready
+        setTimeout(calculateScale, 100);
+
+        window.addEventListener('resize', calculateScale);
+        return () => {
+            window.removeEventListener('resize', calculateScale);
+            observer.disconnect();
+        };
+    }, [showRoomModal, selectedRoom, rooms]);
 
     const getSelectedRoomData = () => {
         if (!selectedRoom) return null;
@@ -757,213 +803,218 @@ function ReadingRoomManagement({ onBack, onDataLoaded }) {
                                             : 'Drag elements to reposition. Double-click to delete.'}
                                     </p>
 
-                                    <div
-                                        style={{
-                                            position: 'relative',
-                                            width: `${selectedRoomData.width} px`,
-                                            height: `${selectedRoomData.height} px`,
-                                            border: '2px solid #333',
-                                            backgroundColor: '#f9f9f9',
-                                            borderRadius: '8px',
-                                            overflow: 'hidden',
-                                            cursor: isDragging ? 'grabbing' : 'default',
-                                            margin: '0 auto'
-                                        }}
-                                        onMouseMove={handleMouseMove}
-                                        onMouseUp={handleMouseUp}
-                                        onMouseLeave={handleMouseUp}
-                                    >
-                                        {/* Controls inside room canvas */}
-                                        <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 100, display: 'flex', gap: '8px' }}>
-                                            <button
-                                                onClick={() => handleToggleLock(selectedRoom)}
-                                                style={{
-                                                    padding: '8px',
-                                                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                                    color: '#333',
-                                                    border: '1px solid #ddd',
-                                                    borderRadius: '4px',
-                                                    cursor: 'pointer',
-                                                    fontSize: '20px',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    width: '40px',
-                                                    height: '40px',
-                                                    transition: 'all 0.2s',
-                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                                }}
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.backgroundColor = '#f5f5f5';
-                                                    e.currentTarget.style.borderColor = '#333';
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
-                                                    e.currentTarget.style.borderColor = '#ddd';
-                                                }}
-                                                title={selectedRoomData.isLocked ? 'Unlock Layout' : 'Lock Layout'}
-                                            >
-                                                {selectedRoomData.isLocked ? '🔓' : '🔒'}
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteRoom(selectedRoom)}
-                                                style={{
-                                                    padding: '8px',
-                                                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                                    color: '#333',
-                                                    border: '1px solid #ddd',
-                                                    borderRadius: '4px',
-                                                    cursor: 'pointer',
-                                                    fontSize: '20px',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    width: '40px',
-                                                    height: '40px',
-                                                    transition: 'all 0.2s',
-                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                                }}
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.backgroundColor = '#ffebee';
-                                                    e.currentTarget.style.borderColor = '#f44';
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
-                                                    e.currentTarget.style.borderColor = '#ddd';
-                                                }}
-                                                title="Delete Room"
-                                            >
-                                                🗑️
-                                            </button>
+                                    <div className="rrm-canvas-wrapper" ref={canvasWrapperRef}>
+                                        <div
+                                            className={`rrm-canvas-container ${isDragging ? 'dragging' : ''}`}
+                                            style={{
+                                                position: 'relative',
+                                                width: `${selectedRoomData.width}px`,
+                                                height: `${selectedRoomData.height}px`,
+                                                transform: `scale(${canvasScale})`,
+                                                transformOrigin: 'top left',
+                                                border: '2px solid #333',
+                                                backgroundColor: '#f9f9f9',
+                                                borderRadius: '8px',
+                                                overflow: 'hidden',
+                                                cursor: isDragging ? 'grabbing' : 'default',
+                                                margin: '0 auto'
+                                            }}
+                                            onMouseMove={handleMouseMove}
+                                            onMouseUp={handleMouseUp}
+                                            onMouseLeave={handleMouseUp}
+                                        >
+                                            {/* Controls inside room canvas */}
+                                            <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 100, display: 'flex', gap: '8px' }}>
+                                                <button
+                                                    onClick={() => handleToggleLock(selectedRoom)}
+                                                    style={{
+                                                        padding: '8px',
+                                                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                                        color: '#333',
+                                                        border: '1px solid #ddd',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '20px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        width: '40px',
+                                                        height: '40px',
+                                                        transition: 'all 0.2s',
+                                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.backgroundColor = '#f5f5f5';
+                                                        e.currentTarget.style.borderColor = '#333';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+                                                        e.currentTarget.style.borderColor = '#ddd';
+                                                    }}
+                                                    title={selectedRoomData.isLocked ? 'Unlock Layout' : 'Lock Layout'}
+                                                >
+                                                    {selectedRoomData.isLocked ? '🔓' : '🔒'}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteRoom(selectedRoom)}
+                                                    style={{
+                                                        padding: '8px',
+                                                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                                        color: '#333',
+                                                        border: '1px solid #ddd',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '20px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        width: '40px',
+                                                        height: '40px',
+                                                        transition: 'all 0.2s',
+                                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.backgroundColor = '#ffebee';
+                                                        e.currentTarget.style.borderColor = '#f44';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+                                                        e.currentTarget.style.borderColor = '#ddd';
+                                                    }}
+                                                    title="Delete Room"
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                            {(() => {
+                                                const elements = selectedRoomData.elements || selectedRoomData.seats || [];
+                                                const normalizedElements = elements.map(el => ({
+                                                    ...el,
+                                                    type: el.type || 'seat',
+                                                    label: el.label || el.number || '',
+                                                    width: el.width || ELEMENT_CONFIG[el.type || 'seat'].width,
+                                                    height: el.height || ELEMENT_CONFIG[el.type || 'seat'].height
+                                                }));
+
+                                                return normalizedElements.map(element => {
+                                                    const assignment = element.type === 'seat'
+                                                        ? seatAssignments.find(a => a.seatId === element.id && a.roomId === selectedRoom)
+                                                        : null;
+                                                    const isAssigned = !!assignment;
+
+                                                    const renderIcon = () => {
+                                                        switch (element.type) {
+                                                            case 'seat':
+                                                                return <SeatIcon occupied={isAssigned} size={element.width} />;
+                                                            case 'toilet':
+                                                                return <ToiletIcon size={element.width} />;
+                                                            case 'door':
+                                                                return <DoorIcon size={element.width} />;
+                                                            case 'window':
+                                                                return <WindowIcon size={element.width} />;
+                                                            default:
+                                                                return <SeatIcon occupied={isAssigned} size={element.width} />;
+                                                        }
+                                                    };
+
+                                                    const handleElementClick = () => {
+                                                        if (isDragging) return;
+
+                                                        if (element.type === 'seat') {
+                                                            if (selectedRoomData.isLocked) {
+                                                                if (isAssigned) {
+                                                                    const student = verifiedUsers.find(u => u.id === assignment.userId);
+                                                                    if (student) {
+                                                                        setSelectedStudent({ ...student, assignment });
+                                                                        setShowStudentModal(true);
+                                                                    }
+                                                                } else {
+                                                                    setAssignmentMode(element.id);
+                                                                    setSelectedStudent(null);
+                                                                }
+                                                            }
+                                                        }
+                                                    };
+
+                                                    return (
+                                                        <div
+                                                            key={element.id}
+                                                            style={{
+                                                                position: 'absolute',
+                                                                left: `${element.x}px`,
+                                                                top: `${element.y}px`,
+                                                                width: `${element.width}px`,
+                                                                height: `${element.height + (element.type === 'seat' && isAssigned ? 20 : 0)}px`,
+                                                                cursor: selectedRoomData.isLocked
+                                                                    ? (element.type === 'seat' ? 'pointer' : 'default')
+                                                                    : (isDragging === element.id ? 'grabbing' : 'grab'),
+                                                                userSelect: 'none',
+                                                                display: 'flex',
+                                                                flexDirection: 'column',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'flex-start'
+                                                            }}
+                                                            onMouseDown={(e) => handleMouseDown(e, element.id)}
+                                                            onClick={handleElementClick}
+                                                            onDoubleClick={() => {
+                                                                if (!selectedRoomData.isLocked) {
+                                                                    if (confirm(`Delete ${element.type} ${element.label || ''}?`)) {
+                                                                        handleDeleteElement(element.id);
+                                                                    }
+                                                                }
+                                                            }}
+                                                            title={
+                                                                element.type === 'seat'
+                                                                    ? (isAssigned
+                                                                        ? `${element.label} - ${assignment.userName} `
+                                                                        : `${element.label} - Available`)
+                                                                    : `${element.type} ${element.label || ''} `
+                                                            }
+                                                        >
+                                                            {renderIcon()}
+                                                            {element.type === 'seat' && element.label && (
+                                                                <div style={{
+                                                                    marginTop: '2px',
+                                                                    fontSize: '11px',
+                                                                    fontWeight: 'bold',
+                                                                    textAlign: 'center',
+                                                                    backgroundColor: isAssigned ? '#4caf50' : '#90caf9',
+                                                                    color: 'white',
+                                                                    padding: '2px 6px',
+                                                                    borderRadius: '3px'
+                                                                }}>
+                                                                    {element.label}
+                                                                </div>
+                                                            )}
+                                                            {element.type === 'seat' && isAssigned && (
+                                                                <div style={{
+                                                                    marginTop: '2px',
+                                                                    fontSize: '9px',
+                                                                    textAlign: 'center',
+                                                                    color: '#333',
+                                                                    maxWidth: '100px',
+                                                                    overflow: 'hidden',
+                                                                    textOverflow: 'ellipsis',
+                                                                    whiteSpace: 'nowrap'
+                                                                }}>
+                                                                    {assignment.userName}
+                                                                </div>
+                                                            )}
+                                                            {element.label && element.type !== 'seat' && (
+                                                                <div style={{
+                                                                    marginTop: '2px',
+                                                                    fontSize: '10px',
+                                                                    textAlign: 'center',
+                                                                    color: '#666'
+                                                                }}>
+                                                                    {element.label}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                });
+                                            })()}
                                         </div>
-                                        {(() => {
-                                            const elements = selectedRoomData.elements || selectedRoomData.seats || [];
-                                            const normalizedElements = elements.map(el => ({
-                                                ...el,
-                                                type: el.type || 'seat',
-                                                label: el.label || el.number || '',
-                                                width: el.width || ELEMENT_CONFIG[el.type || 'seat'].width,
-                                                height: el.height || ELEMENT_CONFIG[el.type || 'seat'].height
-                                            }));
-
-                                            return normalizedElements.map(element => {
-                                                const assignment = element.type === 'seat'
-                                                    ? seatAssignments.find(a => a.seatId === element.id && a.roomId === selectedRoom)
-                                                    : null;
-                                                const isAssigned = !!assignment;
-
-                                                const renderIcon = () => {
-                                                    switch (element.type) {
-                                                        case 'seat':
-                                                            return <SeatIcon occupied={isAssigned} size={element.width} />;
-                                                        case 'toilet':
-                                                            return <ToiletIcon size={element.width} />;
-                                                        case 'door':
-                                                            return <DoorIcon size={element.width} />;
-                                                        case 'window':
-                                                            return <WindowIcon size={element.width} />;
-                                                        default:
-                                                            return <SeatIcon occupied={isAssigned} size={element.width} />;
-                                                    }
-                                                };
-
-                                                const handleElementClick = () => {
-                                                    if (isDragging) return;
-
-                                                    if (element.type === 'seat') {
-                                                        if (selectedRoomData.isLocked) {
-                                                            if (isAssigned) {
-                                                                const student = verifiedUsers.find(u => u.id === assignment.userId);
-                                                                if (student) {
-                                                                    setSelectedStudent({ ...student, assignment });
-                                                                    setShowStudentModal(true);
-                                                                }
-                                                            } else {
-                                                                setAssignmentMode(element.id);
-                                                                setSelectedStudent(null);
-                                                            }
-                                                        }
-                                                    }
-                                                };
-
-                                                return (
-                                                    <div
-                                                        key={element.id}
-                                                        style={{
-                                                            position: 'absolute',
-                                                            left: `${element.x} px`,
-                                                            top: `${element.y} px`,
-                                                            width: `${element.width} px`,
-                                                            height: `${element.height + (element.type === 'seat' && isAssigned ? 20 : 0)} px`,
-                                                            cursor: selectedRoomData.isLocked
-                                                                ? (element.type === 'seat' ? 'pointer' : 'default')
-                                                                : (isDragging === element.id ? 'grabbing' : 'grab'),
-                                                            userSelect: 'none',
-                                                            display: 'flex',
-                                                            flexDirection: 'column',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'flex-start'
-                                                        }}
-                                                        onMouseDown={(e) => handleMouseDown(e, element.id)}
-                                                        onClick={handleElementClick}
-                                                        onDoubleClick={() => {
-                                                            if (!selectedRoomData.isLocked) {
-                                                                if (confirm(`Delete ${element.type} ${element.label || ''}?`)) {
-                                                                    handleDeleteElement(element.id);
-                                                                }
-                                                            }
-                                                        }}
-                                                        title={
-                                                            element.type === 'seat'
-                                                                ? (isAssigned
-                                                                    ? `${element.label} - ${assignment.userName} `
-                                                                    : `${element.label} - Available`)
-                                                                : `${element.type} ${element.label || ''} `
-                                                        }
-                                                    >
-                                                        {renderIcon()}
-                                                        {element.type === 'seat' && element.label && (
-                                                            <div style={{
-                                                                marginTop: '2px',
-                                                                fontSize: '11px',
-                                                                fontWeight: 'bold',
-                                                                textAlign: 'center',
-                                                                backgroundColor: isAssigned ? '#4caf50' : '#90caf9',
-                                                                color: 'white',
-                                                                padding: '2px 6px',
-                                                                borderRadius: '3px'
-                                                            }}>
-                                                                {element.label}
-                                                            </div>
-                                                        )}
-                                                        {element.type === 'seat' && isAssigned && (
-                                                            <div style={{
-                                                                marginTop: '2px',
-                                                                fontSize: '9px',
-                                                                textAlign: 'center',
-                                                                color: '#333',
-                                                                maxWidth: '100px',
-                                                                overflow: 'hidden',
-                                                                textOverflow: 'ellipsis',
-                                                                whiteSpace: 'nowrap'
-                                                            }}>
-                                                                {assignment.userName}
-                                                            </div>
-                                                        )}
-                                                        {element.label && element.type !== 'seat' && (
-                                                            <div style={{
-                                                                marginTop: '2px',
-                                                                fontSize: '10px',
-                                                                textAlign: 'center',
-                                                                color: '#666'
-                                                            }}>
-                                                                {element.label}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            });
-                                        })()}
                                     </div>
                                 </section>
                             </div>

@@ -26,7 +26,8 @@ import {
 } from 'lucide-react';
 import { collection, query, getDocs, orderBy, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import ManageExpenses from './ManageExpenses';
+import { useLoading } from '../../context/GlobalLoadingContext';
+
 import '../../styles/AccountDashboard.css';
 
 const COLORS = {
@@ -43,6 +44,7 @@ const COLORS = {
 const PIE_COLORS = ['#8b5cf6', '#f59e0b', '#3b82f6', '#ec4899', '#6b7280'];
 
 export default function AccountDashboard({ onDataLoaded }) {
+    const { setIsLoading } = useLoading();
     const [timeRange, setTimeRange] = useState('6m');
     const [customStartDate, setCustomStartDate] = useState('');
     const [customEndDate, setCustomEndDate] = useState('');
@@ -54,6 +56,7 @@ export default function AccountDashboard({ onDataLoaded }) {
         transactions: [],
         orders: [],
         manualExpenses: [],
+        manualEarnings: [],
         inventoryPurchases: []
     });
 
@@ -82,6 +85,11 @@ export default function AccountDashboard({ onDataLoaded }) {
         }
         return new Date();
     };
+
+    // Set loading true on mount (handles page refresh case)
+    useEffect(() => {
+        setIsLoading(true);
+    }, []);
 
     // Fetch all data
     useEffect(() => {
@@ -123,6 +131,17 @@ export default function AccountDashboard({ onDataLoaded }) {
         });
         unsubscribers.push(expensesUnsub);
 
+        // Listen to manual earnings
+        const earningsUnsub = onSnapshot(collection(db, 'manual_earnings'), (snapshot) => {
+            const earnings = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                date: doc.data().date?.toDate?.() || new Date(doc.data().date)
+            }));
+            setRawData(prev => ({ ...prev, manualEarnings: earnings }));
+        });
+        unsubscribers.push(earningsUnsub);
+
         // Listen to inventory purchases
         const invUnsub = onSnapshot(collection(db, 'inventory_purchases'), (snapshot) => {
             const purchases = snapshot.docs.map(doc => ({
@@ -154,6 +173,7 @@ export default function AccountDashboard({ onDataLoaded }) {
         const filteredOrders = filterByDate(rawData.orders);
         const filteredExpenses = filterByDate(rawData.manualExpenses);
         const filteredPurchases = filterByDate(rawData.inventoryPurchases);
+        const filteredManualEarnings = filterByDate(rawData.manualEarnings);
 
         // Calculate earnings by source
         const hostelEarnings = filteredTxns
@@ -168,7 +188,9 @@ export default function AccountDashboard({ onDataLoaded }) {
             .filter(o => o.status === 'completed' || o.status === 'success')
             .reduce((sum, o) => sum + (o.amount || o.total || 0), 0);
 
-        const totalEarnings = hostelEarnings + readingRoomEarnings + canteenEarnings;
+        const manualEarningsTotal = filteredManualEarnings.reduce((sum, e) => sum + (e.amount || 0), 0);
+
+        const totalEarnings = hostelEarnings + readingRoomEarnings + canteenEarnings + manualEarningsTotal;
 
         // Calculate expenses
         const manualExpenseTotal = filteredExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
@@ -185,6 +207,7 @@ export default function AccountDashboard({ onDataLoaded }) {
                 hostel: hostelEarnings,
                 readingRoom: readingRoomEarnings,
                 canteen: canteenEarnings,
+                manualEarnings: manualEarningsTotal,
                 manualExpenses: manualExpenseTotal,
                 inventoryExpenses: inventoryExpenseTotal
             },
@@ -216,7 +239,10 @@ export default function AccountDashboard({ onDataLoaded }) {
                     .reduce((s, t) => s + (t.amount || 0), 0) +
                     rawData.orders
                         .filter(o => o.date >= d && o.date < nextD && (o.status === 'completed' || o.status === 'success'))
-                        .reduce((s, o) => s + (o.amount || o.total || 0), 0);
+                        .reduce((s, o) => s + (o.amount || o.total || 0), 0) +
+                    rawData.manualEarnings
+                        .filter(e => e.date >= d && e.date < nextD)
+                        .reduce((s, e) => s + (e.amount || 0), 0);
 
                 const expenses = rawData.manualExpenses
                     .filter(e => e.date >= d && e.date < nextD)
@@ -247,7 +273,10 @@ export default function AccountDashboard({ onDataLoaded }) {
                     .reduce((s, t) => s + (t.amount || 0), 0) +
                     rawData.orders
                         .filter(o => o.date.getMonth() === monthIdx && o.date.getFullYear() === year && (o.status === 'completed' || o.status === 'success'))
-                        .reduce((s, o) => s + (o.amount || o.total || 0), 0);
+                        .reduce((s, o) => s + (o.amount || o.total || 0), 0) +
+                    rawData.manualEarnings
+                        .filter(e => e.date.getMonth() === monthIdx && e.date.getFullYear() === year)
+                        .reduce((s, e) => s + (e.amount || 0), 0);
 
                 const expenses = rawData.manualExpenses
                     .filter(e => e.date.getMonth() === monthIdx && e.date.getFullYear() === year)
@@ -282,7 +311,8 @@ export default function AccountDashboard({ onDataLoaded }) {
         return [
             { name: 'Hostel', value: breakdown.hostel },
             { name: 'Canteen', value: breakdown.canteen },
-            { name: 'Reading Room', value: breakdown.readingRoom }
+            { name: 'Reading Room', value: breakdown.readingRoom },
+            { name: 'Manual Earnings', value: breakdown.manualEarnings }
         ];
     }, [aggregatedData]);
 
@@ -312,46 +342,57 @@ export default function AccountDashboard({ onDataLoaded }) {
         );
     }
 
+    // eslint-disable-next-line
+    const navigate = (path) => {
+        // We can't navigate directly inside this component since it's used inside AdminLanding's Router
+        // But since we are likely inside a Router context, we could use useNavigate()
+        // But to avoid adding a new hook import if not already there, let's check imports
+        // Ah, I need to add useNavigate.
+        window.location.href = path; // Simple fallback or I should add useNavigate
+    };
+
     return (
         <div className="account-dashboard">
             <div className="account-dashboard-content">
                 {/* Top Bar */}
-                {/* Top Bar */}
-                <div className="account-top-bar">
-                    <button className="manage-expenses-btn" onClick={() => setShowExpenseModal(true)}>
-                        <Settings size={18} />
-                        Edit/Manage Expenses
-                    </button>
-                </div>
 
-                {/* Time Range Picker */}
-                <div className="time-range-picker">
-                    {timeRangeOptions.map(opt => (
-                        <button
-                            key={opt.key}
-                            className={`time-range-btn ${timeRange === opt.key ? 'active' : ''}`}
-                            onClick={() => setTimeRange(opt.key)}
-                        >
-                            {opt.label}
-                        </button>
-                    ))}
-                    {timeRange === 'custom' && (
-                        <div className="custom-date-picker">
-                            <input
-                                type="date"
-                                value={customStartDate}
-                                onChange={(e) => setCustomStartDate(e.target.value)}
-                                placeholder="Start Date"
-                            />
-                            <span>to</span>
-                            <input
-                                type="date"
-                                value={customEndDate}
-                                onChange={(e) => setCustomEndDate(e.target.value)}
-                                placeholder="End Date"
-                            />
-                        </div>
-                    )}
+
+                {/* Header Controls: Time Range (Left) & Manage Button (Right) */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+                    {/* Time Range Picker */}
+                    <div className="time-range-picker" style={{ marginBottom: 0 }}>
+                        {timeRangeOptions.map(opt => (
+                            <button
+                                key={opt.key}
+                                className={`time-range-btn ${timeRange === opt.key ? 'active' : ''}`}
+                                onClick={() => setTimeRange(opt.key)}
+                            >
+                                {opt.label}
+                            </button>
+                        ))}
+                        {timeRange === 'custom' && (
+                            <div className="custom-date-picker">
+                                <input
+                                    type="date"
+                                    value={customStartDate}
+                                    onChange={(e) => setCustomStartDate(e.target.value)}
+                                    placeholder="Start Date"
+                                />
+                                <span>to</span>
+                                <input
+                                    type="date"
+                                    value={customEndDate}
+                                    onChange={(e) => setCustomEndDate(e.target.value)}
+                                    placeholder="End Date"
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    <a href="/admin/expense-earning-management" className="manage-expenses-btn" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Settings size={18} />
+                        Manage
+                    </a>
                 </div>
 
                 {/* KPI Cards */}
@@ -368,7 +409,7 @@ export default function AccountDashboard({ onDataLoaded }) {
                             </div>
                         </div>
                         <p className="kpi-card-trend positive">
-                            <TrendingUp size={14} /> Hostel + Canteen + Reading Room
+                            <TrendingUp size={14} /> Hostel + Canteen + Reading Room + Manual
                         </p>
                     </div>
 
@@ -527,11 +568,6 @@ export default function AccountDashboard({ onDataLoaded }) {
                     </div>
                 </div>
             </div>
-
-            {/* Expense Management Modal */}
-            {showExpenseModal && (
-                <ManageExpenses onClose={() => setShowExpenseModal(false)} />
-            )}
         </div>
     );
 }

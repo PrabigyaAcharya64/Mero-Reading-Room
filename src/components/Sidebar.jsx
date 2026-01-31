@@ -69,7 +69,7 @@ function Sidebar({ currentView, onNavigate, isOpen, isMobile, onClose }) {
         { id: 'create-announcement', label: 'Announcements', icon: null, isLucide: true, lucideIcon: Bell },
         { id: 'balance-requests', label: 'Balance Requests', icon: null, isLucide: true, lucideIcon: CreditCard },
         { id: 'transaction-statement', label: 'Transaction Statement', icon: null, isLucide: true, lucideIcon: Receipt },
-        { id: 'account-dashboard', label: 'Account', icon: null, isLucide: true, lucideIcon: Calculator },
+        { id: 'account-dashboard', label: 'Accounts', icon: null, isLucide: true, lucideIcon: Calculator },
     ];
 
     // On mobile, the sidebar is always "expanded" when open

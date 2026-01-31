@@ -24,10 +24,12 @@ import {
 } from 'lucide-react';
 import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import { useLoading } from '../../context/GlobalLoadingContext';
 import PageHeader from '../../components/PageHeader';
 import '../../styles/Dashboard.css';
 
 function Dashboard({ onNavigate, onDataLoaded }) {
+    const { setIsLoading } = useLoading();
     const [timeRange, setTimeRange] = useState('6m');
     const [isSelectOpen, setIsSelectOpen] = useState(false);
     const selectRef = useRef(null);
@@ -47,6 +49,11 @@ function Dashboard({ onNavigate, onDataLoaded }) {
         '12m': 'Last 12 Months',
         '3y': 'Last 3 Years'
     };
+
+    // Set loading true on mount (handles page refresh case)
+    useEffect(() => {
+        setIsLoading(true);
+    }, []);
 
     // Close dropdown when clicking outside
     useEffect(() => {

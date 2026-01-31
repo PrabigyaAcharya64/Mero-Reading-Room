@@ -5,15 +5,22 @@ import { db } from '../../lib/firebase';
 import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { formatBalance } from '../../utils/formatCurrency';
 import { formatDate } from '../../utils/dateFormat';
+import { useLoading } from '../../context/GlobalLoadingContext';
 import { Search, Edit2, User, ChevronRight } from 'lucide-react';
 import '../../styles/StandardLayout.css';
 import '../../styles/AllMembersView.css';
 
 function AllMembersView({ onBack, onDataLoaded }) {
+    const { setIsLoading } = useLoading();
     const [users, setUsers] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUser, setSelectedUser] = useState(null);
     const [seatAssignmentsMap, setSeatAssignmentsMap] = useState({});
+
+    // Set loading true on mount (handles page refresh case)
+    useEffect(() => {
+        setIsLoading(true);
+    }, []);
 
     useEffect(() => {
         const usersQ = query(collection(db, 'users'), where('verified', '==', true));
@@ -77,7 +84,7 @@ function AllMembersView({ onBack, onDataLoaded }) {
 
     const handleEditUser = (user) => setSelectedUser(user);
     const handleCloseModal = () => setSelectedUser(null);
-    const handleUserUpdate = () => console.log('User updated');
+    const handleUserUpdate = () => { /* User updated callback */ };
 
     const handlePageChange = (pageNumber) => {
         setCurrentPage(pageNumber);
@@ -250,4 +257,3 @@ function AllMembersView({ onBack, onDataLoaded }) {
 }
 
 export default AllMembersView;
-

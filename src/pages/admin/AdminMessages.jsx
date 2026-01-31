@@ -1,11 +1,19 @@
 import { collection, doc, onSnapshot, orderBy, query, updateDoc, getDocs } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { db } from '../../lib/firebase';
+import { useLoading } from '../../context/GlobalLoadingContext';
 
 import '../../styles/AdminMessages.css';
 import '../../styles/StandardLayout.css';
 
 function AdminMessages({ onBack, onDataLoaded }) {
+    const { setIsLoading } = useLoading();
+
+    // Set loading true on mount (handles page refresh case)
+    useEffect(() => {
+        setIsLoading(true);
+    }, []);
+
     const [messages, setMessages] = useState([]);
     const [selectedMessage, setSelectedMessage] = useState(null);
     const [statusFilter, setStatusFilter] = useState('unread');

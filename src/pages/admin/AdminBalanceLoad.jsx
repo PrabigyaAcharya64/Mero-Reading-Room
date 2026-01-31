@@ -25,11 +25,18 @@ import {
     History,
     Search
 } from 'lucide-react';
+import { useLoading } from '../../context/GlobalLoadingContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/AdminBalanceLoad.css';
 
 export default function AdminBalanceLoad({ onBack, onDataLoaded }) {
+    const { setIsLoading } = useLoading();
     const [requests, setRequests] = useState([]);
+
+    // Set loading true on mount (handles page refresh case)
+    useEffect(() => {
+        setIsLoading(true);
+    }, []);
     const [history, setHistory] = useState([]);
     const [activeTab, setActiveTab] = useState('pending');
     const [processingId, setProcessingId] = useState(null);

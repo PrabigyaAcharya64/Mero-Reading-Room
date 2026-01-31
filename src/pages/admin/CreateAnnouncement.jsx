@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../auth/AuthProvider';
+import { useLoading } from '../../context/GlobalLoadingContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/StandardLayout.css';
 
 function CreateAnnouncement({ onBack, onDataLoaded }) {
     const { user } = useAuth();
+    const { setIsLoading } = useLoading();
     const [text, setText] = useState('');
     const [durationValue, setDurationValue] = useState(24);
     const [durationUnit, setDurationUnit] = useState('hours');
@@ -15,6 +17,8 @@ function CreateAnnouncement({ onBack, onDataLoaded }) {
     const [error, setError] = useState(null);
 
     useEffect(() => {
+        // Set loading on mount, then immediately signal ready (no data to fetch)
+        setIsLoading(true);
         onDataLoaded?.();
     }, []);
 

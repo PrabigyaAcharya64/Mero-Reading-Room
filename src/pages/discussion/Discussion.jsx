@@ -31,7 +31,7 @@ const Discussion = ({ onBack }) => {
                 const { eligible, reason } = result.data;
 
                 if (!eligible) {
-                    console.log("Ineligible for discussion room:", reason);
+                    // User is ineligible for discussion room
                     if (reason) {
                         alert(reason);
                     }
@@ -494,7 +494,7 @@ const Discussion = ({ onBack }) => {
                     {isBooked && isMyTeam && (
                         <div className="form-container">
                             <h3 className="page-subtitle" style={{ padding: '0 8px', marginBottom: '8px' }}>Members</h3>
-                            
+
                             <ul className="ios-list">
                                 {booking.members && booking.members.length > 0 && (
                                     booking.members.filter(m => m && (m.name || typeof m === 'string')).map((member, idx) => {
@@ -534,7 +534,7 @@ const Discussion = ({ onBack }) => {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             {error && <p className="error-msg">{error}</p>}
                             {successMsg && <p className="success-msg">{successMsg}</p>}
 
@@ -556,7 +556,7 @@ const Discussion = ({ onBack }) => {
                         <div className="others-booking-view">
                             <h2>Session Booked</h2>
                             <p>
-                                This slot is currently occupied by<br/>
+                                This slot is currently occupied by<br />
                                 <strong style={{ color: 'var(--ios-text)' }}>{booking.teamName}</strong>
                             </p>
                         </div>

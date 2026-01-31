@@ -13,6 +13,7 @@ import ReadingRoomManagement from '../readingroom/ReadingRoomManagement';
 import AdminBalanceLoad from './AdminBalanceLoad';
 import AdminTransactionStatement from './AdminTransactionStatement';
 import AccountDashboard from './AccountDashboard';
+import ExpenseEarningManagement from './ExpenseEarningManagement';
 import Sidebar from '../../components/Sidebar';
 import Dashboard from './Dashboard';
 import { useLoading } from '../../context/GlobalLoadingContext';
@@ -28,7 +29,7 @@ function AdminLandingContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const { headerProps, resetHeader } = useAdminHeader();
-  
+
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Admin';
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -122,7 +123,7 @@ function AdminLandingContent() {
 
   const getPageTitle = () => {
     if (headerProps.title) return headerProps.title;
-    
+
     const titles = {
       'dashboard': 'Dashboard Overview',
       'user-management': 'User Management',
@@ -135,7 +136,7 @@ function AdminLandingContent() {
       'reading-rooms': 'Reading Room',
       'balance-requests': 'Balance Requests',
       'transaction-statement': 'Transaction Statement',
-      'account-dashboard': 'Account'
+      'account-dashboard': 'Accounts'
     };
     return titles[currentView] || 'Admin Panel';
   };
@@ -193,6 +194,7 @@ function AdminLandingContent() {
             <Route path="/balance-requests" element={<AdminBalanceLoad onDataLoaded={handlePageReady} />} />
             <Route path="/transaction-statement" element={<AdminTransactionStatement onDataLoaded={handlePageReady} />} />
             <Route path="/account-dashboard" element={<AccountDashboard onDataLoaded={handlePageReady} />} />
+            <Route path="/expense-earning-management" element={<ExpenseEarningManagement onDataLoaded={handlePageReady} />} />
           </Routes>
         </main>
       </div>

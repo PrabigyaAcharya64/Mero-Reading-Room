@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, orderBy, deleteField } from 'firebase/firestore';
+import { useLoading } from '../../context/GlobalLoadingContext';
 import Button from '../../components/Button';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 import '../../styles/NewUsers.css';
@@ -15,6 +16,7 @@ const userManagementIcon = new URL('../../assets/usermanagement.svg', import.met
 function NewUsers({ onBack, onDataLoaded }) {
 
   const { user } = useAuth();
+  const { setIsLoading } = useLoading();
   const [pendingUsers, setPendingUsers] = useState([]);
   const [verifying, setVerifying] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -24,6 +26,11 @@ function NewUsers({ onBack, onDataLoaded }) {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
+
+  // Set loading true on mount (handles page refresh case)
+  useEffect(() => {
+    setIsLoading(true);
+  }, []);
 
   useEffect(() => {
     // Standard Batch Reveal Pattern: Promise.all for all initial fetches

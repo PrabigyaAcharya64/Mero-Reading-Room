@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useLoading } from '../../context/GlobalLoadingContext';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
@@ -8,7 +8,6 @@ import { functions } from '../../lib/firebase';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 import PageHeader from '../../components/PageHeader';
-import { useLoading } from '../../context/GlobalLoadingContext';
 import '../../styles/ReadingRoomManagement.css';
 
 
@@ -95,6 +94,7 @@ function ReadingRoomManagement({ onBack }) {
     const [isDragging, setIsDragging] = useState(null);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
     const [canvasScale, setCanvasScale] = useState(1);
+    const canvasWrapperRef = useRef(null);
 
     // Student management states
     const [verifiedUsers, setVerifiedUsers] = useState([]);
@@ -102,6 +102,7 @@ function ReadingRoomManagement({ onBack }) {
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [showStudentModal, setShowStudentModal] = useState(false);
     const [assignmentMode, setAssignmentMode] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         const init = async () => {
@@ -262,7 +263,6 @@ function ReadingRoomManagement({ onBack }) {
                 roomId: selectedRoom
             });
 
-            console.log('Assignment result:', result.data);
             setMessage(`Seat assigned successfully!`);
 
             // Refresh data
@@ -305,8 +305,6 @@ function ReadingRoomManagement({ onBack }) {
                 selectedRoomType: null
             }, { merge: true });
 
-            console.log('User unassigned from seat (registration status preserved) for userId:', assignment.userId);
-
             setMessage('Student unassigned successfully');
             loadSeatAssignments();
             setShowStudentModal(false);
@@ -347,7 +345,7 @@ function ReadingRoomManagement({ onBack }) {
                 ...(elementForm.type === 'seat' && { occupied: false })
             };
 
-            const currentElements = room.elements || [];
+            const currentElements = room.elements || room.seats || [];
             const updatedElements = [...currentElements, newElement];
             const roomRef = doc(db, 'readingRooms', selectedRoom);
             await updateDoc(roomRef, { elements: updatedElements });
@@ -387,7 +385,7 @@ function ReadingRoomManagement({ onBack }) {
 
         try {
             const room = rooms.find(r => r.id === selectedRoom);
-            const currentElements = room.elements || [];
+            const currentElements = room.elements || room.seats || [];
             const updatedElements = currentElements.filter(e => e.id !== elementId);
             const roomRef = doc(db, 'readingRooms', selectedRoom);
             await updateDoc(roomRef, { elements: updatedElements });
@@ -446,7 +444,7 @@ function ReadingRoomManagement({ onBack }) {
 
         try {
             const room = rooms.find(r => r.id === selectedRoom);
-            const currentElements = room.elements || [];
+            const currentElements = room.elements || room.seats || [];
             const roomRef = doc(db, 'readingRooms', selectedRoom);
             await updateDoc(roomRef, { elements: currentElements });
         } catch (error) {
@@ -482,20 +480,37 @@ function ReadingRoomManagement({ onBack }) {
             const room = rooms.find(r => r.id === selectedRoom);
             if (!room) return;
 
-            const wrapper = document.querySelector('.rrm-canvas-wrapper');
+            const wrapper = canvasWrapperRef.current;
             if (!wrapper) return;
 
             const wrapperWidth = wrapper.clientWidth - 40; // Account for padding
-            const roomWidth = room.width;
+            const roomWidth = room.width || 800; // Default width fallback
 
-            // Scale down if room is wider than container
-            const scale = roomWidth > wrapperWidth ? wrapperWidth / roomWidth : 1;
-            setCanvasScale(Math.min(scale, 1)); // Never scale up, only down
+            if (wrapperWidth > 0 && roomWidth > 0) {
+                // Scale down if room is wider than container
+                const scale = roomWidth > wrapperWidth ? wrapperWidth / roomWidth : 1;
+                setCanvasScale(Math.min(scale, 1)); // Never scale up, only down
+            }
         };
 
-        calculateScale();
+        // Use ResizeObserver for more robust sizing
+        const observer = new ResizeObserver(() => {
+            // Wrap in requestAnimationFrame to avoid "ResizeObserver loop limit exceeded"
+            window.requestAnimationFrame(calculateScale);
+        });
+
+        if (canvasWrapperRef.current) {
+            observer.observe(canvasWrapperRef.current);
+        }
+
+        // Initial calculation with a small delay to ensure DOM is ready
+        setTimeout(calculateScale, 100);
+
         window.addEventListener('resize', calculateScale);
-        return () => window.removeEventListener('resize', calculateScale);
+        return () => {
+            window.removeEventListener('resize', calculateScale);
+            observer.disconnect();
+        };
     }, [showRoomModal, selectedRoom, rooms]);
 
     const getSelectedRoomData = () => {
@@ -561,7 +576,7 @@ function ReadingRoomManagement({ onBack }) {
                     <h2 className="rrm-section-title">All Rooms ({rooms.length})</h2>
                     <div className="rrm-rooms-grid">
                         {rooms.map(room => {
-                            const elements = room.elements || [];
+                            const elements = room.elements || room.seats || [];
                             const seats = elements.filter(e => !e.type || e.type === 'seat');
                             const roomAssignments = seatAssignments.filter(a => a.roomId === room.id);
                             const assignedCount = roomAssignments.length;
@@ -674,7 +689,7 @@ function ReadingRoomManagement({ onBack }) {
                                             : 'Drag elements to reposition. Double-click to delete.'}
                                     </p>
 
-                                    <div className="rrm-canvas-wrapper">
+                                    <div className="rrm-canvas-wrapper" ref={canvasWrapperRef}>
                                         <div
                                             className={`rrm-canvas-container ${isDragging ? 'dragging' : ''}`}
                                             style={{
@@ -704,7 +719,36 @@ function ReadingRoomManagement({ onBack }) {
                                                 </button>
                                             </div>
                                             {(() => {
-                                                const elements = selectedRoomData.elements || [];
+                                                const elements = selectedRoomData.elements || selectedRoomData.seats || [];
+
+                                                if (elements.length === 0) {
+                                                    return (
+                                                        <div style={{
+                                                            position: 'absolute',
+                                                            top: '50%',
+                                                            left: '50%',
+                                                            transform: 'translate(-50%, -50%)',
+                                                            textAlign: 'center',
+                                                            color: '#666',
+                                                            fontSize: '16px',
+                                                            padding: '40px',
+                                                            maxWidth: '400px'
+                                                        }}>
+                                                            <div style={{ fontSize: '48px', marginBottom: '16px' }}>📭</div>
+                                                            <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>
+                                                                {selectedRoomData.isLocked
+                                                                    ? 'No Elements in Room'
+                                                                    : 'Empty Room Layout'}
+                                                            </div>
+                                                            <div style={{ fontSize: '14px', color: '#999' }}>
+                                                                {selectedRoomData.isLocked
+                                                                    ? 'Unlock the layout below to add seats and other elements.'
+                                                                    : 'Use the form above to add seats, doors, windows, or toilets.'}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                }
+
                                                 const normalizedElements = elements.map(el => ({
                                                     ...el,
                                                     type: el.type || 'seat',
