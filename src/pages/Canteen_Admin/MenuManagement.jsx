@@ -8,10 +8,12 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import Button from '../../components/Button';
 import { Plus, Trash2, Star, Check, X, Camera, LayoutGrid, ListChecks, Eye, ArrowLeft } from 'lucide-react';
 import CanteenPreviewAdmin from './CanteenPreviewAdmin';
+import { useAdminHeader } from '../../context/AdminHeaderContext';
 import '../../styles/MenuManagement.css';
 import '../../styles/StandardLayout.css';
 import { uploadImageSecurely } from '../../utils/imageUpload';
 function MenuManagement({ onBack, onDataLoaded }) {
+  const { setHeader } = useAdminHeader();
   const [menuItems, setMenuItems] = useState([]);
   const [todaysMenu, setTodaysMenu] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
@@ -29,6 +31,7 @@ function MenuManagement({ onBack, onDataLoaded }) {
   const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
+    setHeader({ title: 'Menu Management' });
     const initData = async () => {
       try {
         await Promise.all([loadMenuItems(), loadTodaysMenu()]);
@@ -207,30 +210,6 @@ function MenuManagement({ onBack, onDataLoaded }) {
   return (
     <div className="std-container">
       <main className="std-body mm-grid-layout">
-        {onBack && (
-          <div style={{ gridColumn: '1 / -1', marginBottom: '1rem' }}>
-            <button
-              onClick={onBack}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.5rem 1rem',
-                backgroundColor: 'transparent',
-                border: '1px solid #ddd',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '0.875rem',
-                color: '#374151',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            >
-              <ArrowLeft size={16} /> Back
-            </button>
-          </div>
-        )}
         {/* Sidebar: Add Form */}
         <aside className="mm-form-section">
           <h2 className="mm-section-title">Add New Dish</h2>

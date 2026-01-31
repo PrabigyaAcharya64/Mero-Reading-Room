@@ -5,11 +5,13 @@ import { collection, query, orderBy, onSnapshot, where, getDocs } from 'firebase
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Button from '../../components/Button';
 import { Search, Package, MapPin, Receipt, Clock, ChevronRight, ChevronLeft, ArrowLeft } from 'lucide-react';
+import { useAdminHeader } from '../../context/AdminHeaderContext';
 import '../../styles/OrderDashboard.css';
 import '../../styles/StandardLayout.css';
 
 function OrderDashboard({ onBack, onDataLoaded }) {
   const { user, userRole } = useAuth();
+  const { setHeader } = useAdminHeader();
   const [orders, setOrders] = useState([]);
   const [filterStatus, setFilterStatus] = useState('completed');
   const [searchQuery, setSearchQuery] = useState('');
@@ -17,8 +19,9 @@ function OrderDashboard({ onBack, onDataLoaded }) {
   const itemsPerPage = 10;
 
   useEffect(() => {
+    setHeader({ title: 'Order History' });
     setCurrentPage(1);
-  }, [filterStatus, searchQuery]);
+  }, [filterStatus, searchQuery, setHeader]);
 
   useEffect(() => {
     const ordersRef = collection(db, 'orders');
@@ -84,30 +87,6 @@ function OrderDashboard({ onBack, onDataLoaded }) {
 
 
       <main className="od-body">
-        {onBack && (
-          <div style={{ marginBottom: '1rem' }}>
-            <button
-              onClick={onBack}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.5rem 1rem',
-                backgroundColor: 'transparent',
-                border: '1px solid #ddd',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '0.875rem',
-                color: '#374151',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            >
-              <ArrowLeft size={16} /> Back
-            </button>
-          </div>
-        )}
         <section>
           <div className="od-toolbar">
             <h2 className="od-section-title">History ({filteredOrders.length})</h2>

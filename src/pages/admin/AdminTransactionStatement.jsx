@@ -3,7 +3,6 @@ import { ChevronLeft, ArrowUpRight, ArrowDownLeft, Search, X, Calendar } from 'l
 import { db } from '../../lib/firebase';
 import { collection, query, orderBy, onSnapshot, getDocs, doc, getDoc } from 'firebase/firestore';
 import { useLoading } from '../../context/GlobalLoadingContext';
-import PageHeader from '../../components/PageHeader';
 import '../../styles/TransactionStatement.css';
 
 export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
@@ -13,7 +12,7 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
     const [selectedUserDetails, setSelectedUserDetails] = useState(null);
 
     // Filter states
-    const [dateRange, setDateRange] = useState('all');
+    const [dateRange, setDateRange] = useState('today');
     const [customStartDate, setCustomStartDate] = useState('');
     const [customEndDate, setCustomEndDate] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
@@ -170,8 +169,8 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
     const isInflow = (txn) => ['balance_load', 'balance_topup', 'canteen_payment', 'reading_room', 'canteen_order', 'hostel_payment'].includes(txn.type);
 
     return (
-        <div className="txn-statement-container">
-            {/* iOS Search and Filtering - Now acts as the sub-header */}
+        <div className="txn-container">
+            {/* iOS Search and Filtering - Fixed Header */}
             <div className="txn-filter-bar">
                 <div className="txn-filter-controls">
                     <div className="txn-search-wrapper">
@@ -224,6 +223,8 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
                     )}
                 </div>
             </div>
+
+            <div className="std-body">
 
             {/* Transaction List Grouped */}
             <div className="txn-content">
@@ -347,6 +348,7 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
                     </div>
                 </>
             )}
+            </div>
         </div>
     );
 }

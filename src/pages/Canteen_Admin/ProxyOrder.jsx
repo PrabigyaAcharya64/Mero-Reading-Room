@@ -8,10 +8,12 @@ import Button from '../../components/Button';
 import CanteenMenu from '../canteen/CanteenMenu';
 import CanteenCart from '../canteen/CanteenCart';
 import { Search, User, CreditCard, ArrowLeft } from 'lucide-react';
+import { useAdminHeader } from '../../context/AdminHeaderContext';
 import '../../styles/CanteenLanding.css';
 import '../../styles/StandardLayout.css';
 
 const ProxyOrder = ({ onBack, onDataLoaded }) => {
+    const { setHeader } = useAdminHeader();
     const [currentView, setCurrentView] = useState('user-search'); // user-search, menu, cart
     const [mrrSearch, setMrrSearch] = useState('');
     const [searching, setSearching] = useState(false);
@@ -25,6 +27,7 @@ const ProxyOrder = ({ onBack, onDataLoaded }) => {
 
     // Fetch Menu (same as CanteenClient)
     useEffect(() => {
+        setHeader({ title: 'Proxy Order' });
         const today = getBusinessDate();
         const todaysMenuRef = doc(db, 'todaysMenu', today);
         const fixedQ = query(collection(db, 'menuItems'), where('isFixed', '==', true));
@@ -174,30 +177,6 @@ const ProxyOrder = ({ onBack, onDataLoaded }) => {
         return (
             <div className="std-container">
                 <main className="std-body">
-                    {onBack && (
-                        <div style={{ marginBottom: '1rem' }}>
-                            <button
-                                onClick={onBack}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                    padding: '0.5rem 1rem',
-                                    backgroundColor: 'transparent',
-                                    border: '1px solid #ddd',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    fontSize: '0.875rem',
-                                    color: '#374151',
-                                    transition: 'all 0.2s'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                                <ArrowLeft size={16} /> Back
-                            </button>
-                        </div>
-                    )}
                     <div style={{ maxWidth: '500px', margin: '40px auto', padding: '20px', backgroundColor: 'white', borderRadius: '15px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
                         <h2 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '20px', textAlign: 'center' }}>Find Client</h2>
                         <form onSubmit={handleSearchUser}>

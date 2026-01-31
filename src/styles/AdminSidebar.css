@@ -9,7 +9,7 @@
 .admin-layout {
   display: flex;
   min-height: 100vh;
-  background-color: #f9fafb;
+  background-color: #ffffff;
   position: relative;
 }
 
@@ -261,12 +261,12 @@
 
 /* Header Area */
 .admin-header {
-  min-height: 100px;
+  height: var(--header-height);
   background-color: #ffffff;
   border-bottom: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
-  padding: 2rem 1.5rem;
+  padding: 0 1.5rem;
   position: sticky;
   top: 0;
   z-index: 900;
@@ -291,11 +291,41 @@
 }
 
 .admin-header-title {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #111827;
   margin-left: 1rem;
   letter-spacing: -0.02em;
+}
+
+.admin-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.admin-header-back-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f3f4f6;
+  border: none;
+  cursor: pointer;
+  color: #374151;
+  transition: all 0.2s ease;
+}
+
+.admin-header-back-btn:hover {
+  background-color: #e5e7eb;
+  color: #111827;
+  transform: scale(1.05);
+}
+
+.admin-header-back-btn:active {
+  transform: scale(0.95);
 }
 /* Admin Layout Scroll Fix Overrides */
 .admin-main-content .std-container,

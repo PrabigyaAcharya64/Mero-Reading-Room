@@ -3,10 +3,12 @@ import { collection, query, doc, updateDoc, increment, addDoc, deleteDoc, server
 import { db } from '../../lib/firebase';
 import { ArrowLeft } from 'lucide-react';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { useAdminHeader } from '../../context/AdminHeaderContext';
 import '../../styles/RawInventory.css';
 import '../../styles/StandardLayout.css';
 
 const RawInventory = ({ onBack, onDataLoaded }) => {
+    const { setHeader } = useAdminHeader();
     const [inventoryItems, setInventoryItems] = useState([]);
     const [showAddModal, setShowAddModal] = useState(false);
     const [newItem, setNewItem] = useState({
@@ -31,6 +33,7 @@ const RawInventory = ({ onBack, onDataLoaded }) => {
     };
 
     useEffect(() => {
+        setHeader({ title: 'Raw Inventory' });
         const loadData = async () => {
             try {
                 await fetchInventory();
@@ -107,30 +110,6 @@ const RawInventory = ({ onBack, onDataLoaded }) => {
     return (
         <div className="std-container">
             <main className="std-body">
-                {onBack && (
-                    <div style={{ marginBottom: '1rem' }}>
-                        <button
-                            onClick={onBack}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem',
-                                padding: '0.5rem 1rem',
-                                backgroundColor: 'transparent',
-                                border: '1px solid #ddd',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                fontSize: '0.875rem',
-                                color: '#374151',
-                                transition: 'all 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        >
-                            <ArrowLeft size={16} /> Back
-                        </button>
-                    </div>
-                )}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
                     <button
                         className="add-item-btn-simple"

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, ChevronLeft } from 'lucide-react';
 import { useAuth } from '../../auth/AuthProvider';
 import UserManagement from './UserManagement';
 import HostelManagement from './HostelManagement';
@@ -20,12 +20,15 @@ import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestor
 import { db } from '../../lib/firebase';
 import '../../styles/StandardLayout.css';
 import '../../styles/AdminSidebar.css';
+import { AdminHeaderProvider, useAdminHeader } from '../../context/AdminHeaderContext';
 
-function AdminLanding() {
+function AdminLandingContent() {
   const { user } = useAuth();
   const { setIsLoading } = useLoading();
   const navigate = useNavigate();
   const location = useLocation();
+  const { headerProps, resetHeader } = useAdminHeader();
+  
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Admin';
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -94,10 +97,17 @@ function AdminLanding() {
     return () => unsubscribe();
   }, []);
 
+  // Reset header when view changes
+  useEffect(() => {
+    resetHeader();
+  }, [location.pathname, resetHeader]);
+
   // Determine active sidebar item from location
   const currentView = useMemo(() => {
     const path = location.pathname;
     if (path === '/admin' || path === '/admin/dashboard') return 'dashboard';
+    if (path.includes('/admin/new-users')) return 'new-users';
+    if (path.includes('/admin/all-members')) return 'all-members';
     if (path.includes('/admin/user-management')) return 'user-management';
     if (path.includes('/admin/hostel')) return 'hostel';
     if (path.includes('/admin/canteen')) return 'canteen';
@@ -111,9 +121,13 @@ function AdminLanding() {
   }, [location.pathname]);
 
   const getPageTitle = () => {
+    if (headerProps.title) return headerProps.title;
+    
     const titles = {
       'dashboard': 'Dashboard Overview',
       'user-management': 'User Management',
+      'new-users': 'New Users',
+      'all-members': 'All Members',
       'hostel': 'Hostel Management',
       'canteen': 'Canteen Admin',
       'messages': 'Admin Messages',
@@ -144,12 +158,24 @@ function AdminLanding() {
         onMouseEnter={() => !isMobile && setIsSidebarHovered(false)} // Close if mouse enters content
       >
         <header className="admin-header">
-          {isMobile && (
-            <button className="sidebar-toggle-btn" onClick={() => setIsSidebarOpen(!isSidebarOpen)} aria-label="Toggle Sidebar">
-              {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          )}
-          <h1 className="admin-header-title" style={{ textAlign: 'center', flex: 1 }}>{getPageTitle()}</h1>
+          <div className="admin-header-left">
+            {isMobile && (
+              <button className="sidebar-toggle-btn" onClick={() => setIsSidebarOpen(!isSidebarOpen)} aria-label="Toggle Sidebar">
+                {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+            )}
+
+            {(currentView !== 'dashboard' || headerProps.onBack) && (
+              <button
+                className="admin-header-back-btn"
+                onClick={headerProps.onBack || (() => navigate(-1))}
+                aria-label="Go back"
+              >
+                <ChevronLeft size={24} />
+              </button>
+            )}
+          </div>
+          <h1 className="admin-header-title">{getPageTitle()}</h1>
         </header>
 
         <main style={{ padding: '1.5rem', maxWidth: '1400px', margin: '0 auto', width: '100%', flex: 1 }}>
@@ -174,4 +200,10 @@ function AdminLanding() {
   );
 }
 
-export default AdminLanding;
+export default function AdminLanding() {
+  return (
+    <AdminHeaderProvider>
+      <AdminLandingContent />
+    </AdminHeaderProvider>
+  );
+}

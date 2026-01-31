@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Button from '../../components/Button';
+import { useAdminHeader } from '../../context/AdminHeaderContext';
 import '../../styles/NewOrders.css';
 import '../../styles/StandardLayout.css';
 
@@ -12,10 +13,12 @@ import '../../styles/StandardLayout.css';
 // const NEW_ORDER_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
 
 function NewOrders({ onBack, onDataLoaded }) {
+    const { setHeader } = useAdminHeader();
     const [newOrders, setNewOrders] = useState([]);
     const [preparingOrders, setPreparingOrders] = useState([]);
 
     useEffect(() => {
+        setHeader({ title: 'New Orders' });
         const qNew = query(collection(db, 'orders'), where('status', '==', 'pending'));
         const qPreparing = query(collection(db, 'orders'), where('status', '==', 'preparing'));
 
@@ -141,31 +144,6 @@ function NewOrders({ onBack, onDataLoaded }) {
     return (
         <div className="std-container">
             <main className="std-body">
-                {onBack && (
-                    <div style={{ marginBottom: '1rem' }}>
-                        <button
-                            onClick={onBack}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem',
-                                padding: '0.5rem 1rem',
-                                backgroundColor: 'transparent',
-                                border: '1px solid #ddd',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                fontSize: '0.875rem',
-                                color: '#374151',
-                                transition: 'all 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        >
-                            <ArrowLeft size={16} /> Back
-                        </button>
-                    </div>
-                )}
-
                 <div className="no-grid">
 
                     {/* New Orders Column */}

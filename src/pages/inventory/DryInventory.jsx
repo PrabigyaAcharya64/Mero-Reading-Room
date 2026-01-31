@@ -4,10 +4,12 @@ import { db, functions } from '../../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
 import { ArrowLeft } from 'lucide-react';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { useAdminHeader } from '../../context/AdminHeaderContext';
 import '../../styles/DryInventory.css';
 import '../../styles/StandardLayout.css';
 
 const DryInventory = ({ onBack, onDataLoaded }) => {
+    const { setHeader } = useAdminHeader();
     const [inventoryItems, setInventoryItems] = useState([]);
     const [menuItemIds, setMenuItemIds] = useState(new Set());
 
@@ -63,6 +65,7 @@ const DryInventory = ({ onBack, onDataLoaded }) => {
     };
 
     useEffect(() => {
+        setHeader({ title: 'Dry Inventory' });
         const loadData = async () => {
             try {
                 await Promise.all([fetchInventory(), fetchMenuItems()]);
@@ -311,30 +314,6 @@ const DryInventory = ({ onBack, onDataLoaded }) => {
     return (
         <div className="std-container">
             <main className="std-body">
-                {onBack && (
-                    <div style={{ marginBottom: '1rem' }}>
-                        <button
-                            onClick={onBack}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem',
-                                padding: '0.5rem 1rem',
-                                backgroundColor: 'transparent',
-                                border: '1px solid #ddd',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                fontSize: '0.875rem',
-                                color: '#374151',
-                                transition: 'all 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        >
-                            <ArrowLeft size={16} /> Back
-                        </button>
-                    </div>
-                )}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
                     <button
                         className="add-item-btn-simple"

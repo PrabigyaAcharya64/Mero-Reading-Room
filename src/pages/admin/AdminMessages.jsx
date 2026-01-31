@@ -1,7 +1,7 @@
 import { collection, doc, onSnapshot, orderBy, query, updateDoc, getDocs } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { db } from '../../lib/firebase';
-import PageHeader from '../../components/PageHeader';
+
 import '../../styles/AdminMessages.css';
 import '../../styles/StandardLayout.css';
 
@@ -116,8 +116,6 @@ function AdminMessages({ onBack, onDataLoaded }) {
 
     return (
         <div className="std-container">
-            <PageHeader title="Messages" onBack={onBack} />
-
             <main className="std-body">
                 <div className="am-grid">
 

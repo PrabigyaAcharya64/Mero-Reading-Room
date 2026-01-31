@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import PageHeader from '../../components/PageHeader';
+
 import UserDetailView from './UserDetailView';
 import { db } from '../../lib/firebase';
 import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
@@ -88,11 +88,6 @@ function AllMembersView({ onBack, onDataLoaded }) {
 
     return (
         <div className="amv-container">
-            <PageHeader
-                title="Members Directory"
-                onBack={onBack}
-            />
-
             <main className="std-body">
                 <div className="amv-header-card">
                     <div className="amv-title-row">

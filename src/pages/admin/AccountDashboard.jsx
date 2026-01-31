@@ -316,11 +316,8 @@ export default function AccountDashboard({ onDataLoaded }) {
         <div className="account-dashboard">
             <div className="account-dashboard-content">
                 {/* Top Bar */}
+                {/* Top Bar */}
                 <div className="account-top-bar">
-                    <div className="account-title-section">
-                        <h2>Financial Overview</h2>
-                        <p>Track your earnings and expenses in real-time</p>
-                    </div>
                     <button className="manage-expenses-btn" onClick={() => setShowExpenseModal(true)}>
                         <Settings size={18} />
                         Edit/Manage Expenses

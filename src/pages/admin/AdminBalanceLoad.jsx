@@ -26,7 +26,6 @@ import {
     Search
 } from 'lucide-react';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import PageHeader from '../../components/PageHeader';
 import '../../styles/AdminBalanceLoad.css';
 
 export default function AdminBalanceLoad({ onBack, onDataLoaded }) {

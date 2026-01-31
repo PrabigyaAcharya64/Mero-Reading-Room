@@ -39,7 +39,7 @@
 .am-body {
   flex: 1;
   overflow: hidden;
-  padding: 1.5rem;
+  padding: var(--spacing-24);
   box-sizing: border-box;
 }
 
@@ -56,54 +56,57 @@
   overflow-y: auto;
   align-content: start;
   gap: 0;
-  background-color: white;
-  border-radius: var(--radius-default);
-  border: 1px solid var(--color-border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  background-color: var(--color-surface-elevated);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Filter Buttons */
 .am-filter-bar {
   display: flex;
-  gap: 0.5rem;
-  padding: 1rem;
-  border-bottom: 2px solid var(--color-border);
+  gap: var(--spacing-8);
+  padding: var(--spacing-16);
+  border-bottom: 1px solid var(--color-border-subtle);
   position: sticky;
   top: 0;
-  background-color: white;
+  background-color: var(--color-surface-elevated);
   z-index: 1;
 }
 
 .am-filter-btn {
   flex: 1;
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.375rem;
+  padding: var(--spacing-8) var(--spacing-16);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   background-color: transparent;
   color: var(--color-text-primary);
-  font-weight: normal;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
-  font-family: inherit;
+  transition: all var(--transition-base);
+  font-family: var(--font-system);
+  font-size: 0.8125rem;
 }
 
 .am-filter-btn.active {
-  background-color: #000;
+  background-color: var(--color-primary);
   color: #fff;
-  font-weight: bold;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
 }
 
 .am-filter-btn:hover:not(.active) {
-  background-color: #f5f5f5;
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
 }
 
 /* Message Items */
 .am-message-item {
-  padding: 1rem;
-  border-bottom: 1px solid var(--color-border);
+  padding: var(--spacing-12) var(--spacing-16);
+  border-bottom: 1px solid var(--color-border-subtle);
   cursor: pointer;
   background-color: transparent;
-  transition: background-color 0.2s;
+  transition: background-color var(--transition-base);
 }
 
 .am-message-item.unread {
@@ -115,7 +118,7 @@
 }
 
 .am-message-item:hover {
-  background-color: #f9f9f9;
+  background-color: var(--color-surface);
 }
 
 .am-message-header {
@@ -171,22 +174,22 @@
 /* Detail Panel */
 .am-detail-panel {
   align-content: start;
-  background-color: white;
-  border-radius: var(--radius-default);
-  border: 1px solid var(--color-border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  background-color: var(--color-surface-elevated);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: var(--shadow-sm);
   overflow-y: auto;
 }
 
 .am-detail-content {
   display: grid;
-  gap: 1.5rem;
-  padding: 1.5rem;
+  gap: var(--spacing-24);
+  padding: var(--spacing-24);
 }
 
 .am-detail-header {
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: var(--spacing-16);
 }
 
 .am-detail-title {

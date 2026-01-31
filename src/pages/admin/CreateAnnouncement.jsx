@@ -3,8 +3,6 @@ import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firesto
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../auth/AuthProvider';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import EnhancedBackButton from '../../components/EnhancedBackButton';
-import PageHeader from '../../components/PageHeader';
 import '../../styles/StandardLayout.css';
 
 function CreateAnnouncement({ onBack, onDataLoaded }) {
@@ -56,8 +54,6 @@ function CreateAnnouncement({ onBack, onDataLoaded }) {
 
     return (
         <div className="std-container">
-            <PageHeader title="New Announcement" onBack={onBack} />
-
             <main className="std-body">
                 <div className="auth-card" style={{ maxWidth: '600px', margin: '0 auto' }}>
                     {success ? (

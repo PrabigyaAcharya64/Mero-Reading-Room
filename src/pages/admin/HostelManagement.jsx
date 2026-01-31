@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { db } from '../../lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { Eye, Edit, Trash2 } from 'lucide-react';
-import PageHeader from '../../components/PageHeader';
 import { useLoading } from '../../context/GlobalLoadingContext';
+import { useAdminHeader } from '../../context/AdminHeaderContext';
 import '../../styles/StandardLayout.css';
 
 const BUILDING_OPTIONS = [
@@ -23,6 +23,7 @@ const ROOM_TYPES = [
 
 const HostelManagement = ({ onBack, onDataLoaded }) => {
     const { setIsLoading } = useLoading();
+    const { setHeader } = useAdminHeader();
     const [rooms, setRooms] = useState([]);
     const [showAddForm, setShowAddForm] = useState(false);
     const [selectedGroup, setSelectedGroup] = useState(null);
@@ -242,14 +243,20 @@ const HostelManagement = ({ onBack, onDataLoaded }) => {
 
 
 
+    // Set header when a group is selected
+    useEffect(() => {
+        if (selectedGroup) {
+            setHeader({
+                title: `${selectedGroup.buildingName} - ${getRoomTypeLabel(selectedGroup.type)}`,
+                onBack: () => setSelectedGroup(null)
+            });
+        }
+    }, [selectedGroup, setHeader]);
+
     // If a group is selected, show detail view
     if (selectedGroup) {
         return (
             <div className="std-container">
-                <PageHeader
-                    title={`${selectedGroup.buildingName} - ${getRoomTypeLabel(selectedGroup.type)}`}
-                    onBack={() => setSelectedGroup(null)}
-                />
                 <main className="std-body">
                     <div style={{ background: 'white', padding: '1.5rem', borderRadius: '10px' }}>
                         <div style={{ marginBottom: '1.5rem' }}>
@@ -318,8 +325,6 @@ const HostelManagement = ({ onBack, onDataLoaded }) => {
     // Main grouped view
     return (
         <div className="std-container">
-            <PageHeader title="Hostel Management" />
-
             <main className="std-body">
                 <div style={{ background: 'white', padding: '1.5rem', borderRadius: '10px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>

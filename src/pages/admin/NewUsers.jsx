@@ -4,7 +4,6 @@ import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, orderBy, deleteField } from 'firebase/firestore';
 import Button from '../../components/Button';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
-import PageHeader from '../../components/PageHeader';
 import '../../styles/NewUsers.css';
 import '../../styles/StandardLayout.css';
 
@@ -159,13 +158,6 @@ function NewUsers({ onBack, onDataLoaded }) {
 
   return (
     <div className="std-container">
-      <PageHeader
-        title="User Management"
-        icon={userManagementIcon}
-        onBack={onBack}
-        badgeCount={pendingUsers.length}
-      />
-
       <main className="std-body">
         <div className="nu-search-container" style={{ marginBottom: '20px' }}>
           <input
