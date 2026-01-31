@@ -7,21 +7,13 @@ export default defineConfig({
     'global': 'window',
   },
   optimizeDeps: {
-    include: [
-      'firebase/app',
-      'firebase/auth',
-      'firebase/firestore',
-      'firebase/storage',
-      '@firebase/app',
-      '@firebase/auth',
-      '@firebase/firestore',
-      '@firebase/storage'
-    ],
+    include: [],
     esbuildOptions: {
       supported: {
         bigint: true
       }
-    }
+    },
+    exclude: []
   },
   server: {
     host: '0.0.0.0',
@@ -30,18 +22,11 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 2000,
-    commonjsOptions: {
-      include: [/node_modules/],
-      transformMixedEsModules: true
-    },
     rollupOptions: {
+      external: [],
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            // Bundle all Firebase packages together
-            if (id.includes('firebase') || id.includes('@firebase')) {
-              return 'firebase'
-            }
             if (id.includes('@react-pdf/renderer')) {
               return 'pdf-renderer'
             }
