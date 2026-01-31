@@ -7,13 +7,17 @@ export default defineConfig({
     'global': 'window',
   },
   optimizeDeps: {
-    include: [],
+    include: [
+      'firebase/app',
+      'firebase/auth',
+      'firebase/firestore',
+      'firebase/storage'
+    ],
     esbuildOptions: {
       supported: {
         bigint: true
       }
-    },
-    exclude: []
+    }
   },
   server: {
     host: '0.0.0.0',
@@ -22,8 +26,11 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 2000,
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true
+    },
     rollupOptions: {
-      external: [],
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
