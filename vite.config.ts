@@ -7,11 +7,13 @@ export default defineConfig({
     'global': 'window',
   },
   optimizeDeps: {
-    include: [
+    exclude: [
+      'firebase',
       'firebase/app',
       'firebase/auth',
       'firebase/firestore',
-      'firebase/storage'
+      'firebase/storage',
+      'firebase/functions'
     ],
     esbuildOptions: {
       supported: {
@@ -34,6 +36,9 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
+            if (id.includes('firebase') || id.includes('@firebase')) {
+              return 'firebase'
+            }
             if (id.includes('@react-pdf/renderer')) {
               return 'pdf-renderer'
             }
