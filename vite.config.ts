@@ -13,7 +13,8 @@ export default defineConfig({
       'firebase/auth',
       'firebase/firestore',
       'firebase/storage',
-      'firebase/functions'
+      'firebase/functions',
+      'lucide-react'
     ],
     esbuildOptions: {
       supported: {
