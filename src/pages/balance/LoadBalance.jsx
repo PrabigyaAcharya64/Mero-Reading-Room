@@ -89,7 +89,7 @@ export default function LoadBalance({ onBack, onComplete }) {
     if (loading) {
         return (
             <div className="std-container">
-                <PageHeader title="Load Balance" onBack={onBack} />
+                <PageHeader title="Load Balance" onBack={onBack} forceShowBack={true} />
                 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
                     <LoadingSpinner />
                 </div>

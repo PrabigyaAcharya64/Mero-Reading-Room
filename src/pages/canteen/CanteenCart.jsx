@@ -30,7 +30,7 @@ const CanteenCart = ({
 
   return (
     <div className="std-container">
-      <PageHeader title="Your Cart" onBack={onBack} />
+      <PageHeader title="Your Cart" onBack={onBack} forceShowBack={true} />
 
       <main className="std-body">
         <div className="discussion-card">

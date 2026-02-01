@@ -193,7 +193,7 @@ function Dashboard({ onNavigate, onDataLoaded }) {
 
     return (
         <div className="dashboard-container">
-            <div className="dashboard-content">
+            <div className="dashboard-content" style={{ padding: '24px' }}>
                 <p style={{ color: '#6b7280', marginBottom: '24px' }}>Welcome back, Admin. Here's what's happening today.</p>
 
                 {/* Top Stats Row - Original Inline Styles Restored */}

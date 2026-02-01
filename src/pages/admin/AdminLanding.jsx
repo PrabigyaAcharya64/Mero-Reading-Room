@@ -2,10 +2,8 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Menu, X, ChevronLeft } from 'lucide-react';
 import { useAuth } from '../../auth/AuthProvider';
-import UserManagement from './UserManagement';
+import UserManagementModule from './UserManagementModule';
 import HostelManagement from './HostelManagement';
-import NewUsers from './NewUsers';
-import AllMembersView from './AllMembersView';
 import CanteenAdminLanding from '../Canteen_Admin/CanteenAdminLanding';
 import AdminMessages from './AdminMessages';
 import CreateAnnouncement from './CreateAnnouncement';
@@ -107,8 +105,6 @@ function AdminLandingContent() {
   const currentView = useMemo(() => {
     const path = location.pathname;
     if (path === '/admin' || path === '/admin/dashboard') return 'dashboard';
-    if (path.includes('/admin/new-users')) return 'new-users';
-    if (path.includes('/admin/all-members')) return 'all-members';
     if (path.includes('/admin/user-management')) return 'user-management';
     if (path.includes('/admin/hostel')) return 'hostel';
     if (path.includes('/admin/canteen')) return 'canteen';
@@ -127,8 +123,6 @@ function AdminLandingContent() {
     const titles = {
       'dashboard': 'Dashboard Overview',
       'user-management': 'User Management',
-      'new-users': 'New Users',
-      'all-members': 'All Members',
       'hostel': 'Hostel Management',
       'canteen': 'Canteen Admin',
       'messages': 'Admin Messages',
@@ -159,34 +153,44 @@ function AdminLandingContent() {
         onMouseEnter={() => !isMobile && setIsSidebarHovered(false)} // Close if mouse enters content
       >
         <header className="admin-header">
-          <div className="admin-header-left">
-            {isMobile && (
-              <button className="sidebar-toggle-btn" onClick={() => setIsSidebarOpen(!isSidebarOpen)} aria-label="Toggle Sidebar">
-                {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
-              </button>
-            )}
+          <div className="admin-header-content">
+            <div className="admin-header-top-row">
+              <div className="admin-header-left">
+                {isMobile && (
+                  <button className="sidebar-toggle-btn" onClick={() => setIsSidebarOpen(!isSidebarOpen)} aria-label="Toggle Sidebar">
+                    {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+                  </button>
+                )}
 
-            {(currentView !== 'dashboard' || headerProps.onBack) && (
-              <button
-                className="admin-header-back-btn"
-                onClick={headerProps.onBack || (() => navigate(-1))}
-                aria-label="Go back"
-              >
-                <ChevronLeft size={24} />
-              </button>
-            )}
+                {((location.pathname.split('/').filter(Boolean).length > 2) || headerProps.onBack) && (
+                  <button
+                    className="admin-header-back-btn"
+                    onClick={headerProps.onBack || (() => navigate(-1))}
+                    aria-label="Go back"
+                  >
+                    <ChevronLeft size={24} />
+                  </button>
+                )}
+                <h1 className="admin-header-title">{getPageTitle()}</h1>
+              </div>
+              <div className="admin-header-right">
+                {headerProps.rightElement}
+              </div>
+            </div>
           </div>
-          <h1 className="admin-header-title">{getPageTitle()}</h1>
         </header>
 
-        <main style={{ padding: '1.5rem', maxWidth: '1400px', margin: '0 auto', width: '100%', flex: 1 }}>
+        <main className="std-body" style={{ maxWidth: '1400px', margin: '0 auto', width: '100%', flex: 1 }}>
+          {headerProps.actionBar && (
+            <div className="admin-header-action-bar">
+              {headerProps.actionBar}
+            </div>
+          )}
           <Routes>
             <Route path="/" element={<Dashboard onNavigate={handleNavigate} onDataLoaded={handlePageReady} />} />
             <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
-            <Route path="/user-management" element={<UserManagement onNavigate={handleNavigate} onDataLoaded={handlePageReady} />} />
+            <Route path="/user-management/*" element={<UserManagementModule onDataLoaded={handlePageReady} />} />
             <Route path="/hostel" element={<HostelManagement onBack={() => handleNavigate('dashboard')} onDataLoaded={handlePageReady} />} />
-            <Route path="/new-users" element={<NewUsers onBack={() => handleNavigate('user-management')} onDataLoaded={handlePageReady} />} />
-            <Route path="/all-members" element={<AllMembersView onBack={() => handleNavigate('user-management')} onDataLoaded={handlePageReady} />} />
             <Route path="/canteen/*" element={<CanteenAdminLanding onDataLoaded={handlePageReady} />} />
             <Route path="/messages" element={<AdminMessages onDataLoaded={handlePageReady} />} />
             <Route path="/create-announcement" element={<CreateAnnouncement onDataLoaded={handlePageReady} />} />

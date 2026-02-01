@@ -26,6 +26,7 @@ import {
     Search
 } from 'lucide-react';
 import { useLoading } from '../../context/GlobalLoadingContext';
+import { useAdminHeader } from '../../context/AdminHeaderContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/AdminBalanceLoad.css';
 
@@ -157,37 +158,37 @@ export default function AdminBalanceLoad({ onBack, onDataLoaded }) {
     };
 
 
-    const headerActions = (
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <div className="abl-tabs">
-                <button
-                    className={`abl-tab-btn ${activeTab === 'pending' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('pending')}
-                >
-                    Pending
-                    {requests.length > 0 && <span className="abl-badge-count">{requests.length}</span>}
-                </button>
-                <button
-                    className={`abl-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-                    onClick={() => {
-                        if (activeTab !== 'history') {
-                            setIsLoadingHistory(true);
-                        }
-                        setActiveTab('history');
-                    }}
-                >
-                    History
-                </button>
-            </div>
-        </div>
-    );
+    const { setHeader } = useAdminHeader();
+
+    useEffect(() => {
+        setHeader({
+            actionBar: (
+                <div className="abl-tabs" style={{ padding: '0' }}>
+                    <button
+                        className={`abl-tab-btn ${activeTab === 'pending' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('pending')}
+                    >
+                        Pending
+                        {requests.length > 0 && <span className="abl-badge-count">{requests.length}</span>}
+                    </button>
+                    <button
+                        className={`abl-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
+                        onClick={() => {
+                            if (activeTab !== 'history') {
+                                setIsLoadingHistory(true);
+                            }
+                            setActiveTab('history');
+                        }}
+                    >
+                        History
+                    </button>
+                </div>
+            )
+        });
+    }, [setHeader, activeTab, requests.length]);
 
     return (
         <div className="abl-container">
-            {/* Tabs moved into content area for cleaner layout */}
-            <div style={{ padding: '16px 24px 0', backgroundColor: 'var(--color-background)' }}>
-                {headerActions}
-            </div>
 
             {activeTab === 'pending' ? (
                 requests.length === 0 ? (

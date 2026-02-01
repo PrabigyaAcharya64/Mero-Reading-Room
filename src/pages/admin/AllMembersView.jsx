@@ -7,6 +7,7 @@ import { formatBalance } from '../../utils/formatCurrency';
 import { formatDate } from '../../utils/dateFormat';
 import { useLoading } from '../../context/GlobalLoadingContext';
 import { Search, Edit2, User, ChevronRight } from 'lucide-react';
+import { useAdminHeader } from '../../context/AdminHeaderContext';
 import '../../styles/StandardLayout.css';
 import '../../styles/AllMembersView.css';
 
@@ -93,27 +94,30 @@ function AllMembersView({ onBack, onDataLoaded }) {
         if (container) container.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    const { setHeader } = useAdminHeader();
+
+    useEffect(() => {
+        setHeader({
+            actionBar: (
+                <div className="amv-search-wrapper" style={{ marginBottom: '0' }}>
+                    <input
+                        type="text"
+                        placeholder="Search by Name, Email or MRR ID..."
+                        className="amv-search-input"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <Search className="amv-search-icon" size={20} />
+                </div>
+            )
+        });
+    }, [setHeader, searchQuery, setSearchQuery]);
+
     return (
         <div className="amv-container">
             <main className="std-body">
-                <div className="amv-header-card">
-                    <div className="amv-title-row">
-                        <h2 className="amv-title">Member List</h2>
-                        <div className="amv-stats">
-                            {filteredUsers.length} total • Page {currentPage} of {totalPages || 1}
-                        </div>
-                    </div>
-
-                    <div className="amv-search-wrapper">
-                        <input
-                            type="text"
-                            placeholder="Search by Name, Email or MRR ID..."
-                            className="amv-search-input"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                        <Search className="amv-search-icon" size={20} />
-                    </div>
+                <div className="amv-stats" style={{ marginBottom: '16px', display: 'inline-block' }}>
+                    {filteredUsers.length} total • Page {currentPage} of {totalPages || 1}
                 </div>
 
                 {paginatedUsers.length === 0 && users.length > 0 ? (

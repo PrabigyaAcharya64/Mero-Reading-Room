@@ -174,7 +174,7 @@ const HostelPurchase = ({ onBack, onNavigate }) => {
     if (step === 1) {
         return (
             <div className="std-container">
-                <PageHeader title="Select Room Type" onBack={onBack} />
+                <PageHeader title="Select Room Type" onBack={onBack} forceShowBack={true} />
 
                 <main className="std-body">
                     <div className="hostel-purchase-card">
@@ -236,7 +236,7 @@ const HostelPurchase = ({ onBack, onNavigate }) => {
     if (step === 2) {
         return (
             <div className="std-container">
-                <PageHeader title="Select Package" onBack={() => setStep(1)} />
+                <PageHeader title="Select Package" onBack={() => setStep(1)} forceShowBack={true} />
 
                 <main className="std-body">
                     <div className="hostel-purchase-card">
@@ -288,7 +288,7 @@ const HostelPurchase = ({ onBack, onNavigate }) => {
     // Step 3: Confirmation
     return (
         <div className="std-container">
-            <PageHeader title="Confirm Purchase" onBack={() => setStep(2)} />
+            <PageHeader title="Confirm Purchase" onBack={() => setStep(2)} forceShowBack={true} />
 
             <main className="std-body">
                 <div className="hostel-purchase-card">

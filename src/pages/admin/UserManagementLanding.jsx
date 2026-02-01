@@ -9,7 +9,7 @@ import { useLoading } from '../../context/GlobalLoadingContext';
 const newUserIcon = new URL('../../assets/newuser.svg', import.meta.url).href;
 const usersIcon = new URL(/* @vite-ignore */ '../../assets/users.svg', import.meta.url).href;
 
-function UserManagement({ onBack, onNavigate, onDataLoaded }) {
+function UserManagementLanding({ onBack, onNavigate, onDataLoaded }) {
     const { setIsLoading } = useLoading();
     const [pendingCount, setPendingCount] = useState(0);
 
@@ -99,4 +99,4 @@ function UserManagement({ onBack, onNavigate, onDataLoaded }) {
     );
 }
 
-export default UserManagement;
+export default UserManagementLanding;

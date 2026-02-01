@@ -47,7 +47,7 @@ function AnonymousMessage({ onBack }) {
 
     return (
         <div className="std-container">
-            <PageHeader title="Anonymous" onBack={onBack} />
+            <PageHeader title="Anonymous" onBack={onBack} forceShowBack={true} />
 
             <main className="std-body">
                 <div className="discussion-card">

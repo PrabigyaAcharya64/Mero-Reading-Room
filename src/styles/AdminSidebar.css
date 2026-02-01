@@ -261,15 +261,44 @@
 
 /* Header Area */
 .admin-header {
-  height: var(--header-height);
-  background-color: #ffffff;
+  height: auto;
+  min-height: 72px;
+  background: #fff;
   border-bottom: 1px solid #e5e7eb;
   display: flex;
-  align-items: center;
-  padding: 0 1.5rem;
+  flex-direction: column;
   position: sticky;
   top: 0;
   z-index: 900;
+  width: 100%;
+}
+
+.admin-header-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 0 24px;
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-header-top-row {
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.admin-header-action-bar {
+    padding: 8px 0 16px;
+    width: 100%;
+    animation: fadeInDown 0.2s ease-out;
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .sidebar-toggle-btn {
@@ -294,7 +323,6 @@
   font-size: 1.25rem;
   font-weight: 700;
   color: #111827;
-  margin-left: 1rem;
   letter-spacing: -0.02em;
 }
 
@@ -327,7 +355,10 @@
 .admin-header-back-btn:active {
   transform: scale(0.95);
 }
-/* Admin Layout Scroll Fix Overrides */
+/* Main Body Area Overrides */
+.admin-main .std-body {
+    padding: 24px;
+}
 .admin-main-content .std-container,
 .admin-main-content .rrm-container,
 .admin-main-content .am-container,

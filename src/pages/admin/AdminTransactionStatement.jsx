@@ -3,6 +3,7 @@ import { ChevronLeft, ArrowUpRight, ArrowDownLeft, Search, X, Calendar } from 'l
 import { db } from '../../lib/firebase';
 import { collection, query, orderBy, onSnapshot, getDocs, doc, getDoc } from 'firebase/firestore';
 import { useLoading } from '../../context/GlobalLoadingContext';
+import { useAdminHeader } from '../../context/AdminHeaderContext';
 import '../../styles/TransactionStatement.css';
 
 export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
@@ -168,17 +169,18 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
 
     const isInflow = (txn) => ['balance_load', 'balance_topup', 'canteen_payment', 'reading_room', 'canteen_order', 'hostel_payment'].includes(txn.type);
 
-    return (
-        <div className="txn-container">
-            {/* iOS Search and Filtering - Fixed Header */}
-            <div className="txn-filter-bar">
-                <div className="txn-filter-controls">
+    const { setHeader } = useAdminHeader();
+
+    useEffect(() => {
+        setHeader({
+            actionBar: (
+                <div className="txn-filter-controls" style={{ padding: '0' }}>
                     <div className="txn-search-wrapper">
                         <Search className="txn-search-icon" size={18} />
                         <input
                             type="text"
                             className="txn-search-input"
-                            placeholder="Search"
+                            placeholder="Search transactions..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -222,8 +224,12 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
                         </div>
                     )}
                 </div>
-            </div>
+            )
+        });
+    }, [setHeader, searchQuery, setSearchQuery, dateRange, setDateRange, customStartDate, setCustomStartDate, customEndDate, setCustomEndDate]);
 
+    return (
+        <div className="txn-container">
             <div className="std-body">
 
             {/* Transaction List Grouped */}
@@ -272,11 +278,10 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
                 </div>
             </div>
 
-            {/* iOS Style Detail Bottom Sheet / Drawer */}
+            {/* Transaction Detail Modal */}
             {selectedTransaction && (
-                <>
-                    <div className="txn-drawer-overlay" onClick={() => setSelectedTransaction(null)} />
-                    <div className="txn-drawer">
+                <div className="txn-drawer-overlay" onClick={() => setSelectedTransaction(null)}>
+                    <div className="txn-drawer" onClick={(e) => e.stopPropagation()}>
                         <div className="txn-drawer-header">
                             <h2 className="txn-drawer-title">Details</h2>
                             <button className="txn-drawer-close" onClick={() => setSelectedTransaction(null)}>
@@ -346,7 +351,7 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
                             </div>
                         </div>
                     </div>
-                </>
+                </div>
             )}
             </div>
         </div>

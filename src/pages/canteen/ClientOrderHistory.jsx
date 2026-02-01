@@ -66,7 +66,7 @@ function ClientOrderHistory({ onBack }) {
 
   return (
     <div className="std-container">
-      <PageHeader title="Order History" onBack={onBack} />
+      <PageHeader title="Order History" onBack={onBack} forceShowBack={true} />
 
       <main className="std-body">
         <div className="discussion-card">

@@ -150,6 +150,7 @@ const CanteenMenu = ({
       <PageHeader
         title="Menu"
         onBack={onBack}
+        forceShowBack={true}
         rightElement={
           <div
             className="cart-icon-wrapper"

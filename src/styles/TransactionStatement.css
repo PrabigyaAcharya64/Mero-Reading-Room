@@ -5,10 +5,7 @@
 
 /* Base Container - Block Layout to Prevent Flex Shrink Issues */
 .txn-container {
-    display: block;
     width: 100%;
-    max-width: 100%;
-    min-height: 100vh;
     background-color: var(--color-background);
     position: relative;
     box-sizing: border-box;
@@ -17,18 +14,11 @@
 /* Ensure body respects container width */
 .txn-container .std-body {
     width: 100%;
-    max-width: 100%;
 }
 
 /* Filter Section - Fixed Header matching Balance Request */
 .txn-filter-bar {
-    background-color: var(--color-background);
-    padding: 16px 24px 0;
-    margin-bottom: 0;
-    width: 100%;
-    flex-shrink: 0;
-    box-sizing: border-box;
-    z-index: 90;
+    display: none;
 }
 
 .txn-filter-controls {
@@ -112,7 +102,7 @@
 }
 
 .txn-date-group-header {
-    padding: 0 0 8px 16px;
+    padding: 0 0 8px 24px;
     font-size: 13px;
     font-weight: 400;
     color: #8E8E93;
@@ -128,7 +118,7 @@
 .txn-item {
     display: flex;
     align-items: center;
-    padding: 12px 16px;
+    padding: 12px 24px;
     background-color: #FFF;
     cursor: pointer;
     transition: background-color 0.2s;
@@ -213,70 +203,89 @@
     color: #000;
 }
 
-/* Transaction Detail Drawer - Bottom Sheet for Mobile */
+/* Transaction Detail Modal - Centered with Blur */
 .txn-drawer-overlay {
     position: fixed;
     inset: 0;
-    background-color: rgba(0, 0, 0, 0.4);
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     animation: fadeIn 0.3s ease;
+    padding: 40px 20px 20px;
 }
 
 .txn-drawer {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #F2F2F7;
-    border-radius: 12px 12px 0 0;
+    position: relative;
+    background-color: #FFFFFF;
+    border-radius: 16px;
     z-index: 201;
-    max-height: 90vh;
+    max-width: 500px;
+    width: 100%;
+    max-height: 85vh;
     overflow-y: auto;
-    padding-bottom: constant(safe-area-inset-bottom);
-    padding-bottom: env(safe-area-inset-bottom);
-    transform: translateY(0);
-    animation: slideUp 0.4s cubic-bezier(0.3, 0.85, 0.4, 1);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalZoom 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    margin-top: 20px;
 }
 
-@keyframes slideUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
+@keyframes modalZoom {
+    from { 
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to { 
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 .txn-drawer-header {
-    padding: 16px;
+    padding: 20px 24px;
     display: flex;
     align-items: center;
     justify-content: center;
     position: sticky;
     top: 0;
-    background-color: #F2F2F7;
+    background-color: #FFFFFF;
+    border-bottom: 1px solid #f0f0f0;
     z-index: 10;
+    border-radius: 16px 16px 0 0;
 }
 
 .txn-drawer-close {
     position: absolute;
-    right: 16px;
-    background: rgba(0, 0, 0, 0.05);
+    right: 20px;
+    background: #f5f5f5;
     border: none;
     border-radius: 50%;
-    width: 30px;
-    height: 30px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #8E8E93;
+    color: #666;
     cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.txn-drawer-close:hover {
+    background: #e5e5e5;
+    color: #000;
 }
 
 .txn-drawer-title {
-    font-size: 17px;
-    font-weight: 600;
+    font-size: 18px;
+    font-weight: 700;
+    color: #111;
 }
 
 /* Grouped List for Drawer Details */
 .txn-drawer-content {
-    padding: 0 16px 32px;
+    padding: 0 24px 32px;
 }
 
 .txn-drawer-section {

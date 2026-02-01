@@ -14,7 +14,8 @@ export const AdminHeaderProvider = ({ children }) => {
     const [headerProps, setHeaderProps] = useState({
         title: '',
         onBack: null,
-        rightElement: null
+        rightElement: null,
+        actionBar: null
     });
 
     const setHeader = useCallback((props) => {
@@ -25,7 +26,8 @@ export const AdminHeaderProvider = ({ children }) => {
         setHeaderProps({
             title: '',
             onBack: null,
-            rightElement: null
+            rightElement: null,
+            actionBar: null
         });
     }, []);
 

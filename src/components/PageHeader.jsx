@@ -1,4 +1,4 @@
-import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import '../styles/PageHeader.css';
 
@@ -10,12 +10,29 @@ import '../styles/PageHeader.css';
  * @param {function} [props.onBack] - Callback for the back button. If provided, back button is shown.
  * @param {React.ReactNode} [props.rightElement] - Optional element to display on the right side
  * @param {string} [props.icon] - Optional icon URL to display next to the title
+ * @param {boolean} [props.forceShowBack] - Force the back button to show regardless of route nesting
  */
-const PageHeader = ({ title, onBack, rightElement, icon, badgeCount }) => {
+const PageHeader = ({ title, onBack, rightElement, icon, badgeCount, forceShowBack }) => {
+    const location = useLocation();
+
+    // Determine if we're in a nested route (depth > 1)
+    // Examples:
+    // / - depth 0 (LandingHome)
+    // /hostel - depth 1
+    // /admin - depth 1
+    // /admin/user-management - depth 2
+    const pathSegments = location.pathname.split('/').filter(Boolean);
+    const isNested = pathSegments.length > 1;
+
+    // Show back button if:
+    // 1. onBack is provided AND
+    // 2. (we are in a nested route OR forceShowBack is true)
+    const showBack = onBack && (isNested || forceShowBack);
+
     return (
         <header className="std-header">
             <div className="std-header-left">
-                {onBack && (
+                {showBack && (
                     <button
                         type="button"
                         className="std-header-back-btn"

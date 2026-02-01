@@ -404,7 +404,7 @@ const Discussion = ({ onBack }) => {
 
     return (
         <div className="std-container">
-            <PageHeader title="Room Details" onBack={() => setViewMode('list')} />
+            <PageHeader title="Room Details" onBack={() => setViewMode('list')} forceShowBack={true} />
 
             <main className="std-body">
                 <div className="discussion-card">

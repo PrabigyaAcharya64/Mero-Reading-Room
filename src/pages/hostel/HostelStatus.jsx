@@ -104,7 +104,7 @@ const HostelStatus = ({ onBack }) => {
     if (!hostelInfo) {
         return (
             <div className="std-container">
-                <PageHeader title="Hostel Status" onBack={onBack} />
+                <PageHeader title="Hostel Status" onBack={onBack} forceShowBack={true} />
                 <main className="std-body">
                     <div className="hostel-status-card">
                         <p>No active hostel booking found.</p>
@@ -116,7 +116,7 @@ const HostelStatus = ({ onBack }) => {
 
     return (
         <div className="std-container">
-            <PageHeader title="Hostel Status" onBack={onBack} />
+            <PageHeader title="Hostel Status" onBack={onBack} forceShowBack={true} />
 
             <main className="std-body">
                 <div className="hostel-status-card">
