@@ -75,6 +75,14 @@ async function calculatePriceInternal({ userId, serviceType, couponCode, months,
             if (coupon.applicableServices && !coupon.applicableServices.includes(serviceType)) { isValid = false; invalidReason = 'Not applicable for this service'; }
             if (coupon.minAmount && basePrice < coupon.minAmount) { isValid = false; invalidReason = `Min spend ${coupon.minAmount} required`; }
 
+            // targeted users check
+            if (coupon.allowedUsers && Array.isArray(coupon.allowedUsers) && coupon.allowedUsers.length > 0) {
+                if (!coupon.allowedUsers.includes(userId)) {
+                    isValid = false;
+                    invalidReason = 'This coupon is not valid for your account';
+                }
+            }
+
             if (isValid) {
                 // Check stackable
                 const hasAutomated = discounts.length > 0;
