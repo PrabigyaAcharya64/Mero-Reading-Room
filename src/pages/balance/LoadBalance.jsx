@@ -5,10 +5,12 @@ import { db, functions } from '../../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { useConfig } from '../../context/ConfigContext';
 import '../../styles/LoadBalance.css';
 
 export default function LoadBalance({ onBack, onComplete }) {
     const { user, userBalance } = useAuth();
+    const { config } = useConfig();
     const [step, setStep] = useState(1);
     const [amount, setAmount] = useState('0');
     const [transactionId, setTransactionId] = useState('');
@@ -30,8 +32,8 @@ export default function LoadBalance({ onBack, onComplete }) {
 
     const handleContinue = () => {
         const numAmount = parseFloat(amount);
-        if (numAmount < 100) {
-            alert("Minimum load amount is रु 100");
+        if (numAmount < config.WALLET.MIN_LOAD_AMOUNT) {
+            alert(`Minimum load amount is रु ${config.WALLET.MIN_LOAD_AMOUNT}`);
             return;
         }
         setStep(2);

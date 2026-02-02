@@ -5,7 +5,9 @@ import {
     CreditCard,
     Receipt,
     Calculator,
-    X
+    X,
+    RotateCcw,
+    Settings as SettingsIcon
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider';
 import { db } from '../lib/firebase';
@@ -23,6 +25,7 @@ function Sidebar({ currentView, onNavigate, isOpen, isMobile, onClose }) {
     const { signOutUser } = useAuth();
     const [unreadMessages, setUnreadMessages] = useState(0);
     const [pendingUsers, setPendingUsers] = useState(0);
+    const [pendingRefunds, setPendingRefunds] = useState(0);
 
     // Fetch Counts
     useEffect(() => {
@@ -33,8 +36,8 @@ function Sidebar({ currentView, onNavigate, isOpen, isMobile, onClose }) {
         }, (err) => console.error("Error fetching unread messages:", err));
 
 
+        // 2. Pending Users
         const userQ = query(collection(db, 'users'), orderBy('submittedAt', 'desc'));
-
         const unsubUser = onSnapshot(userQ, (snap) => {
             const count = snap.docs.filter(doc => {
                 const data = doc.data();
@@ -43,9 +46,16 @@ function Sidebar({ currentView, onNavigate, isOpen, isMobile, onClose }) {
             setPendingUsers(count);
         }, (err) => console.error("Error fetching pending users:", err));
 
+        // 3. Pending Refunds
+        const refundQ = query(collection(db, 'refunds'), where('status', '==', 'pending'));
+        const unsubRefund = onSnapshot(refundQ, (snap) => {
+            setPendingRefunds(snap.size);
+        }, (err) => console.error("Error fetching pending refunds:", err));
+
         return () => {
             unsubMsg();
             unsubUser();
+            unsubRefund();
         };
     }, []);
 
@@ -68,8 +78,18 @@ function Sidebar({ currentView, onNavigate, isOpen, isMobile, onClose }) {
         },
         { id: 'create-announcement', label: 'Announcements', icon: null, isLucide: true, lucideIcon: Bell },
         { id: 'balance-requests', label: 'Balance Requests', icon: null, isLucide: true, lucideIcon: CreditCard },
+        {
+            id: 'refund-requests',
+            label: 'Refund Requests',
+            icon: null,
+            isLucide: true,
+            lucideIcon: RotateCcw,
+            badge: pendingRefunds > 0 ? pendingRefunds : null
+        },
         { id: 'transaction-statement', label: 'Transaction Statement', icon: null, isLucide: true, lucideIcon: Receipt },
         { id: 'account-dashboard', label: 'Accounts', icon: null, isLucide: true, lucideIcon: Calculator },
+        { id: 'discounts', label: 'Discounts', icon: null, isLucide: true, lucideIcon: Receipt }, // Using Receipt as icon placeholder
+        { id: 'settings', label: 'Settings', icon: null, isLucide: true, lucideIcon: SettingsIcon },
     ];
 
     // On mobile, the sidebar is always "expanded" when open

@@ -12,7 +12,6 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [selectedUserDetails, setSelectedUserDetails] = useState(null);
 
-    // Filter states
     const [dateRange, setDateRange] = useState('today');
     const [customStartDate, setCustomStartDate] = useState('');
     const [customEndDate, setCustomEndDate] = useState('');
@@ -159,7 +158,8 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
             'canteen_payment': 'Canteen Purchase',
             'canteen_order': 'Canteen Order',
             'reading_room': 'Reading Room Payment',
-            'hostel_payment': 'Hostel Room Fee',
+            'hostel': 'Hostel Room Fee',
+            'hostel_renewal': 'Hostel Renewal',
             'refund': 'Refund',
             'withdrawal': 'Withdrawal',
             'cashback': 'Cashback'
@@ -167,7 +167,7 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
         return types[txn.type] || txn.type || 'Transaction';
     };
 
-    const isInflow = (txn) => ['balance_load', 'balance_topup', 'canteen_payment', 'reading_room', 'canteen_order', 'hostel_payment'].includes(txn.type);
+    const isInflow = (txn) => ['balance_load', 'balance_topup', 'canteen_payment', 'reading_room', 'canteen_order', 'hostel', 'hostel_renewal'].includes(txn.type);
 
     const { setHeader } = useAdminHeader();
 
@@ -232,127 +232,127 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
         <div className="txn-container">
             <div className="std-body">
 
-            {/* Transaction List Grouped */}
-            <div className="txn-content">
-                <div className="txn-content-inner">
-                    {groupedTransactions.length === 0 ? (
-                        <div className="txn-empty-state">
-                            <Calendar className="txn-empty-icon" size={48} />
-                            <p className="txn-empty-text">No Transactions</p>
-                        </div>
-                    ) : (
-                        groupedTransactions.map(([date, transactions]) => (
-                            <div key={date} className="txn-date-group">
-                                <div className="txn-date-group-header">{date}</div>
-                                <div className="txn-list-section">
-                                    {transactions.map(txn => {
-                                        const inflow = isInflow(txn);
-                                        const Icon = inflow ? ArrowDownLeft : ArrowUpRight;
-                                        return (
-                                            <div
-                                                key={txn.id}
-                                                className="txn-item"
-                                                onClick={() => setSelectedTransaction(txn)}
-                                            >
-                                                <div className={`txn-icon ${inflow ? 'inflow' : 'outflow'}`}>
-                                                    <Icon size={18} />
-                                                </div>
-                                                <div className="txn-details">
-                                                    <h4 className="txn-merchant-name">{getMerchantName(txn)}</h4>
-                                                    <div className="txn-timestamp">
-                                                        {txn.createdAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                                                    </div>
-                                                </div>
-                                                <div className="txn-amount-section">
-                                                    <div className={`txn-amount ${inflow ? 'positive' : 'negative'}`}>
-                                                        {inflow ? '+' : '-'} रु {txn.amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                {/* Transaction List Grouped */}
+                <div className="txn-content">
+                    <div className="txn-content-inner">
+                        {groupedTransactions.length === 0 ? (
+                            <div className="txn-empty-state">
+                                <Calendar className="txn-empty-icon" size={48} />
+                                <p className="txn-empty-text">No Transactions</p>
                             </div>
-                        ))
-                    )}
+                        ) : (
+                            groupedTransactions.map(([date, transactions]) => (
+                                <div key={date} className="txn-date-group">
+                                    <div className="txn-date-group-header">{date}</div>
+                                    <div className="txn-list-section">
+                                        {transactions.map(txn => {
+                                            const inflow = isInflow(txn);
+                                            const Icon = inflow ? ArrowDownLeft : ArrowUpRight;
+                                            return (
+                                                <div
+                                                    key={txn.id}
+                                                    className="txn-item"
+                                                    onClick={() => setSelectedTransaction(txn)}
+                                                >
+                                                    <div className={`txn-icon ${inflow ? 'inflow' : 'outflow'}`}>
+                                                        <Icon size={18} />
+                                                    </div>
+                                                    <div className="txn-details">
+                                                        <h4 className="txn-merchant-name">{getMerchantName(txn)}</h4>
+                                                        <div className="txn-timestamp">
+                                                            {txn.createdAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                                        </div>
+                                                    </div>
+                                                    <div className="txn-amount-section">
+                                                        <div className={`txn-amount ${inflow ? 'positive' : 'negative'}`}>
+                                                            {inflow ? '+' : '-'} रु {txn.amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
-            </div>
 
-            {/* Transaction Detail Modal */}
-            {selectedTransaction && (
-                <div className="txn-drawer-overlay" onClick={() => setSelectedTransaction(null)}>
-                    <div className="txn-drawer" onClick={(e) => e.stopPropagation()}>
-                        <div className="txn-drawer-header">
-                            <h2 className="txn-drawer-title">Details</h2>
-                            <button className="txn-drawer-close" onClick={() => setSelectedTransaction(null)}>
-                                <X size={20} />
-                            </button>
-                        </div>
-                        
-                        <div className="txn-drawer-content">
-                            <div className="txn-drawer-value large">
-                                रु {selectedTransaction.amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                {/* Transaction Detail Modal */}
+                {selectedTransaction && (
+                    <div className="txn-drawer-overlay" onClick={() => setSelectedTransaction(null)}>
+                        <div className="txn-drawer" onClick={(e) => e.stopPropagation()}>
+                            <div className="txn-drawer-header">
+                                <h2 className="txn-drawer-title">Details</h2>
+                                <button className="txn-drawer-close" onClick={() => setSelectedTransaction(null)}>
+                                    <X size={20} />
+                                </button>
                             </div>
 
-                            <div className="txn-drawer-section">
-                                <div className="txn-drawer-section-title">Information</div>
-                                <div className="txn-drawer-card">
-                                    <div className="txn-drawer-detail-row">
-                                        <span className="txn-drawer-label">Merchant</span>
-                                        <span className="txn-drawer-value">{getMerchantName(selectedTransaction)}</span>
-                                    </div>
-                                    <div className="txn-drawer-detail-row">
-                                        <span className="txn-drawer-label">Reference</span>
-                                        <span className="txn-drawer-value mono">{selectedTransaction.id.slice(0, 16)}...</span>
-                                    </div>
-                                    <div className="txn-drawer-detail-row">
-                                        <span className="txn-drawer-label">Status</span>
-                                        <span className={`txn-drawer-value ${selectedTransaction.status === 'error' ? 'negative' : 'positive'}`}>
-                                            {selectedTransaction.status || 'Success'}
-                                        </span>
+                            <div className="txn-drawer-content">
+                                <div className="txn-drawer-value large">
+                                    रु {selectedTransaction.amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </div>
+
+                                <div className="txn-drawer-section">
+                                    <div className="txn-drawer-section-title">Information</div>
+                                    <div className="txn-drawer-card">
+                                        <div className="txn-drawer-detail-row">
+                                            <span className="txn-drawer-label">Merchant</span>
+                                            <span className="txn-drawer-value">{getMerchantName(selectedTransaction)}</span>
+                                        </div>
+                                        <div className="txn-drawer-detail-row">
+                                            <span className="txn-drawer-label">Reference</span>
+                                            <span className="txn-drawer-value mono">{selectedTransaction.id.slice(0, 16)}...</span>
+                                        </div>
+                                        <div className="txn-drawer-detail-row">
+                                            <span className="txn-drawer-label">Status</span>
+                                            <span className={`txn-drawer-value ${selectedTransaction.status === 'error' ? 'negative' : 'positive'}`}>
+                                                {selectedTransaction.status || 'Success'}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="txn-drawer-section">
-                                <div className="txn-drawer-section-title">Parties</div>
-                                <div className="txn-drawer-card">
-                                    <div className="txn-drawer-detail-row">
-                                        <span className="txn-drawer-label">From</span>
-                                        <span className="txn-drawer-value">
-                                            {selectedUserDetails?.mrrNumber ? `${selectedTransaction.userName} (${selectedUserDetails.mrrNumber})` : (selectedTransaction.userName || 'User')}
-                                        </span>
-                                    </div>
-                                    <div className="txn-drawer-detail-row">
-                                        <span className="txn-drawer-label">To</span>
-                                        <span className="txn-drawer-value">
-                                            {['balance_load', 'balance_topup', 'reading_room'].includes(selectedTransaction.type) ? 'Mero Reading Room' : 'Canteen'}
-                                        </span>
+                                <div className="txn-drawer-section">
+                                    <div className="txn-drawer-section-title">Parties</div>
+                                    <div className="txn-drawer-card">
+                                        <div className="txn-drawer-detail-row">
+                                            <span className="txn-drawer-label">From</span>
+                                            <span className="txn-drawer-value">
+                                                {selectedUserDetails?.mrrNumber ? `${selectedTransaction.userName} (${selectedUserDetails.mrrNumber})` : (selectedTransaction.userName || 'User')}
+                                            </span>
+                                        </div>
+                                        <div className="txn-drawer-detail-row">
+                                            <span className="txn-drawer-label">To</span>
+                                            <span className="txn-drawer-value">
+                                                {['balance_load', 'balance_topup', 'reading_room', 'hostel', 'hostel_renewal'].includes(selectedTransaction.type) ? 'Mero Reading Room' : 'Canteen'}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="txn-drawer-section">
-                                <div className="txn-drawer-section-title">Date & Time</div>
-                                <div className="txn-drawer-card">
-                                    <div className="txn-drawer-detail-row">
-                                        <span className="txn-drawer-label">Timestamp</span>
-                                        <span className="txn-drawer-value">
-                                            {selectedTransaction.createdAt.toLocaleString('en-US', {
-                                                month: 'long',
-                                                day: 'numeric',
-                                                year: 'numeric',
-                                                hour: '2-digit',
-                                                minute: '2-digit'
-                                            })}
-                                        </span>
+                                <div className="txn-drawer-section">
+                                    <div className="txn-drawer-section-title">Date & Time</div>
+                                    <div className="txn-drawer-card">
+                                        <div className="txn-drawer-detail-row">
+                                            <span className="txn-drawer-label">Timestamp</span>
+                                            <span className="txn-drawer-value">
+                                                {selectedTransaction.createdAt.toLocaleString('en-US', {
+                                                    month: 'long',
+                                                    day: 'numeric',
+                                                    year: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
             </div>
         </div>
     );

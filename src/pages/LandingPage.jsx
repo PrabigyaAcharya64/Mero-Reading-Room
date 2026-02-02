@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { db } from '../lib/firebase';
-import { doc, getDoc, collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
-import { Bell, Clock, History as HistoryIcon } from 'lucide-react';
+import { doc, getDoc, collection, query, where, orderBy, onSnapshot, Timestamp, updateDoc } from 'firebase/firestore';
+import { Bell, Clock, History as HistoryIcon, Gift, X } from 'lucide-react';
 import IDCard from './IDCard';
 import CanteenClient from './canteen/CanteenClient.jsx';
 import CanteenAdminLanding from './Canteen_Admin/CanteenAdminLanding';
@@ -17,6 +17,7 @@ import Hostel from './hostel';
 import LoadBalance from './balance/LoadBalance';
 import Confirmation from './balance/Confirmation';
 import Statement from './balance/Statement';
+import RefundRequest from './balance/RefundRequest';
 import profileIcon from '../assets/profile.svg';
 import readingRoomIcon from '../assets/readingroom.svg';
 import hostelIcon from '../assets/hostel.svg';
@@ -34,6 +35,7 @@ function LandingPage({ onBack }) {
   const [selectedRoomOption, setSelectedRoomOption] = useState(null);
   const [checkingMembership, setCheckingMembership] = useState(false);
   const [announcements, setAnnouncements] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
 
   // isAdmin is already declared above, removing duplicate
@@ -131,6 +133,41 @@ function LandingPage({ onBack }) {
 
     return () => unsubscribe();
   }, []);
+
+  // Fetch Personal Notifications
+  useEffect(() => {
+    if (!user) {
+      setNotifications([]);
+      return;
+    }
+
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setNotifications(list);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const dismissNotification = async (id) => {
+    try {
+      await updateDoc(doc(db, 'notifications', id), {
+        read: true,
+        archived: true // or just delete it? for now let's just mark read/archived
+      });
+      // Or local filter if we want to remove immediately from view without relying on query change immediately if query doesn't filter by archived
+      // But better to just let snapshot handle it. We can filter the display list.
+      // Let's actually delete it from view for the user after "dismissing"
+    } catch (err) {
+      console.error("Error dismissing notification", err);
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -237,6 +274,42 @@ function LandingPage({ onBack }) {
           </div>
         </section>
 
+        {/* Personal Notifications Section */}
+        {notifications.filter(n => !n.archived).length > 0 && (
+          <section style={{ marginTop: '2.5rem' }}>
+            <div className="landing-section-header">
+              <Gift size={20} color="#e11d48" />
+              <h2 style={{ color: '#e11d48' }}>Rewards & Coupons</h2>
+            </div>
+
+            <div className="landing-announcements">
+              {notifications.filter(n => !n.archived).map(note => (
+                <div key={note.id} className="announcement-card" style={{ borderLeft: '4px solid #e11d48', backgroundColor: '#fff1f2' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
+                    <h4 style={{ margin: 0, fontSize: '15px', color: '#be123c' }}>{note.title}</h4>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        dismissNotification(note.id);
+                      }}
+                      style={{ border: 'none', background: 'transparent', padding: '0', cursor: 'pointer', color: '#999' }}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <p className="announcement-card__text" style={{ color: '#881337' }}>
+                    {note.message}
+                  </p>
+                  <div className="announcement-card__footer">
+                    <Clock size={12} color="#9f1239" />
+                    <span style={{ color: '#9f1239' }}>Received: {note.createdAt && (typeof note.createdAt === 'string' ? new Date(note.createdAt).toLocaleDateString() : note.createdAt.toDate?.().toLocaleDateString())}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         <section style={{ marginTop: '2.5rem' }}>
           <div className="landing-section-header">
             <Bell size={20} />
@@ -326,6 +399,7 @@ function LandingPage({ onBack }) {
       />
       <Route path="/balance-confirmation" element={<Confirmation onHome={() => navigate('/')} />} />
       <Route path="/statement" element={<Statement onBack={() => navigate('/')} />} />
+      <Route path="/refund-request" element={<RefundRequest onBack={() => navigate('/statement')} />} />
     </Routes>
   );
 }

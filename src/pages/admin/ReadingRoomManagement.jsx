@@ -104,6 +104,12 @@ function ReadingRoomManagement({ onBack }) {
     const [assignmentMode, setAssignmentMode] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
+    // Renewal State
+    const [renewMode, setRenewMode] = useState(false);
+    const [renewalDuration, setRenewalDuration] = useState(1);
+    const [renewalType, setRenewalType] = useState('month'); // 'month', 'day', 'custom'
+    const [customDuration, setCustomDuration] = useState('');
+
     useEffect(() => {
         const init = async () => {
             setIsLoading(true);
@@ -279,38 +285,91 @@ function ReadingRoomManagement({ onBack }) {
     };
 
     const handleUnassignStudent = async (assignmentId) => {
-        if (!confirm('Are you sure you want to unassign this student?')) {
+        if (!confirm('Are you sure you want to withdraw/unassign this student? This will clear their seat and clear any pending fines.')) {
             return;
         }
 
+        setLoading(true);
         try {
-            // First, get the assignment to find the userId
-            const assignment = seatAssignments.find(a => a.id === assignmentId);
+            // Use cloud function for clean withdrawal
+            const withdrawService = httpsCallable(functions, 'withdrawService');
+            // We must pass the student's userId. 
+            // selectedStudent.id should be the userId.
+            const userId = selectedStudent?.id;
 
-            if (!assignment) {
-                setMessage('Error: Assignment not found');
-                return;
+            if (!userId) {
+                throw new Error("Student ID not found.");
             }
 
-            // Delete the seat assignment
-            await deleteDoc(doc(db, 'seatAssignments', assignmentId));
+            await withdrawService({
+                serviceType: 'readingRoom',
+                userId: userId // Admin override
+            });
 
-            // Update user document to clear seat assignment but PRESERVE registration status
-            await setDoc(doc(db, 'users', assignment.userId), {
-                // registrationCompleted: false, // REMOVED: Registration is lifetime
-                // enrollmentCompleted: false,   // REMOVED: Enrollment is lifetime
-                currentSeat: null,
-                nextPaymentDue: null,
-                lastPaymentDate: null,
-                selectedRoomType: null
-            }, { merge: true });
-
-            setMessage('Student unassigned successfully');
+            setMessage('Student withdrawn successfully');
             loadSeatAssignments();
             setShowStudentModal(false);
         } catch (error) {
             console.error('Error unassigning student:', error);
-            setMessage('Error unassigning student');
+            setMessage(`Error unassigning student: ${error.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRenewStudent = async () => {
+        setLoading(true);
+        try {
+            const renewReadingRoomSubscription = httpsCallable(functions, 'renewReadingRoomSubscription');
+
+            let duration = renewalDuration;
+            let type = renewalType;
+
+            if (renewalType === 'custom') {
+                // For custom input, we assume it's days or months? The UI should clarify.
+                // Let's assume the custom input allows selecting month/day OR just defaults to months.
+                // Actually standard UI allows selecting type AND duration.
+                // My UI below will likely have strict types.
+                // Let's assume 'custom' in state means they are typing a number, and we need another state for unit or assume month.
+                // Re-design: UI has [1 Month] [3 Months] [Custom Input] [Unit Select]
+                // Simpler: Just rely on renewalType as 'month' or 'day' and use customDuration if renewalDuration is 'custom'.
+            }
+
+            // Refined Logic
+            let finalDuration = renewalDuration;
+            if (renewalType === 'custom') {
+                finalDuration = parseInt(customDuration);
+                type = 'month'; // Default custom to months, or add a selector.
+                // Let's support both in UI but for now assume Month for custom to keep it simple or check my previous impl.
+                // Previous impl had: durationType ('month' or 'day') and duration (int).
+            }
+
+            // Let's use the explicit states:
+            // renewalType: 'month' or 'day'
+            // renewalDuration: integer
+
+            if (finalDuration <= 0 || isNaN(finalDuration)) {
+                throw new Error("Invalid duration");
+            }
+
+            await renewReadingRoomSubscription({
+                userId: selectedStudent.id,
+                duration: finalDuration,
+                durationType: renewalType === 'custom' ? 'month' : renewalType // simplify 'custom' -> 'month' for now or handle in UI
+            });
+
+            setMessage('Subscription renewed successfully!');
+            setRenewMode(false);
+            // Refresh student data? We might need to reload verified users or assignments.
+            // But we probably just want to close modal.
+            setShowStudentModal(false);
+            loadSeatAssignments();
+
+        } catch (error) {
+            console.error('Renewal failed:', error);
+            setMessage(`Renewal failed: ${error.message}`);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -1008,9 +1067,14 @@ function ReadingRoomManagement({ onBack }) {
                             alignItems: 'center',
                             backgroundColor: '#f8f9fa'
                         }}>
-                            <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '600' }}>Student Details</h3>
+                            <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '600' }}>
+                                {renewMode ? 'Renew Subscription' : 'Student Details'}
+                            </h3>
                             <button
-                                onClick={() => setShowStudentModal(false)}
+                                onClick={() => {
+                                    setShowStudentModal(false);
+                                    setRenewMode(false);
+                                }}
                                 style={{
                                     background: 'none',
                                     border: 'none',
@@ -1042,292 +1106,428 @@ function ReadingRoomManagement({ onBack }) {
 
                         {/* Modal Body */}
                         <div style={{ padding: '24px' }}>
-                            {/* Student Photo and Basic Info Section */}
-                            <div style={{
-                                display: 'flex',
-                                gap: '20px',
-                                marginBottom: '24px',
-                                flexWrap: 'wrap'
-                            }}>
-                                {/* Photo */}
-                                {selectedStudent.photoUrl && (
-                                    <div style={{ flex: '0 0 auto' }}>
-                                        <img
-                                            src={selectedStudent.photoUrl}
-                                            alt={selectedStudent.name}
-                                            style={{
-                                                width: '120px',
-                                                height: '120px',
-                                                objectFit: 'cover',
-                                                borderRadius: '12px',
-                                                border: '3px solid #e0e0e0',
-                                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                                            }}
-                                        />
-                                    </div>
-                                )}
-
-                                {/* Name and MRR */}
-                                <div style={{ flex: 1, minWidth: '200px' }}>
-                                    <h2 style={{
-                                        margin: '0 0 8px 0',
-                                        fontSize: '24px',
-                                        fontWeight: '600',
-                                        color: '#333'
-                                    }}>
-                                        {selectedStudent.name}
-                                    </h2>
-                                    <div style={{
-                                        display: 'inline-block',
-                                        padding: '6px 12px',
-                                        backgroundColor: '#e3f2fd',
-                                        color: '#1976d2',
-                                        borderRadius: '6px',
-                                        fontSize: '14px',
-                                        fontWeight: '600',
-                                        marginBottom: '12px'
-                                    }}>
-                                        {selectedStudent.mrrNumber}
+                            {renewMode ? (
+                                <div className="renewal-form">
+                                    <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#e3f2fd', borderRadius: '8px' }}>
+                                        <strong style={{ display: 'block', marginBottom: '5px' }}>Member:</strong>
+                                        {selectedStudent.name} (MRR: {selectedStudent.mrrNumber})
                                     </div>
 
-                                    {/* Verification Badge */}
-                                    {selectedStudent.verified && (
-                                        <div style={{
-                                            display: 'inline-block',
-                                            marginLeft: '8px',
-                                            padding: '6px 12px',
-                                            backgroundColor: '#e8f5e9',
-                                            color: '#2e7d32',
-                                            borderRadius: '6px',
-                                            fontSize: '12px',
-                                            fontWeight: '600'
-                                        }}>
-                                            ✓ Verified
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Contact Information */}
-                            <div style={{
-                                marginBottom: '24px',
-                                padding: '16px',
-                                backgroundColor: '#f8f9fa',
-                                borderRadius: '8px'
-                            }}>
-                                <h4 style={{
-                                    margin: '0 0 12px 0',
-                                    fontSize: '14px',
-                                    fontWeight: '600',
-                                    color: '#666',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.5px'
-                                }}>
-                                    Contact Information
-                                </h4>
-                                <div style={{ display: 'grid', gap: '12px' }}>
-                                    <div>
-                                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>Email</div>
-                                        <div style={{ fontSize: '14px', fontWeight: '500', color: '#333' }}>{selectedStudent.email}</div>
-                                    </div>
-                                    {selectedStudent.phoneNumber && (
-                                        <div>
-                                            <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>Phone</div>
-                                            <div style={{ fontSize: '14px', fontWeight: '500', color: '#333' }}>{selectedStudent.phoneNumber}</div>
-                                        </div>
-                                    )}
-                                    {selectedStudent.dateOfBirth && (
-                                        <div>
-                                            <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>Date of Birth</div>
-                                            <div style={{ fontSize: '14px', fontWeight: '500', color: '#333' }}>
-                                                {new Date(selectedStudent.dateOfBirth).toLocaleDateString('en-US', {
-                                                    year: 'numeric',
-                                                    month: 'long',
-                                                    day: 'numeric'
-                                                })}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Interests */}
-                            {selectedStudent.interestedIn && Array.isArray(selectedStudent.interestedIn) && selectedStudent.interestedIn.length > 0 && (
-                                <div style={{ marginBottom: '24px' }}>
-                                    <h4 style={{
-                                        margin: '0 0 12px 0',
-                                        fontSize: '14px',
-                                        fontWeight: '600',
-                                        color: '#666',
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '0.5px'
-                                    }}>
-                                        Interests
-                                    </h4>
-                                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                        {selectedStudent.interestedIn.map((interest, index) => (
-                                            <span
-                                                key={index}
+                                    <h4 style={{ marginBottom: '15px' }}>Select Duration</h4>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '20px' }}>
+                                        {[1, 3, 6, 12].map(m => (
+                                            <button
+                                                key={m}
+                                                onClick={() => {
+                                                    setRenewalDuration(m);
+                                                    setRenewalType('month');
+                                                    setCustomDuration('');
+                                                }}
                                                 style={{
-                                                    padding: '8px 16px',
-                                                    backgroundColor: '#fff3e0',
-                                                    color: '#e65100',
-                                                    borderRadius: '20px',
-                                                    fontSize: '13px',
-                                                    fontWeight: '500',
-                                                    border: '1px solid #ffe0b2'
+                                                    padding: '15px',
+                                                    border: renewalDuration === m && renewalType === 'month' ? '2px solid #1976d2' : '1px solid #ccc',
+                                                    backgroundColor: renewalDuration === m && renewalType === 'month' ? '#e3f2fd' : 'white',
+                                                    borderRadius: '8px',
+                                                    fontWeight: 'bold',
+                                                    cursor: 'pointer'
                                                 }}
                                             >
-                                                {interest}
-                                            </span>
+                                                {m} Month{m > 1 ? 's' : ''}
+                                            </button>
                                         ))}
                                     </div>
-                                </div>
-                            )}
 
-                            {/* Seat Assignment Information */}
-                            {selectedStudent.assignment && (
-                                <div style={{
-                                    marginBottom: '24px',
-                                    padding: '16px',
-                                    backgroundColor: '#e8f5e9',
-                                    borderRadius: '8px',
-                                    border: '1px solid #c8e6c9'
-                                }}>
-                                    <h4 style={{
-                                        margin: '0 0 12px 0',
-                                        fontSize: '14px',
-                                        fontWeight: '600',
-                                        color: '#2e7d32',
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '0.5px'
-                                    }}>
-                                        Seat Assignment
-                                    </h4>
-                                    <div style={{ display: 'grid', gap: '8px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <span style={{ fontSize: '13px', color: '#555' }}>Room:</span>
-                                            <span style={{ fontSize: '13px', fontWeight: '600', color: '#333' }}>
-                                                {selectedStudent.assignment.roomName}
-                                            </span>
+                                    <div style={{ marginBottom: '20px' }}>
+                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Custom Duration</label>
+                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                            <input
+                                                type="number"
+                                                placeholder="Value"
+                                                value={customDuration}
+                                                onChange={(e) => {
+                                                    setCustomDuration(e.target.value);
+                                                    setRenewalType('custom');
+                                                    setRenewalDuration(parseInt(e.target.value) || 0);
+                                                }}
+                                                style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
+                                            />
+                                            <select
+                                                value={renewalType === 'custom' ? 'month' : renewalType} // If custom, assume month unless we add day selector
+                                                onChange={(e) => {
+                                                    // Assuming if they pick unit, they want custom
+                                                    setRenewalType(e.target.value);
+                                                    // If switching to 'day' or 'month' explicitly from select, handle it
+                                                }}
+                                                disabled={true} // For simplicity, only custom MONTHS for now as per button logic above, or...
+                                                // Actually let's allow "Days" via a separate button or logic.
+                                                // Let's just keep it simple: Input number is Months.
+                                                style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: '#f0f0f0' }}
+                                            >
+                                                <option value="month">Months</option>
+                                            </select>
                                         </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <span style={{ fontSize: '13px', color: '#555' }}>Seat:</span>
-                                            <span style={{ fontSize: '13px', fontWeight: '600', color: '#333' }}>
-                                                {selectedStudent.assignment.seatLabel}
-                                            </span>
+                                        <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                                            (Enter number of months for custom duration)
+                                        </p>
+                                    </div>
+
+                                    {/* Daily Option Button */}
+                                    <button
+                                        onClick={() => {
+                                            setRenewalType('day');
+                                            setRenewalDuration(1); // Default 1 day
+                                            setCustomDuration('');
+                                        }}
+                                        style={{
+                                            width: '100%',
+                                            padding: '15px',
+                                            border: renewalType === 'day' ? '2px solid #1976d2' : '1px solid #ccc',
+                                            backgroundColor: renewalType === 'day' ? '#e3f2fd' : 'white',
+                                            borderRadius: '8px',
+                                            fontWeight: 'bold',
+                                            cursor: 'pointer',
+                                            marginBottom: '20px'
+                                        }}
+                                    >
+                                        Daily (Per Day Basis)
+                                    </button>
+
+                                    {renewalType === 'day' && (
+                                        <div style={{ marginBottom: '20px' }}>
+                                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Number of Days</label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                value={renewalDuration}
+                                                onChange={(e) => setRenewalDuration(parseInt(e.target.value))}
+                                                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
+                                            />
                                         </div>
-                                        {selectedStudent.assignment.assignedAt && (
-                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                <span style={{ fontSize: '13px', color: '#555' }}>Assigned:</span>
-                                                <span style={{ fontSize: '13px', fontWeight: '500', color: '#333' }}>
-                                                    {new Date(selectedStudent.assignment.assignedAt).toLocaleDateString('en-US', {
-                                                        year: 'numeric',
-                                                        month: 'short',
-                                                        day: 'numeric',
-                                                        hour: '2-digit',
-                                                        minute: '2-digit'
-                                                    })}
-                                                </span>
-                                            </div>
-                                        )}
+                                    )}
+
+                                    <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                                        <button
+                                            onClick={() => setRenewMode(false)}
+                                            className="cta-button"
+                                            style={{ flex: 1, backgroundColor: '#757575', color: 'white' }}
+                                        >
+                                            Back
+                                        </button>
+                                        <button
+                                            onClick={handleRenewStudent}
+                                            className="cta-button cta-button--primary"
+                                            style={{ flex: 1 }}
+                                            disabled={loading || (renewalType === 'custom' && !customDuration) || (renewalType === 'day' && renewalDuration < 1)}
+                                        >
+                                            {loading ? <LoadingSpinner size="20" color="white" /> : 'Confirm Renewal'}
+                                        </button>
                                     </div>
                                 </div>
-                            )}
+                            ) : (
+                                // Existing Student Details Content
+                                <div>
+                                    {/* Student Photo and Basic Info Section */}
+                                    <div style={{
+                                        display: 'flex',
+                                        gap: '20px',
+                                        marginBottom: '24px',
+                                        flexWrap: 'wrap'
+                                    }}>
+                                        {/* Photo */}
+                                        {selectedStudent.photoUrl && (
+                                            <div style={{ flex: '0 0 auto' }}>
+                                                <img
+                                                    src={selectedStudent.photoUrl}
+                                                    alt={selectedStudent.name}
+                                                    style={{
+                                                        width: '120px',
+                                                        height: '120px',
+                                                        objectFit: 'cover',
+                                                        borderRadius: '12px',
+                                                        border: '3px solid #e0e0e0',
+                                                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
 
-                            {/* Additional Metadata */}
-                            {(selectedStudent.submittedAt || selectedStudent.updatedAt) && (
-                                <div style={{
-                                    marginBottom: '24px',
-                                    padding: '12px',
-                                    backgroundColor: '#fafafa',
-                                    borderRadius: '6px',
-                                    fontSize: '12px',
-                                    color: '#666'
-                                }}>
-                                    {selectedStudent.submittedAt && (
-                                        <div style={{ marginBottom: '4px' }}>
-                                            Registered: {new Date(selectedStudent.submittedAt).toLocaleDateString('en-US', {
-                                                year: 'numeric',
-                                                month: 'short',
-                                                day: 'numeric'
-                                            })}
+                                        {/* Name and MRR */}
+                                        <div style={{ flex: 1, minWidth: '200px' }}>
+                                            <h2 style={{
+                                                margin: '0 0 8px 0',
+                                                fontSize: '24px',
+                                                fontWeight: '600',
+                                                color: '#333'
+                                            }}>
+                                                {selectedStudent.name}
+                                            </h2>
+                                            <div style={{
+                                                display: 'inline-block',
+                                                padding: '6px 12px',
+                                                backgroundColor: '#e3f2fd',
+                                                color: '#1976d2',
+                                                borderRadius: '6px',
+                                                fontSize: '14px',
+                                                fontWeight: '600',
+                                                marginBottom: '12px'
+                                            }}>
+                                                {selectedStudent.mrrNumber}
+                                            </div>
+
+                                            {/* Verification Badge */}
+                                            {selectedStudent.verified && (
+                                                <div style={{
+                                                    display: 'inline-block',
+                                                    marginLeft: '8px',
+                                                    padding: '6px 12px',
+                                                    backgroundColor: '#e8f5e9',
+                                                    color: '#2e7d32',
+                                                    borderRadius: '6px',
+                                                    fontSize: '12px',
+                                                    fontWeight: '600'
+                                                }}>
+                                                    ✓ Verified
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Contact Information */}
+                                    <div style={{
+                                        marginBottom: '24px',
+                                        padding: '16px',
+                                        backgroundColor: '#f8f9fa',
+                                        borderRadius: '8px'
+                                    }}>
+                                        <h4 style={{
+                                            margin: '0 0 12px 0',
+                                            fontSize: '14px',
+                                            fontWeight: '600',
+                                            color: '#666',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.5px'
+                                        }}>
+                                            Contact Information
+                                        </h4>
+                                        <div style={{ display: 'grid', gap: '12px' }}>
+                                            <div>
+                                                <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>Email</div>
+                                                <div style={{ fontSize: '14px', fontWeight: '500', color: '#333' }}>{selectedStudent.email}</div>
+                                            </div>
+                                            {selectedStudent.phoneNumber && (
+                                                <div>
+                                                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>Phone</div>
+                                                    <div style={{ fontSize: '14px', fontWeight: '500', color: '#333' }}>{selectedStudent.phoneNumber}</div>
+                                                </div>
+                                            )}
+                                            {selectedStudent.dateOfBirth && (
+                                                <div>
+                                                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>Date of Birth</div>
+                                                    <div style={{ fontSize: '14px', fontWeight: '500', color: '#333' }}>
+                                                        {new Date(selectedStudent.dateOfBirth).toLocaleDateString('en-US', {
+                                                            year: 'numeric',
+                                                            month: 'long',
+                                                            day: 'numeric'
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Interests */}
+                                    {selectedStudent.interestedIn && Array.isArray(selectedStudent.interestedIn) && selectedStudent.interestedIn.length > 0 && (
+                                        <div style={{ marginBottom: '24px' }}>
+                                            <h4 style={{
+                                                margin: '0 0 12px 0',
+                                                fontSize: '14px',
+                                                fontWeight: '600',
+                                                color: '#666',
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.5px'
+                                            }}>
+                                                Interests
+                                            </h4>
+                                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                                {selectedStudent.interestedIn.map((interest, index) => (
+                                                    <span
+                                                        key={index}
+                                                        style={{
+                                                            padding: '8px 16px',
+                                                            backgroundColor: '#fff3e0',
+                                                            color: '#e65100',
+                                                            borderRadius: '20px',
+                                                            fontSize: '13px',
+                                                            fontWeight: '500',
+                                                            border: '1px solid #ffe0b2'
+                                                        }}
+                                                    >
+                                                        {interest}
+                                                    </span>
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
-                                    {selectedStudent.updatedAt && (
-                                        <div>
-                                            Last Updated: {new Date(selectedStudent.updatedAt).toLocaleDateString('en-US', {
-                                                year: 'numeric',
-                                                month: 'short',
-                                                day: 'numeric'
-                                            })}
+
+                                    {/* Seat Assignment Information */}
+                                    {selectedStudent.assignment && (
+                                        <div style={{
+                                            marginBottom: '24px',
+                                            padding: '16px',
+                                            backgroundColor: '#e8f5e9',
+                                            borderRadius: '8px',
+                                            border: '1px solid #c8e6c9'
+                                        }}>
+                                            <h4 style={{
+                                                margin: '0 0 12px 0',
+                                                fontSize: '14px',
+                                                fontWeight: '600',
+                                                color: '#2e7d32',
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.5px'
+                                            }}>
+                                                Seat Assignment
+                                            </h4>
+                                            <div style={{ display: 'grid', gap: '8px' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                    <span style={{ fontSize: '13px', color: '#555' }}>Room:</span>
+                                                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#333' }}>
+                                                        {selectedStudent.assignment.roomName}
+                                                    </span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                    <span style={{ fontSize: '13px', color: '#555' }}>Seat:</span>
+                                                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#333' }}>
+                                                        {selectedStudent.assignment.seatLabel}
+                                                    </span>
+                                                </div>
+                                                {selectedStudent.assignment.assignedAt && (
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                        <span style={{ fontSize: '13px', color: '#555' }}>Assigned:</span>
+                                                        <span style={{ fontSize: '13px', fontWeight: '500', color: '#333' }}>
+                                                            {new Date(selectedStudent.assignment.assignedAt).toLocaleDateString('en-US', {
+                                                                year: 'numeric',
+                                                                month: 'short',
+                                                                day: 'numeric',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit'
+                                                            })}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Additional Metadata */}
+                                    {(selectedStudent.submittedAt || selectedStudent.updatedAt) && (
+                                        <div style={{
+                                            marginBottom: '24px',
+                                            padding: '12px',
+                                            backgroundColor: '#fafafa',
+                                            borderRadius: '6px',
+                                            fontSize: '12px',
+                                            color: '#666'
+                                        }}>
+                                            {selectedStudent.submittedAt && (
+                                                <div style={{ marginBottom: '4px' }}>
+                                                    Registered: {new Date(selectedStudent.submittedAt).toLocaleDateString('en-US', {
+                                                        year: 'numeric',
+                                                        month: 'short',
+                                                        day: 'numeric'
+                                                    })}
+                                                </div>
+                                            )}
+                                            {selectedStudent.updatedAt && (
+                                                <div>
+                                                    Last Updated: {new Date(selectedStudent.updatedAt).toLocaleDateString('en-US', {
+                                                        year: 'numeric',
+                                                        month: 'short',
+                                                        day: 'numeric'
+                                                    })}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
                             )}
                         </div>
 
-                        {/* Modal Footer */}
-                        <div style={{
-                            padding: '16px 24px',
-                            borderTop: '1px solid #e0e0e0',
-                            display: 'flex',
-                            gap: '12px',
-                            backgroundColor: '#f8f9fa'
-                        }}>
-                            <button
-                                onClick={() => handleUnassignStudent(selectedStudent.assignment?.id)}
-                                style={{
-                                    flex: 1,
-                                    padding: '12px',
-                                    backgroundColor: '#f44336',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    fontSize: '14px',
-                                    fontWeight: '600',
-                                    transition: 'all 0.2s',
-                                    boxShadow: '0 2px 4px rgba(244,67,54,0.2)'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.backgroundColor = '#d32f2f';
-                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(244,67,54,0.3)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = '#f44336';
-                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(244,67,54,0.2)';
-                                }}
-                            >
-                                Unassign Seat
-                            </button>
-                            <button
-                                onClick={() => setShowStudentModal(false)}
-                                style={{
-                                    flex: 1,
-                                    padding: '12px',
-                                    backgroundColor: '#757575',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    fontSize: '14px',
-                                    fontWeight: '600',
-                                    transition: 'all 0.2s',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.backgroundColor = '#616161';
-                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = '#757575';
-                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-                                }}
-                            >
-                                Close
-                            </button>
-                        </div>
+                        {/* Modal Footer (Only show if not in renew mode) */}
+                        {!renewMode && (
+                            <div style={{
+                                padding: '16px 24px',
+                                borderTop: '1px solid #e0e0e0',
+                                display: 'flex',
+                                gap: '12px',
+                                backgroundColor: '#f8f9fa'
+                            }}>
+                                <button
+                                    onClick={() => handleUnassignStudent(selectedStudent.assignment?.id)}
+                                    style={{
+                                        flex: 1,
+                                        padding: '12px',
+                                        backgroundColor: '#f44336',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        transition: 'all 0.2s',
+                                        boxShadow: '0 2px 4px rgba(244,67,54,0.2)'
+                                    }}
+                                    disabled={loading}
+                                >
+                                    {loading ? 'Processing...' : 'Withdraw / Unassign'}
+                                </button>
+                                <button
+                                    onClick={() => setRenewMode(true)}
+                                    style={{
+                                        flex: 1,
+                                        padding: '12px',
+                                        backgroundColor: '#4caf50',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        transition: 'all 0.2s',
+                                        boxShadow: '0 2px 4px rgba(76,175,80,0.2)'
+                                    }}
+                                    disabled={loading}
+                                >
+                                    Renew Subscription
+                                </button>
+                                <button
+                                    onClick={() => setShowStudentModal(false)}
+                                    style={{
+                                        flex: 1,
+                                        padding: '12px',
+                                        backgroundColor: '#757575',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        transition: 'all 0.2s',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor = '#616161';
+                                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor = '#757575';
+                                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                                    }}
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

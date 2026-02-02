@@ -1,7 +1,9 @@
+import CONFIG from '../config';
+
 // Hostel Buildings and Room Configuration
 export const HOSTEL_CONFIG = {
-    registrationFee: 4000,
-    refundableDeposit: 5000,
+    registrationFee: CONFIG.HOSTEL.REGISTRATION_FEE,
+    refundableDeposit: CONFIG.HOSTEL.REFUNDABLE_DEPOSIT,
 
     buildings: {
         building_a: {
@@ -112,10 +114,18 @@ export const getRoomsByType = (buildingId, roomType) => {
 };
 
 // Calculate total cost
-export const calculateHostelCost = (monthlyRate, months, isFirstTime = true) => {
+export const calculateHostelCost = (monthlyRate, months, isFirstTime = true, dynamicConfig = null) => {
     const monthlyTotal = monthlyRate * months;
-    const registrationFee = isFirstTime ? HOSTEL_CONFIG.registrationFee : 0;
-    const deposit = isFirstTime ? HOSTEL_CONFIG.refundableDeposit : 0;
+
+    // Use dynamic config if provided, otherwise fallback to imported HOSTEL_CONFIG
+    // which falls back to static CONFIG in the file
+    const registrationFee = isFirstTime
+        ? (dynamicConfig?.REGISTRATION_FEE ?? HOSTEL_CONFIG.registrationFee)
+        : 0;
+
+    const deposit = isFirstTime
+        ? (dynamicConfig?.REFUNDABLE_DEPOSIT ?? HOSTEL_CONFIG.refundableDeposit)
+        : 0;
 
     return {
         monthlyTotal,

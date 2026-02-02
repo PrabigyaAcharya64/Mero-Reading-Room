@@ -11,9 +11,12 @@ import ReadingRoomManagement from '../readingroom/ReadingRoomManagement';
 import AdminBalanceLoad from './AdminBalanceLoad';
 import AdminTransactionStatement from './AdminTransactionStatement';
 import AccountDashboard from './AccountDashboard';
+import RefundRequests from './RefundRequests';
 import ExpenseEarningManagement from './ExpenseEarningManagement';
 import Sidebar from '../../components/Sidebar';
 import Dashboard from './Dashboard';
+import Settings from './Settings';
+import DiscountManagement from './DiscountManagement';
 import { useLoading } from '../../context/GlobalLoadingContext';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -112,8 +115,11 @@ function AdminLandingContent() {
     if (path.includes('/admin/create-announcement')) return 'create-announcement';
     if (path.includes('/admin/reading-rooms')) return 'reading-rooms';
     if (path.includes('/admin/balance-requests')) return 'balance-requests';
+    if (path.includes('/admin/refund-requests')) return 'refund-requests';
     if (path.includes('/admin/transaction-statement')) return 'transaction-statement';
     if (path.includes('/admin/account-dashboard')) return 'account-dashboard';
+    if (path.includes('/admin/settings')) return 'settings';
+    if (path.includes('/admin/discounts')) return 'discounts';
     return 'dashboard';
   }, [location.pathname]);
 
@@ -129,8 +135,11 @@ function AdminLandingContent() {
       'create-announcement': 'Announcements',
       'reading-rooms': 'Reading Room',
       'balance-requests': 'Balance Requests',
+      'refund-requests': 'Refund Requests',
       'transaction-statement': 'Transaction Statement',
-      'account-dashboard': 'Accounts'
+      'account-dashboard': 'Accounts',
+      'settings': 'System Settings',
+      'discounts': 'Discount & Coupons'
     };
     return titles[currentView] || 'Admin Panel';
   };
@@ -196,9 +205,12 @@ function AdminLandingContent() {
             <Route path="/create-announcement" element={<CreateAnnouncement onDataLoaded={handlePageReady} />} />
             <Route path="/reading-rooms" element={<ReadingRoomManagement onDataLoaded={handlePageReady} />} />
             <Route path="/balance-requests" element={<AdminBalanceLoad onDataLoaded={handlePageReady} />} />
+            <Route path="/refund-requests" element={<RefundRequests onDataLoaded={handlePageReady} />} />
             <Route path="/transaction-statement" element={<AdminTransactionStatement onDataLoaded={handlePageReady} />} />
             <Route path="/account-dashboard" element={<AccountDashboard onDataLoaded={handlePageReady} />} />
             <Route path="/expense-earning-management" element={<ExpenseEarningManagement onDataLoaded={handlePageReady} />} />
+            <Route path="/discounts" element={<DiscountManagement onDataLoaded={handlePageReady} />} />
+            <Route path="/settings" element={<Settings onBack={() => handleNavigate('dashboard')} />} />
           </Routes>
         </main>
       </div>

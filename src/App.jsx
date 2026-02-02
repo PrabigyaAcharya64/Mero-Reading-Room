@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './auth/AuthProvider';
 import { NavigationRoot } from './navigation';
 import FullScreenLoader from './components/FullScreenLoader';
 import { LoadingProvider, useLoading } from './context/GlobalLoadingContext';
+import { ConfigProvider } from './context/ConfigContext';
 
 function AppShell() {
     const { loading } = useAuth();
@@ -22,7 +23,9 @@ function App() {
     return (
         <AuthProvider>
             <LoadingProvider>
-                <AppShell />
+                <ConfigProvider>
+                    <AppShell />
+                </ConfigProvider>
             </LoadingProvider>
         </AuthProvider>
     );

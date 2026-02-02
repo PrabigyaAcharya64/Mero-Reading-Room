@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import PageHeader from '../../components/PageHeader';
 import Button from '../../components/Button';
+import { useAuth } from '../../auth/AuthProvider';
+import { functions } from '../../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
 import '../../styles/CanteenCart.css';
 import '../../styles/StandardLayout.css';
 
@@ -15,16 +18,46 @@ const CanteenCart = ({
   orderMessage,
   userName
 }) => {
+  const { user } = useAuth();
   const [note, setNote] = useState('');
   const [placing, setPlacing] = useState(false);
 
+  // Coupon State
+  const [couponCode, setCouponCode] = useState('');
+  const [calculation, setCalculation] = useState(null);
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [couponError, setCouponError] = useState('');
+
   // Total Calculation
   const totalAmount = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-  const canPlaceOrder = cart.length > 0 && userBalance >= totalAmount && !placing;
+  const finalAmount = calculation ? calculation.finalPrice : totalAmount;
+
+  const canPlaceOrder = cart.length > 0 && userBalance >= finalAmount && !placing;
+
+  const handleCalculatePrice = async (code = '') => {
+    setIsCalculating(true);
+    setCouponError('');
+    try {
+      const calculatePayment = httpsCallable(functions, 'calculatePayment');
+      const result = await calculatePayment({
+        userId: user.uid,
+        serviceType: 'canteen',
+        amount: totalAmount,
+        couponCode: code || null
+      });
+      setCalculation(result.data);
+    } catch (err) {
+      console.error(err);
+      setCouponError(err.message || 'Failed to calculate price');
+      setCalculation(null);
+    } finally {
+      setIsCalculating(false);
+    }
+  };
 
   const handlePlaceOrder = async () => {
     setPlacing(true);
-    await placeOrder(note);
+    await placeOrder(note, calculation ? couponCode : null);
     setPlacing(false);
   };
 
@@ -80,7 +113,47 @@ const CanteenCart = ({
                 <div className="cart-summary-section">
                   <div className="summary-row">
                     <span>Total Amount</span>
-                    <span className="summary-total">Rs. {totalAmount.toFixed(2)}</span>
+                    <span className="summary-total">Rs. {finalAmount.toFixed(2)}</span>
+                  </div>
+
+                  {/* Coupon UI */}
+                  <div className="coupon-section" style={{ borderTop: '1px solid #eee', paddingTop: '10px', marginTop: '10px' }}>
+                    <div style={{ display: 'flex', gap: '5px' }}>
+                      <input
+                        type="text"
+                        placeholder="Coupon Code"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        disabled={isCalculating || !!calculation}
+                        style={{ flex: 1, padding: '8px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '4px' }}
+                      />
+                      {calculation ? (
+                        <Button size="sm" variant="danger" onClick={() => {
+                          setCouponCode('');
+                          setCalculation(null);
+                          setCouponError('');
+                        }}>X</Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => handleCalculatePrice(couponCode)}
+                          disabled={!couponCode || isCalculating}
+                        >
+                          {isCalculating ? '...' : 'Apply'}
+                        </Button>
+                      )}
+                    </div>
+                    {couponError && <div style={{ color: 'red', fontSize: '12px', marginTop: '5px' }}>{couponError}</div>}
+                    {calculation && calculation.discounts && (
+                      <div style={{ marginTop: '5px' }}>
+                        {calculation.discounts.map((d, i) => (
+                          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'green' }}>
+                            <span>{d.name}</span>
+                            <span>- Rs. {d.amount}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="note-section">
@@ -112,7 +185,7 @@ const CanteenCart = ({
                       disabled={!canPlaceOrder}
                       loading={placing}
                     >
-                      {placing ? 'Placing Order...' : (userBalance < totalAmount ? 'Insufficient Balance' : 'Place Order')}
+                      {placing ? 'Placing Order...' : (userBalance < finalAmount ? 'Insufficient Balance' : 'Place Order')}
                     </Button>
                   </div>
                 </div>

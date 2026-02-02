@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
+import { useConfig } from '../../context/ConfigContext';
 import { db } from '../../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -9,6 +10,7 @@ import '../../styles/StandardLayout.css';
 
 function ReadingRoomOptions({ onBack, onSelectOption }) {
     const { user } = useAuth();
+    const { config } = useConfig();
     const [loading, setLoading] = useState(true);
     const [hasExistingMembership, setHasExistingMembership] = useState(false);
     const [membershipType, setMembershipType] = useState(null);
@@ -38,8 +40,8 @@ function ReadingRoomOptions({ onBack, onSelectOption }) {
         onSelectOption({
             roomType,
             isFirstTime: !hasExistingMembership,
-            registrationFee: hasExistingMembership ? 0 : 1000,
-            monthlyFee: roomType === 'ac' ? 3750 : 3500
+            registrationFee: hasExistingMembership ? 0 : config.READING_ROOM.REGISTRATION_FEE,
+            monthlyFee: roomType === 'ac' ? config.READING_ROOM.MONTHLY_FEE.AC : config.READING_ROOM.MONTHLY_FEE.NON_AC
         });
     };
 
@@ -111,7 +113,7 @@ function ReadingRoomOptions({ onBack, onSelectOption }) {
                             </h2>
                             <div style={{ marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '15px' }}>
                                 <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#000' }}>
-                                    रु 3,500<span style={{ fontSize: '14px', fontWeight: 'normal', color: '#666' }}>/month</span>
+                                    रु {config.READING_ROOM.MONTHLY_FEE.NON_AC.toLocaleString()}<span style={{ fontSize: '14px', fontWeight: 'normal', color: '#666' }}>/month</span>
                                 </div>
                             </div>
                             <ul style={{
@@ -134,9 +136,9 @@ function ReadingRoomOptions({ onBack, onSelectOption }) {
                             }}>
                                 <div style={{ fontWeight: 'bold', color: '#000' }}>
                                     {hasExistingMembership ? (
-                                        <span>Total: रु 3,500/month</span>
+                                        <span>Total: रु {config.READING_ROOM.MONTHLY_FEE.NON_AC.toLocaleString()}/month</span>
                                     ) : (
-                                        <span>Total: रु 4,500 (Inc. Registration)</span>
+                                        <span>Total: रु {(config.READING_ROOM.MONTHLY_FEE.NON_AC + config.READING_ROOM.REGISTRATION_FEE).toLocaleString()} (Inc. Registration)</span>
                                     )}
                                 </div>
                             </div>
@@ -175,7 +177,7 @@ function ReadingRoomOptions({ onBack, onSelectOption }) {
                             </h2>
                             <div style={{ marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '15px' }}>
                                 <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#000' }}>
-                                    रु 3,750<span style={{ fontSize: '14px', fontWeight: 'normal', color: '#666' }}>/month</span>
+                                    रु {config.READING_ROOM.MONTHLY_FEE.AC.toLocaleString()}<span style={{ fontSize: '14px', fontWeight: 'normal', color: '#666' }}>/month</span>
                                 </div>
                             </div>
                             <ul style={{
@@ -198,9 +200,9 @@ function ReadingRoomOptions({ onBack, onSelectOption }) {
                             }}>
                                 <div style={{ fontWeight: 'bold', color: '#000' }}>
                                     {hasExistingMembership ? (
-                                        <span>Total: रु 3,750/month</span>
+                                        <span>Total: रु {config.READING_ROOM.MONTHLY_FEE.AC.toLocaleString()}/month</span>
                                     ) : (
-                                        <span>Total: रु 4,750 (Inc. Registration)</span>
+                                        <span>Total: रु {(config.READING_ROOM.MONTHLY_FEE.AC + config.READING_ROOM.REGISTRATION_FEE).toLocaleString()} (Inc. Registration)</span>
                                     )}
                                 </div>
                             </div>
@@ -227,10 +229,10 @@ function ReadingRoomOptions({ onBack, onSelectOption }) {
                         <h3 style={{ margin: '0 0 10px 0', color: '#000', fontSize: '16px', fontWeight: 'bold' }}>Payment Information</h3>
                         <ul style={{ paddingLeft: '20px' }}>
                             <li style={{ marginBottom: '5px' }}>
-                                <strong>Registration Fee:</strong> रु 1,000 (One-time, only for first-time members)
+                                <strong>Registration Fee:</strong> रु {config.READING_ROOM.REGISTRATION_FEE.toLocaleString()} (One-time, only for first-time members)
                             </li>
                             <li style={{ marginBottom: '5px' }}>
-                                <strong>Monthly Membership Fee:</strong> Non-AC: रु 3,500 | AC: रु 3,750
+                                <strong>Monthly Membership Fee:</strong> Non-AC: रु {config.READING_ROOM.MONTHLY_FEE.NON_AC.toLocaleString()} | AC: रु {config.READING_ROOM.MONTHLY_FEE.AC.toLocaleString()}
                             </li>
                         </ul>
                     </div>

@@ -119,17 +119,20 @@ function CanteenClient({ onBack }) {
   // ------------------------------------------------------------------
   // Order Logic
   // ------------------------------------------------------------------
-  const handlePlaceOrder = async (note) => {
+  const handlePlaceOrder = async (note, couponCode = null) => {
     setOrderMessage('');
 
     // Calculate total on client side for initial feedback
     const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
     try {
-      if (userBalance < total) {
-        setOrderMessage('Insufficient balance.');
-        return;
+      if (userBalance < total && !couponCode) { // If coupon exists, server determines final price, so skip strict client check here or keep it simple
+        // We can't know final price without coupon here, so we let server handle it or update client to calc it.
+        // For now, let's allow it to proceed if coupon is present, or maybe we should fetch price first?
+        // The cart will calculate it anyway.
       }
+
+      // ... Note validation ...
 
       let sanitizedNote = null;
       if (note && note.trim()) {
@@ -145,7 +148,8 @@ function CanteenClient({ onBack }) {
       const processOrder = httpsCallable(functions, 'processCanteenOrder');
       const result = await processOrder({
         cart: cart,
-        note: sanitizedNote
+        note: sanitizedNote,
+        couponCode: couponCode
       });
 
       const { success } = result.data;

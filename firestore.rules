@@ -322,6 +322,20 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    match /refunds/{refundId} {
+      // Allow users to read their own refunds, staff to read all
+      allow read: if loggedIn() && (isStaff() || resource.data.userId == request.auth.uid);
+      
+      // CREATE: Allow users to create refund requests
+      allow create: if loggedIn() 
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'pending';
+        
+      // Only admin can update status (approve/reject)
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
     match /invoices/{id} {
       // Allow users to read their own invoices, staff to read all
       allow read: if loggedIn() && (isStaff() || resource.data.userId == request.auth.uid);
@@ -385,6 +399,25 @@ service cloud.firestore {
       // Only admin can create, update, or delete assignments
       // (Typically created via Cloud Function during purchase)
       allow write: if isAdmin();
+    }
+
+
+    /* ======================
+
+       APP CONFIGURATION
+
+       ====================== */
+
+    match /settings/{docId} {
+      // Allow everyone to read config (needed for public pricing on landing pages)
+      allow read: if true;
+      
+      // Only admin can update settings
+      allow write: if isAdmin();
+    }
+
+    match /coupons/{couponId} {
+      allow read, write: if isAdmin();
     }
 
 

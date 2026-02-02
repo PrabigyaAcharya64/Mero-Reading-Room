@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { db } from '../../lib/firebase';
-import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import { Eye, Edit, Trash2 } from 'lucide-react';
+import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, setDoc } from 'firebase/firestore';
+import { functions } from '../../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { Eye, Edit, Trash2, Users } from 'lucide-react';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import { useLoading } from '../../context/GlobalLoadingContext';
 import { useAdminHeader } from '../../context/AdminHeaderContext';
 import '../../styles/StandardLayout.css';
@@ -25,10 +28,18 @@ const HostelManagement = ({ onBack, onDataLoaded }) => {
     const { setIsLoading } = useLoading();
     const { setHeader } = useAdminHeader();
     const [rooms, setRooms] = useState([]);
+    const [assignments, setAssignments] = useState([]);
     const [showAddForm, setShowAddForm] = useState(false);
     const [selectedGroup, setSelectedGroup] = useState(null);
+    const [selectedRoom, setSelectedRoom] = useState(null); // For viewing occupants
     const [editingGroup, setEditingGroup] = useState(null);
     const [newPrice, setNewPrice] = useState('');
+    const [msg, setMsg] = useState('');
+
+    // Renewal State
+    const [renewModalOpen, setRenewModalOpen] = useState(false);
+    const [targetOccupant, setTargetOccupant] = useState(null);
+    const [renewMonths, setRenewMonths] = useState(1);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -57,11 +68,23 @@ const HostelManagement = ({ onBack, onDataLoaded }) => {
 
     const fetchRooms = async () => {
         try {
-            const snapshot = await getDocs(collection(db, 'hostelRooms'));
-            const roomsData = snapshot.docs.map(doc => ({
+            const [roomsSnapshot, assignmentsSnapshot] = await Promise.all([
+                getDocs(collection(db, 'hostelRooms')),
+                getDocs(collection(db, 'hostelAssignments'))
+            ]);
+
+            const roomsData = roomsSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
+
+            // Filter only active assignments
+            const assignmentsData = assignmentsSnapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .filter(a => a.status === 'active');
+
+            setAssignments(assignmentsData);
+
             roomsData.sort((a, b) => {
                 if (a.buildingId !== b.buildingId) {
                     return a.buildingId.localeCompare(b.buildingId);
@@ -70,8 +93,8 @@ const HostelManagement = ({ onBack, onDataLoaded }) => {
             });
             setRooms(roomsData);
         } catch (error) {
-            console.error('Error fetching rooms:', error);
-            alert('Failed to load rooms');
+            console.error('Error fetching data:', error);
+            alert('Failed to load data');
         }
     };
 
@@ -222,6 +245,62 @@ const HostelManagement = ({ onBack, onDataLoaded }) => {
         }
     };
 
+    const handleWithdrawOccupant = async (occupant) => {
+        if (!confirm(`Are you sure you want to withdraw ${occupant.userName} from ${occupant.roomLabel}?`)) {
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const withdrawService = httpsCallable(functions, 'withdrawService');
+            await withdrawService({
+                serviceType: 'hostel',
+                userId: occupant.userId
+            });
+
+            alert('Occupant withdrawn successfully');
+            await fetchRooms();
+            // Close modal if empty? or refresh it.
+            // Refresh occupants list for selectedRoom
+            if (selectedRoom) {
+                // We need to update local state or re-fetch. 
+                // fetchRooms updates 'assignments' state, so the UI should update automatically if we derive occupants from assignments.
+            }
+        } catch (error) {
+            console.error('Error withdrawing:', error);
+            alert(`Error: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleRenewOccupant = async () => {
+        if (!targetOccupant) return;
+
+        setIsLoading(true);
+        try {
+            const renewHostelSubscription = httpsCallable(functions, 'renewHostelSubscription');
+            await renewHostelSubscription({
+                months: parseInt(renewMonths),
+                userId: targetOccupant.userId
+            });
+
+            alert('Subscription renewed successfully!');
+            setRenewModalOpen(false);
+            setTargetOccupant(null);
+            await fetchRooms();
+        } catch (error) {
+            console.error('Error renewing:', error);
+            alert(`Error: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const getOccupants = (roomId) => {
+        return assignments.filter(a => a.roomId === roomId);
+    };
+
     const getRoomTypeLabel = (type) => {
         const roomType = ROOM_TYPES.find(t => t.value === type);
         return roomType ? roomType.label : type;
@@ -280,49 +359,189 @@ const HostelManagement = ({ onBack, onDataLoaded }) => {
                             <thead>
                                 <tr style={{ background: '#f5f5f5', borderBottom: '2px solid #ddd' }}>
                                     <th style={{ padding: '1rem', textAlign: 'left' }}>Room Label</th>
-                                    <th style={{ padding: '1rem', textAlign: 'center' }}>Capacity</th>
+                                    <th style={{ padding: '1rem', textAlign: 'center' }}>Occupancy</th>
                                     <th style={{ padding: '1rem', textAlign: 'right' }}>Price</th>
                                     <th style={{ padding: '1rem', textAlign: 'center' }}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {selectedGroup.rooms.map((room) => (
-                                    <tr key={room.id} style={{ borderBottom: '1px solid #eee' }}>
-                                        <td style={{ padding: '1rem', fontWeight: 600 }}>{room.label}</td>
-                                        <td style={{ padding: '1rem', textAlign: 'center' }}>{room.capacity}</td>
-                                        <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                            रु {room.price.toLocaleString()}
-                                        </td>
-                                        <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'center' }}>
-                                                <button
-                                                    onClick={() => handleDeleteRoom(room.id, room.label)}
-                                                    style={{
-                                                        background: 'transparent',
-                                                        color: '#FF3B30',
-                                                        border: 'none',
-                                                        padding: '0.5rem',
-                                                        borderRadius: '6px',
-                                                        cursor: 'pointer',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        transition: 'all 0.2s'
-                                                    }}
-                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 59, 48, 0.1)'}
-                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                                    title="Delete Room"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {selectedGroup.rooms.map((room) => {
+                                    const occupants = getOccupants(room.id);
+                                    const isFull = occupants.length >= room.capacity;
+
+                                    return (
+                                        <tr key={room.id} style={{ borderBottom: '1px solid #eee' }}>
+                                            <td style={{ padding: '1rem', fontWeight: 600 }}>{room.label}</td>
+                                            <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                                <span style={{
+                                                    padding: '4px 8px',
+                                                    borderRadius: '12px',
+                                                    backgroundColor: isFull ? '#ffebee' : occupants.length > 0 ? '#e8f5e9' : '#f5f5f5',
+                                                    color: isFull ? '#c62828' : occupants.length > 0 ? '#2e7d32' : '#666',
+                                                    fontSize: '12px',
+                                                    fontWeight: 'bold'
+                                                }}>
+                                                    {occupants.length} / {room.capacity}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                                रु {room.price.toLocaleString()}
+                                            </td>
+                                            <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                                                    <button
+                                                        onClick={() => setSelectedRoom(room)}
+                                                        style={{
+                                                            background: 'transparent',
+                                                            color: '#007AFF',
+                                                            border: 'none',
+                                                            padding: '0.5rem',
+                                                            borderRadius: '6px',
+                                                            cursor: 'pointer',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                        title="View Occupants"
+                                                    >
+                                                        <Users size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteRoom(room.id, room.label)}
+                                                        style={{
+                                                            background: 'transparent',
+                                                            color: '#FF3B30',
+                                                            border: 'none',
+                                                            padding: '0.5rem',
+                                                            borderRadius: '6px',
+                                                            cursor: 'pointer',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                        title="Delete Room"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
                             </tbody>
                         </table>
                     </div>
                 </main>
+
+                {/* Occupants Modal */}
+                {selectedRoom && (
+                    <div className="modal-overlay" style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>
+                        <div style={{ background: 'white', borderRadius: '12px', width: '500px', maxWidth: '90%', maxHeight: '90vh', overflow: 'auto' }}>
+                            <div style={{ padding: '20px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h3 style={{ margin: 0 }}>Room {selectedRoom.label} Occupants</h3>
+                                <button onClick={() => setSelectedRoom(null)} style={{ border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer' }}>&times;</button>
+                            </div>
+                            <div style={{ padding: '20px' }}>
+                                {getOccupants(selectedRoom.id).length === 0 ? (
+                                    <p style={{ textAlign: 'center', color: '#666' }}>No occupants in this room.</p>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                        {getOccupants(selectedRoom.id).map(occ => (
+                                            <div key={occ.id} style={{ padding: '15px', border: '1px solid #eee', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                                                    <div>
+                                                        <strong>{occ.userName}</strong> ({occ.userMrrNumber || 'N/A'})
+                                                        <div style={{ fontSize: '12px', color: '#666' }}>Bed {occ.bedNumber}</div>
+                                                    </div>
+                                                    <div style={{ textAlign: 'right', fontSize: '12px' }}>
+                                                        <div style={{ color: '#666' }}>Joined: {new Date(occ.assignedAt).toLocaleDateString()}</div>
+                                                        <div style={{ fontWeight: 'bold', color: new Date(occ.nextPaymentDue) < new Date() ? 'red' : 'green' }}>
+                                                            Due: {new Date(occ.nextPaymentDue).toLocaleDateString()}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '10px' }}>
+                                                    <button
+                                                        onClick={() => {
+                                                            setTargetOccupant(occ);
+                                                            setRenewModalOpen(true);
+                                                            // We keep selectedRoom open
+                                                        }}
+                                                        style={{ flex: 1, padding: '8px', background: '#4caf50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                                    >
+                                                        Renew
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleWithdrawOccupant(occ)}
+                                                        style={{ flex: 1, padding: '8px', background: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                                    >
+                                                        Withdraw
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Renewal Modal */}
+                {renewModalOpen && targetOccupant && (
+                    <div className="modal-overlay" style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1100,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>
+                        <div style={{ background: 'white', borderRadius: '12px', width: '350px', padding: '24px' }}>
+                            <h3 style={{ marginTop: 0 }}>Renew Subscription</h3>
+                            <p>Renew for <strong>{targetOccupant.userName}</strong></p>
+
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Duration (Months)</label>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    {[1, 3, 6, 12].map(m => (
+                                        <button
+                                            key={m}
+                                            onClick={() => setRenewMonths(m)}
+                                            style={{
+                                                flex: 1, padding: '10px',
+                                                border: renewMonths === m ? '2px solid #1976d2' : '1px solid #ccc',
+                                                background: renewMonths === m ? ('#e3f2fd') : 'white',
+                                                borderRadius: '6px', cursor: 'pointer'
+                                            }}
+                                        >
+                                            {m}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleRenewOccupant}
+                                style={{ width: '100%', padding: '12px', background: '#1976d2', color: 'white', border: 'none', borderRadius: '6px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '10px' }}
+                            >
+                                Confirm Renewal
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setRenewModalOpen(false);
+                                    setTargetOccupant(null);
+                                }}
+                                style={{ width: '100%', padding: '12px', background: '#f5f5f5', color: '#333', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
