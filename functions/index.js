@@ -2084,6 +2084,7 @@ exports.calculatePayment = onCall(async (request) => {
     // serviceType: 'readingRoom' | 'hostel' | 'canteen'
 
     if (!userId || !serviceType) {
+        console.error("calculatePayment Missing Fields:", { userId, serviceType, data: request.data });
         throw new HttpsError('invalid-argument', 'Missing required fields.');
     }
 
@@ -2136,7 +2137,8 @@ exports.calculatePayment = onCall(async (request) => {
         basePrice = amount;
         basePriceLabel = 'Canteen Order Total';
     } else {
-        throw new HttpsError('invalid-argument', 'Invalid service type for discount calculation.');
+        console.error("Invalid service type received:", serviceType);
+        throw new HttpsError('invalid-argument', `Invalid service type for discount calculation: ${serviceType}`);
     }
 
     try {
