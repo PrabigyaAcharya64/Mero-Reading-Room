@@ -1178,21 +1178,8 @@ exports.processReadingRoomPurchase = onCall(async (request) => {
             const userData = userDoc.data();
             const currentBalance = userData.balance || 0;
 
-            // Recalculate price with coupons
-            const rawBasePrice = (roomType === 'ac' ? 3750 : 3500); // Assuming 1 month for now as param suggests
-            const calcResult = await calculatePriceInternal({
-                userId,
-                serviceType: 'readingRoom',
-                couponCode: request.data.couponCode || null,
-                months: 1, // Default to 1 month for this specific function signature
-                basePrice: request.data.monthlyFee || rawBasePrice, // Use passed fee or default
-                db
-            });
-
-            const finalAmount = calcResult.finalPrice + (request.data.registrationFee || 0);
-
-            if (currentBalance < finalAmount) {
-                throw new HttpsError('failed-precondition', `Insufficient balance. You need रु ${finalAmount - currentBalance} more.`);
+            if (currentBalance < totalAmount) {
+                throw new HttpsError('failed-precondition', `Insufficient balance. You need रु ${totalAmount - currentBalance} more.`);
             }
 
             // 2. Find available seat
@@ -1230,9 +1217,9 @@ exports.processReadingRoomPurchase = onCall(async (request) => {
             }
 
             // 3. Deduct balance
-            const newBalance = currentBalance - finalAmount;
+            const newBalance = currentBalance - totalAmount;
 
-            // Update user balance and subscription
+            // Standard initial purchase is 30 days
             transaction.update(userRef, {
                 balance: newBalance,
                 selectedRoomType: roomType,
@@ -1245,18 +1232,8 @@ exports.processReadingRoomPurchase = onCall(async (request) => {
                     seatId: assignedSeat.id,
                     seatLabel: assignedSeat.label
                 },
-                expiryPolicy: 'standard'
+                expiryPolicy: 'standard' // Default to standard policy
             });
-
-            // Increment usage if coupon used
-            if (calcResult.discounts && calcResult.discounts.length > 0) {
-                const usedCoupon = calcResult.discounts.find(d => d.type === 'coupon');
-                if (usedCoupon && usedCoupon.docId) {
-                    transaction.update(db.collection('coupons').doc(usedCoupon.docId), {
-                        usedCount: admin.firestore.FieldValue.increment(1)
-                    });
-                }
-            }
 
             // 4. Create seat assignment
             const assignmentRef = db.collection('seatAssignments').doc();
@@ -1279,14 +1256,7 @@ exports.processReadingRoomPurchase = onCall(async (request) => {
             transaction.set(transactionRef, {
                 type: 'reading_room',
                 transactionId: readingRoomTxnId,
-                amount: finalAmount,
-                originalAmount: (request.data.monthlyFee || rawBasePrice) + (request.data.registrationFee || 0),
-                couponCode: request.data.couponCode || null,
-                breakdown: {
-                    basePrice: request.data.monthlyFee || rawBasePrice,
-                    registrationFee: request.data.registrationFee || 0,
-                    discounts: calcResult.discounts
-                },
+                amount: totalAmount,
                 details: `${roomType === 'ac' ? 'AC' : 'Non-AC'} Room Fee`,
                 userId: userId,
                 userName: userData.name || userData.displayName || 'User',
@@ -1432,33 +1402,8 @@ exports.processCanteenOrder = onCall(async (request) => {
                 }
             }
 
-            // 3. Calculate Final Price with Coupon
-            const calcResult = await calculatePriceInternal({
-                userId: userIdToCharge,
-                serviceType: 'canteen',
-                couponCode: request.data.couponCode || null,
-                months: 1,
-                basePrice: total,
-                db
-            });
-            const finalTotal = calcResult.finalPrice;
-
-            if (currentBalance < finalTotal) {
-                throw new HttpsError('failed-precondition', isProxyOrder ? 'Client has insufficient balance.' : 'Insufficient balance.');
-            }
-
-            // 4. Execute all updates atomically
-            const newBalance = currentBalance - finalTotal;
-
-            // Increment coupon usage
-            if (calcResult.discounts && calcResult.discounts.length > 0) {
-                const usedCoupon = calcResult.discounts.find(d => d.type === 'coupon');
-                if (usedCoupon && usedCoupon.docId) {
-                    transaction.update(db.collection('coupons').doc(usedCoupon.docId), {
-                        usedCount: admin.firestore.FieldValue.increment(1)
-                    });
-                }
-            }
+            // 3. Execute all updates atomically
+            const newBalance = currentBalance - total;
 
             // Update balance
             transaction.update(userRef, {
@@ -1479,19 +1424,14 @@ exports.processCanteenOrder = onCall(async (request) => {
                 userEmail: userData.email || null,
                 userName: userData.name || userData.displayName || 'Reader',
                 items: cart,
-                total: finalTotal, // Final price after discount
-                originalTotal: total, // Original price
+                total: total,
                 status: 'pending',
                 note: note || null,
                 location: null,
                 createdAt: new Date().toISOString(),
                 transactionId: canteenTxnId,
                 isProxyOrder: isProxyOrder,
-                processedBy: isProxyOrder ? callerId : null,
-                couponCode: request.data.couponCode || null,
-                breakdown: {
-                    discounts: calcResult.discounts
-                }
+                processedBy: isProxyOrder ? callerId : null
             });
 
             return {
@@ -1695,7 +1635,7 @@ exports.processHostelPurchase = onCall(async (request) => {
         throw new HttpsError('unauthenticated', 'Must be authenticated to purchase hostel room.');
     }
 
-    const { buildingId, roomType, months, couponCode } = request.data;
+    const { buildingId, roomType, months } = request.data;
     const userId = request.auth.uid;
 
     if (!buildingId || !roomType || !months || months < 1) {
@@ -1719,18 +1659,6 @@ exports.processHostelPurchase = onCall(async (request) => {
             const isFirstTime = !userData.hostelRegistrationPaid;
 
             // 2. Get room configuration from hostelRooms collection
-            // Note: In transaction, all reads must come before writes.
-            // But calculatePriceInternal does reads (settings, coupons, user).
-            // Cloud Firestore transactions require reads to be done via the transaction object if we want consistency.
-            // However, settings/discounts and coupons don't change often. 
-            // Limitation: calculatePriceInternal uses db.collection().get() not transaction.get().
-            // Ideally we pass transaction object to calculatePriceInternal, but strictly it must be used for ALL reads.
-            // For now, calculating price *outside* first? No, we need user data.
-            // Let's stick to calculating inside, but accept that reads in calculatePriceInternal are non-transactional (snapshot consistency vs transaction consistency).
-            // This is acceptable for simple coupons. 
-            // OR we update calculatePriceInternal to accept a transaction object?
-
-            // 2. Get room config
             const roomsSnapshot = await transaction.get(
                 db.collection('hostelRooms')
                     .where('buildingId', '==', buildingId)
@@ -1744,24 +1672,8 @@ exports.processHostelPurchase = onCall(async (request) => {
             const availableRooms = roomsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             const monthlyRate = availableRooms[0].price;
 
-            // 3. Calculate costs (Base)
-            // Note: We need to use the helper to get the ACTUAL discounted price.
-            // We'll call the helper here. Since it does async reads, it's fine.
-            const basePrice = monthlyRate * months;
-
-            // Call Helper
-            // WARNING: calculatePriceInternal assumes db.collection... which is non-transactional read.
-            // This is okay for "settings" and "coupons" usually.
-            const calcResult = await calculatePriceInternal({
-                userId,
-                serviceType: 'hostel',
-                couponCode,
-                months,
-                basePrice,
-                db
-            });
-
-            const monthlyTotal = calcResult.finalPrice; // This is the discounted monthly total
+            // 3. Calculate costs
+            const monthlyTotal = monthlyRate * months;
             const registrationFee = isFirstTime ? 4000 : 0;
             const deposit = isFirstTime ? 5000 : 0;
             const totalCost = monthlyTotal + registrationFee + deposit;
@@ -1863,27 +1775,13 @@ exports.processHostelPurchase = onCall(async (request) => {
                 buildingId: assignedRoom.buildingId,
                 roomType: assignedRoom.type,
                 months: months,
-                couponCode: couponCode || null, // Track used coupon
                 breakdown: {
                     monthlyRate: monthlyRate,
-                    basePrice: basePrice,
-                    discountedPrice: monthlyTotal,
+                    monthlyTotal: monthlyTotal,
                     registrationFee: registrationFee,
-                    deposit: deposit,
-                    discounts: calcResult.discounts
+                    deposit: deposit
                 }
             });
-
-            // 8. Increment Coupon Usage Counter (if coupon used)
-            // Note: calcResult.discounts contains applied discounts.
-            // Find if a coupon was actually applied (it might have been invalid or replaced).
-            const appliedCoupon = calcResult.discounts.find(d => d.type === 'coupon');
-            if (appliedCoupon && appliedCoupon.docId) {
-                const couponRef = db.collection('coupons').doc(appliedCoupon.docId);
-                transaction.update(couponRef, {
-                    usedCount: admin.firestore.FieldValue.increment(1)
-                });
-            }
 
             return {
                 success: true,
@@ -2070,207 +1968,3 @@ exports.renewHostelSubscription = onCall(async (request) => {
         throw new HttpsError('internal', 'Failed to renew subscription.');
     }
 });
-
-/**
- * Calculate Payment with Discounts & Coupons
- * Validates coupons, checks automated rules, and returns final price.
- */
-exports.calculatePayment = onCall(async (request) => {
-    if (!request.auth) {
-        throw new HttpsError('unauthenticated', 'Must be authenticated.');
-    }
-
-    const { userId, serviceType, couponCode, months = 1, roomType, amount } = request.data;
-    // serviceType: 'readingRoom' | 'hostel' | 'canteen'
-
-    if (!userId || !serviceType) {
-        throw new HttpsError('invalid-argument', 'Missing required fields.');
-    }
-
-    const db = admin.firestore();
-    const userRef = db.collection('users').doc(userId);
-    const userDoc = await userRef.get();
-
-    if (!userDoc.exists) {
-        throw new HttpsError('not-found', 'User not found.');
-    }
-    const userData = userDoc.data();
-
-    // --- 1. Base Price Fetching ---
-    let basePrice = 0;
-    let basePriceLabel = '';
-
-    if (serviceType === 'readingRoom') {
-        const isAc = roomType === 'ac';
-        basePrice = (isAc ? 3750 : 3500) * months;
-        basePriceLabel = `${isAc ? 'AC' : 'Non-AC'} Reading Room (${months} months)`;
-    } else if (serviceType === 'hostel') {
-        // Fetch accurate price if details provided
-        if (request.data.buildingId && request.data.roomType) {
-            const roomsSnapshot = await db.collection('hostelRooms')
-                .where('buildingId', '==', request.data.buildingId)
-                .where('type', '==', request.data.roomType)
-                .limit(1)
-                .get();
-
-            if (!roomsSnapshot.empty) {
-                const roomData = roomsSnapshot.docs[0].data();
-                basePrice = roomData.price * months;
-                basePriceLabel = `Hostel Room (${months} months)`;
-            } else {
-                // Fallback if not found (should not happen if frontend is correct)
-                basePrice = 14500 * months;
-                basePriceLabel = `Hostel Room (Est.)`;
-            }
-        } else {
-            // Fallback for generic estimate
-            basePrice = 14500 * months;
-            basePriceLabel = `Hostel Room (Base)`;
-        }
-    } else if (serviceType === 'canteen') {
-        // For canteen, base price is the cart total passed from client (validated later in processOrder)
-        // Here we just use it for estimation
-        if (typeof amount !== 'number' || amount < 0) {
-            throw new HttpsError('invalid-argument', 'Invalid amount for canteen order.');
-        }
-        basePrice = amount;
-        basePriceLabel = 'Canteen Order Total';
-    } else {
-        throw new HttpsError('invalid-argument', 'Invalid service type for discount calculation.');
-    }
-
-    try {
-        const result = await calculatePriceInternal({
-            userId,
-            serviceType,
-            couponCode,
-            months,
-            basePrice,
-            db
-        });
-
-        return {
-            success: true,
-            basePrice: basePrice, // Renamed from originalPrice for consistency
-            finalPrice: result.finalPrice,
-            discounts: result.discounts,
-            basePriceLabel: basePriceLabel, // Renamed from label for consistency
-            totalDiscount: result.totalDiscount, // Added totalDiscount
-            currency: 'NPR' // Kept currency
-        };
-    } catch (e) {
-        throw new HttpsError('invalid-argument', e.message);
-    }
-});
-
-/**
- * Shared Helper: Calculate Final Price with Discounts
- * Used by calculatePayment (UI) and processHostelPurchase (Transaction)
- */
-async function calculatePriceInternal({ userId, serviceType, couponCode, months, basePrice, db }) {
-    const discounts = [];
-
-    // 1. Fetch Dynamic Settings
-    let discountSettings = {
-        REFERRAL_PERCENT: 5,
-        BULK_PERCENT: 10,
-        BUNDLE_FIXED: 500,
-        LOYALTY_THRESHOLD: 50
-    };
-
-    try {
-        const settingsDoc = await db.collection('settings').doc('discounts').get();
-        if (settingsDoc.exists) {
-            discountSettings = { ...discountSettings, ...settingsDoc.data() };
-        }
-    } catch (e) {
-        console.error("Error fetching discount settings:", e);
-    }
-
-    // 2. Automated Discounts
-
-    // A. Bulk Discount (6+ months)
-    if (months >= 6) {
-        const amount = Math.round(basePrice * (discountSettings.BULK_PERCENT / 100));
-        discounts.push({
-            id: 'auto_bulk',
-            name: `Bulk Discount (${months}+ months)`,
-            amount: amount,
-            type: 'automated'
-        });
-    }
-
-    // B. Bundle Discount (Check active services)
-    const userDoc = await db.collection('users').doc(userId).get();
-    if (userDoc.exists) {
-        const userData = userDoc.data();
-        if (serviceType === 'hostel' && userData.currentSeat) {
-            discounts.push({
-                id: 'auto_bundle',
-                name: 'Bundle Discount (Active Reading Room)',
-                amount: discountSettings.BUNDLE_FIXED,
-                type: 'automated'
-            });
-        } else if (serviceType === 'readingRoom' && userData.currentHostelRoom) {
-            discounts.push({
-                id: 'auto_bundle',
-                name: 'Bundle Discount (Active Hostel)',
-                amount: discountSettings.BUNDLE_FIXED,
-                type: 'automated'
-            });
-        }
-    }
-
-    // 3. Coupon Validation
-    if (couponCode) {
-        const couponRef = db.collection('coupons').where('code', '==', couponCode).limit(1);
-        const couponSnap = await couponRef.get();
-
-        if (!couponSnap.empty) {
-            const couponDoc = couponSnap.docs[0];
-            const coupon = couponDoc.data();
-            const now = new Date().toISOString();
-
-            let isValid = true;
-            let invalidReason = '';
-
-            if (coupon.expiryDate && coupon.expiryDate < now) { isValid = false; invalidReason = 'Coupon expired'; }
-            if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) { isValid = false; invalidReason = 'Coupon limit reached'; }
-            if (coupon.applicableServices && !coupon.applicableServices.includes(serviceType)) { isValid = false; invalidReason = 'Not applicable for this service'; }
-            if (coupon.minAmount && basePrice < coupon.minAmount) { isValid = false; invalidReason = `Min spend ${coupon.minAmount} required`; }
-
-            if (isValid) {
-                // Check stackable
-                const hasAutomated = discounts.length > 0;
-                if (!coupon.stackable && hasAutomated) {
-                    discounts.length = 0; // Clear automated if not stackable
-                }
-
-                let amount = 0;
-                if (coupon.type === 'percentage') {
-                    amount = Math.round(basePrice * (coupon.value / 100));
-                } else {
-                    amount = coupon.value;
-                }
-
-                discounts.push({
-                    id: couponDoc.id,
-                    name: `Coupon (${couponCode})`,
-                    amount: amount,
-                    type: 'coupon',
-                    code: couponCode,
-                    docId: couponDoc.id // Needed for incrementing usage
-                });
-            } else {
-                throw new Error(invalidReason);
-            }
-        } else {
-            throw new Error('Invalid coupon code');
-        }
-    }
-
-    const totalDiscount = discounts.reduce((sum, d) => sum + d.amount, 0);
-    const finalPrice = Math.max(0, basePrice - totalDiscount);
-
-    return { discounts, totalDiscount, finalPrice };
-}
