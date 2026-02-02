@@ -10,6 +10,18 @@ admin.initializeApp();
 // Define the secret parameter
 const brevoApiKey = defineSecret("BREVO_API_KEY");
 
+/**
+ * Generate a unique, human-readable transaction ID
+ * Format: PREFIX-YYYYMMDD-RANDOM (e.g., CAN-20260202-A3X7K2)
+ * @param {string} prefix - Service identifier (CAN, RDR, HST, HSR, BTU, BLD)
+ * @returns {string} Unique transaction ID
+ */
+function generateTransactionId(prefix) {
+    const date = new Date();
+    const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
+    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+    return `${prefix}-${dateStr}-${random}`;
+}
 
 exports.onUserVerified = onDocumentUpdated(
     {
@@ -47,7 +59,6 @@ exports.onUserVerified = onDocumentUpdated(
             }
         }
 
-        // Check if the user was just verified
         if (newData.verified === true && oldData.verified !== true) {
             const userEmail = newData.email;
             const userName = newData.name;
@@ -441,62 +452,529 @@ exports.sendInvoiceEmail = onCall(
 
 /**
  * Scheduled function to check for expired memberships daily at midnight.
- * Proactively clears seats and updates user status.
+ * Applies fines for standard policy, removes seat for 'daily' policy.
  */
 exports.checkStatusExpiration = onSchedule("0 0 * * *", async (event) => {
     const db = admin.firestore();
-    const now = new Date().toISOString();
+    const now = new Date();
+    const today = now.toISOString();
 
     try {
-        // 1. Find users with expired nextPaymentDue
+        const batch = db.batch();
+        let operationsCount = 0;
+
+        // --- 1. Process Reading Room Expirations ---
         const usersRef = db.collection('users');
+        // Get users who are enrolled and have a payment due date in the past
         const expiredUsersQuery = usersRef
-            .where('nextPaymentDue', '<', now)
+            .where('nextPaymentDue', '<', today)
             .where('enrollmentCompleted', '==', true);
 
         const snapshot = await expiredUsersQuery.get();
 
-        if (snapshot.empty) {
-            console.log("No expired memberships found today.");
-            return null;
-        }
-
-        const batch = db.batch();
         const seatDeletions = [];
 
         snapshot.forEach((doc) => {
+            const userData = doc.data();
             const userId = doc.id;
+            const nextPaymentDue = new Date(userData.nextPaymentDue);
 
-            console.log(`Processing expiration for user: ${userId}`);
+            // Calculate days overdue
+            const diffTime = Math.abs(now - nextPaymentDue);
+            const daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-            // Update user document
-            batch.update(doc.ref, {
-                enrollmentCompleted: false,
-                currentSeat: admin.firestore.FieldValue.delete(),
-                updatedAt: now
-            });
+            console.log(`Processing expiration for user: ${userId}, Overdue: ${daysOverdue} days, Policy: ${userData.expiryPolicy}`);
 
-            // Find and delete their seat assignments
-            const assignmentsRef = db.collection('seatAssignments');
-            const q = assignmentsRef.where('userId', '==', userId);
-            seatDeletions.push(q.get());
+            // logic: If 'daily' policy -> Remove Immediately
+            // logic: If 'standard' (default) -> Keep seat, Apply Fine (Rs 5/day)
+
+            const isDailyPolicy = userData.expiryPolicy === 'daily';
+
+            if (isDailyPolicy) {
+                // Immediate Removal
+                console.log(`Removing daily user ${userId}`);
+                batch.update(doc.ref, {
+                    enrollmentCompleted: false,
+                    currentSeat: admin.firestore.FieldValue.delete(),
+                    expiryPolicy: admin.firestore.FieldValue.delete(),
+                    updatedAt: today
+                });
+
+                // Find and delete their seat assignments
+                const assignmentsRef = db.collection('seatAssignments');
+                const q = assignmentsRef.where('userId', '==', userId);
+                seatDeletions.push(q.get());
+
+            } else {
+                // Standard Policy: Indefinite Grace Period with Fines
+                console.log(`Applying fine to user ${userId}`);
+
+                // Calculate fine increment (Rs 5 per day overdue)
+                // If the function runs daily, we just add 5 to the existing fine.
+                // However, to be robust, we can just increment by 5 each time this runs (daily).
+
+                batch.update(doc.ref, {
+                    inGracePeriod: true,
+                    fineAmount: admin.firestore.FieldValue.increment(5),
+                    updatedAt: today
+                });
+            }
+            operationsCount++;
         });
 
-        // Resolve all assignment queries
+        // --- 2. Process Hostel Expirations ---
+        // Hostel users also have indefinite retention with fines
+        const hostelUsersQuery = usersRef
+            .where('hostelNextPaymentDue', '<', today)
+            .where('hostelRegistrationPaid', '==', true); // Assuming this indicates active hostel user
+
+        const hostelSnapshot = await hostelUsersQuery.get();
+
+        hostelSnapshot.forEach((doc) => {
+            const userData = doc.data();
+            const userId = doc.id;
+
+            // Check if actually has a room (double check)
+            if (!userData.currentHostelRoom) return;
+
+            console.log(`Processing hostel expiration for user: ${userId}`);
+
+            // Apply Fine (Rs 5)
+            batch.update(doc.ref, {
+                hostelInGracePeriod: true,
+                hostelFineAmount: admin.firestore.FieldValue.increment(5),
+                updatedAt: today
+            });
+            operationsCount++;
+        });
+
+
+        // Execute Seat Deletions (for daily users)
         const assignmentSnapshots = await Promise.all(seatDeletions);
         assignmentSnapshots.forEach(snap => {
             snap.forEach(doc => {
                 batch.delete(doc.ref);
+                operationsCount++;
             });
         });
 
-        await batch.commit();
-        console.log(`Successfully processed ${snapshot.size} expired memberships.`);
+        if (operationsCount > 0) {
+            await batch.commit();
+            console.log(`Successfully processed expirations. Operations: ${operationsCount}`);
+        } else {
+            console.log("No expiration actions needed today.");
+        }
 
     } catch (error) {
         console.error("Error in checkStatusExpiration:", error);
     }
     return null;
+});
+
+/**
+ * Callable function to renew reading room subscription.
+ * Handles custom durations, fines, and policy updates.
+ */
+exports.renewReadingRoomSubscription = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Must be authenticated to renew.');
+    }
+
+    const { duration, durationType, roomType, userId: targetUserId } = request.data;
+    // durationType: 'month' | 'day'
+    // duration: number (e.g., 1, 3, 45)
+    // roomType: optional, to verify rate if needed, though we usually use user's current room
+
+    if (!duration || !durationType) {
+        throw new HttpsError('invalid-argument', 'Missing duration details.');
+    }
+
+    let userId = request.auth.uid;
+    const db = admin.firestore();
+
+    // Admin override
+    if (targetUserId && targetUserId !== userId) {
+        const callerDoc = await db.collection('users').doc(userId).get();
+        if (callerDoc.exists && callerDoc.data().role === 'admin') {
+            userId = targetUserId;
+        } else {
+            throw new HttpsError('permission-denied', 'Only admins can renew for others.');
+        }
+    }
+
+    try {
+        return await db.runTransaction(async (transaction) => {
+            const userRef = db.collection('users').doc(userId);
+            const userDoc = await transaction.get(userRef);
+
+            if (!userDoc.exists) {
+                throw new HttpsError('not-found', 'User not found.');
+            }
+
+            const userData = userDoc.data();
+
+            if (!userData.currentSeat) {
+                throw new HttpsError('failed-precondition', 'No active seat to renew.');
+            }
+
+            // Determine Rate
+            // We need to fetch the room to get the current rate, or use a stored rate.
+            // For now, let's look up the room.
+            const roomRef = db.collection('readingRooms').doc(userData.currentSeat.roomId);
+            const roomDoc = await transaction.get(roomRef);
+
+            if (!roomDoc.exists) {
+                throw new HttpsError('not-found', 'Assigned room not found.');
+            }
+
+            const roomData = roomDoc.data();
+            const monthlyRate = roomData.price || (roomData.type === 'ac' ? 3000 : 2500); // Fallback
+            const dailyRate = Math.ceil(monthlyRate / 30); // Approx daily rate or standard daily rate
+
+            let cost = 0;
+            let expiryPolicy = 'standard';
+            let addedTimeMs = 0;
+
+            if (durationType === 'month') {
+                cost = monthlyRate * duration;
+                addedTimeMs = duration * 30 * 24 * 60 * 60 * 1000;
+                expiryPolicy = 'standard';
+            } else if (durationType === 'day') {
+                // If user specifically buys "days", we might treat them as 'daily' policy OR just standard extension.
+                // The requirement says "ensure a custom month also like 2 months 3 months".
+                // And "in the bottom add a per day also option it should have the logic like today's reading rom system after expiery remove from the seat."
+
+                // So if they choose "Per Day" option, they become 'daily' policy user.
+                cost = dailyRate * duration; // Or specific daily rate if different
+                addedTimeMs = duration * 24 * 60 * 60 * 1000;
+                expiryPolicy = 'daily';
+            }
+
+            // Add Fines
+            const fine = userData.fineAmount || 0;
+            const totalCost = cost + fine;
+
+            // Check Balance
+            if ((userData.balance || 0) < totalCost) {
+                throw new HttpsError('failed-precondition', `Insufficient balance. Total needed: रु ${totalCost} (Includes fine: रु ${fine})`);
+            }
+
+            // Calculate New Expiry
+            const currentDue = userData.nextPaymentDue ? new Date(userData.nextPaymentDue) : new Date();
+            const now = new Date();
+
+            // If expired, start from NOW? Or backdate? 
+            // Usually, if you pay fine, you extend from NOW. 
+            // If you are in grace period, valid discussion. 
+            // Let's assume extending from NOW if already expired, to avoid paying for dead time + fine doubles.
+            // BUT, if we just charged fines for the dead days, we should probably start from NOW.
+
+            // Simple logic: New Due = Now + Duration. 
+            // (Since fines covered the gap).
+
+            const newDueDate = new Date(now.getTime() + addedTimeMs);
+
+            // Update User
+            transaction.update(userRef, {
+                balance: (userData.balance || 0) - totalCost,
+                nextPaymentDue: newDueDate.toISOString(),
+                fineAmount: 0, // Clear fine
+                inGracePeriod: false,
+                expiryPolicy: expiryPolicy,
+                updatedAt: now.toISOString()
+            });
+
+            // Create Transaction Record
+            const renewalTxnId = generateTransactionId('RRE'); // Reading Room renewal
+            const transactionRef = db.collection('transactions').doc();
+            transaction.set(transactionRef, {
+                type: 'reading_room_renewal',
+                transactionId: renewalTxnId,
+                amount: totalCost,
+                details: `Renewal - ${durationType === 'month' ? duration + ' Month(s)' : duration + ' Day(s)'}${fine > 0 ? ` (Fine: ${fine})` : ''}`,
+                userId: userId,
+                userName: userData.name || 'User',
+                date: now.toISOString(),
+                createdAt: now.toISOString(),
+                breakdown: {
+                    cost: cost,
+                    fine: fine
+                }
+            });
+
+            return {
+                success: true,
+                newBalance: (userData.balance || 0) - totalCost,
+                nextPaymentDue: newDueDate.toISOString(),
+                message: "Renewal successful"
+            };
+        });
+    } catch (error) {
+        console.error('Error renewing subscription:', error);
+        throw new HttpsError('internal', error.message || 'Renewal failed');
+    }
+});
+
+/**
+ * Callable function to withdraw from a service (Reading Room or Hostel).
+ * Immediately removes user from the seat/room.
+ */
+exports.withdrawService = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Must be authenticated to withdraw.');
+    }
+
+    const { serviceType, userId: targetUserId } = request.data; // 'readingRoom' or 'hostel'
+    let userId = request.auth.uid;
+    const db = admin.firestore();
+
+    // Admin override
+    if (targetUserId && targetUserId !== userId) {
+        const callerDoc = await db.collection('users').doc(userId).get();
+        if (callerDoc.exists && callerDoc.data().role === 'admin') {
+            userId = targetUserId;
+        } else {
+            throw new HttpsError('permission-denied', 'Only admins can withdraw others.');
+        }
+    }
+
+    try {
+        const batch = db.batch();
+        const userRef = db.collection('users').doc(userId);
+        const userDoc = await userRef.get(); // No need for transaction unless we refund, which we don't usually for withdraw?
+        // Let's assume no refund for voluntary withdraw unless specified.
+
+        if (!userDoc.exists) {
+            throw new HttpsError('not-found', 'User not found.');
+        }
+        const userData = userDoc.data();
+
+        if (serviceType === 'readingRoom') {
+            if (!userData.currentSeat) {
+                throw new HttpsError('failed-precondition', 'No active reading room seat to withdraw from.');
+            }
+
+            // Remove seat assignment
+            const assignmentsRef = db.collection('seatAssignments');
+            const q = assignmentsRef.where('userId', '==', userId).where('roomId', '==', userData.currentSeat.roomId);
+            const snapshot = await q.get();
+
+            snapshot.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+
+            // Update user
+            batch.update(userRef, {
+                enrollmentCompleted: false,
+                currentSeat: admin.firestore.FieldValue.delete(),
+                inGracePeriod: false,
+                fineAmount: 0, // Clear fine on exit? Or keep it? Usually clear if they leave.
+                updatedAt: new Date().toISOString()
+            });
+
+        } else if (serviceType === 'hostel') {
+            if (!userData.currentHostelRoom) {
+                throw new HttpsError('failed-precondition', 'No active hostel room to withdraw from.');
+            }
+
+            // Logic for hostel withdraw
+            // Find active assignment
+            const assignmentsRef = db.collection('hostelAssignments');
+            const q = assignmentsRef.where('userId', '==', userId).where('status', '==', 'active');
+            const snapshot = await q.get();
+
+            snapshot.forEach(doc => {
+                batch.update(doc.ref, { status: 'withdrawn', endedAt: new Date().toISOString() });
+            });
+
+            // Update user
+            batch.update(userRef, {
+                currentHostelRoom: admin.firestore.FieldValue.delete(),
+                hostelRegistrationPaid: true, // They paid once, so maybe keep this true
+                hostelInGracePeriod: false,
+                hostelFineAmount: 0,
+                updatedAt: new Date().toISOString()
+            });
+        } else {
+            throw new HttpsError('invalid-argument', 'Invalid service type.');
+        }
+
+        // --- Handle Refund Creation if Requested ---
+        // --- Handle Refund Creation if Requested ---
+        const { refundDetails, refundMode } = request.data; // refundMode: 'wallet' | 'cash'
+        let refundToken = null;
+
+        if (refundDetails) {
+            // Generate Token Server-Side
+            const uniqueSuffix = Date.now().toString().slice(-4) + Math.random().toString(36).substring(2, 4).toUpperCase();
+            refundToken = `REF-${uniqueSuffix}`;
+
+            const calculatedAmount = refundDetails.calculatedAmount || 0;
+
+            if (refundMode === 'wallet' && calculatedAmount > 0) {
+                // 1. Credit Balance Immediately
+                batch.update(userRef, {
+                    balance: (userData.balance || 0) + calculatedAmount,
+                    updatedAt: new Date().toISOString()
+                });
+
+                // 2. Create COMPLETED Refund Record
+                const refundDoc = db.collection('refunds').doc();
+                batch.set(refundDoc, {
+                    userId: userId,
+                    userName: userData.name || 'Unknown',
+                    userMrr: userData.mrrNumber || 'N/A',
+                    serviceType: serviceType === 'readingRoom' ? 'reading_room' : 'hostel',
+                    packagePrice: refundDetails.packagePrice || 0,
+                    packageDays: refundDetails.packageDays || 30,
+                    daysUsed: refundDetails.daysUsed || 0,
+                    calculatedAmount: calculatedAmount,
+                    finalRefundAmount: calculatedAmount,
+                    status: 'completed', // Completed immediately
+                    refundMode: 'wallet',
+                    refundToken: refundToken,
+                    createdAt: new Date().toISOString(),
+                    processedAt: new Date().toISOString(),
+                    processedBy: 'System (Wallet Credit)'
+                });
+
+                // 3. Create Transaction Record
+                const txnRef = db.collection('transactions').doc();
+                batch.set(txnRef, {
+                    type: 'refund_credit',
+                    transactionId: `TXN-REF-${uniqueSuffix}`,
+                    amount: calculatedAmount,
+                    details: `Refund Credited to Wallet - ${refundToken}`,
+                    userId: userId,
+                    userName: userData.name || 'Unknown',
+                    date: new Date().toISOString(),
+                    createdAt: new Date().toISOString(),
+                    status: 'completed'
+                });
+
+            } else {
+                // Cash Mode (Standard Pending Request)
+                const refundDoc = db.collection('refunds').doc();
+                batch.set(refundDoc, {
+                    userId: userId,
+                    userName: userData.name || 'Unknown',
+                    userMrr: userData.mrrNumber || 'N/A',
+                    serviceType: serviceType === 'readingRoom' ? 'reading_room' : 'hostel',
+                    packagePrice: refundDetails.packagePrice || 0,
+                    packageDays: refundDetails.packageDays || 30,
+                    daysUsed: refundDetails.daysUsed || 0,
+                    calculatedAmount: calculatedAmount,
+                    finalRefundAmount: calculatedAmount, // Admin can edit
+                    status: 'pending',
+                    refundMode: 'cash',
+                    refundToken: refundToken, // Server-generated token
+                    createdAt: new Date().toISOString()
+                });
+            }
+        }
+
+        await batch.commit();
+
+        return {
+            success: true,
+            message: "Service withdrawn successfully.",
+            refundToken: refundToken
+        };
+
+    } catch (error) {
+        console.error('Error withdrawing service:', error);
+        throw new HttpsError('internal', error.message || 'Withdraw failed');
+    }
+});
+
+/**
+ * Callable function to request a balance refund.
+ * Generates token, DEDUCTS BALANCE IMMEDIATELY, and stores request securely.
+ */
+exports.requestBalanceRefund = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Must be authenticated.');
+    }
+
+    const { amount, reason } = request.data;
+    const userId = request.auth.uid;
+    const refundAmount = parseFloat(amount);
+
+    if (!refundAmount || refundAmount <= 0) {
+        throw new HttpsError('invalid-argument', 'Invalid amount.');
+    }
+
+    const db = admin.firestore();
+
+    try {
+        return await db.runTransaction(async (transaction) => {
+            const userRef = db.collection('users').doc(userId);
+            const userDoc = await transaction.get(userRef);
+
+            if (!userDoc.exists) {
+                throw new HttpsError('not-found', 'User not found.');
+            }
+
+            const userData = userDoc.data();
+            const currentBalance = userData.balance || 0;
+
+            if (currentBalance < refundAmount) {
+                throw new HttpsError('failed-precondition', 'Insufficient balance.');
+            }
+
+            // Generate Token
+            const uniqueSuffix = Date.now().toString().slice(-4) + Math.random().toString(36).substring(2, 4).toUpperCase();
+            const refundToken = `REF-${uniqueSuffix}`;
+            const now = new Date().toISOString();
+
+            // 1. Deduct Balance
+            transaction.update(userRef, {
+                balance: currentBalance - refundAmount,
+                updatedAt: now
+            });
+
+            // 2. Create Refund Request
+            const refundRef = db.collection('refunds').doc();
+            transaction.set(refundRef, {
+                userId: userId,
+                userName: userData.name || 'Unknown',
+                serviceType: 'balance_refund',
+                details: reason || 'Balance Withdraw Request',
+                amount: refundAmount,
+                packagePrice: refundAmount, // For consistency
+                calculatedAmount: refundAmount,
+                finalRefundAmount: refundAmount,
+                status: 'pending',
+                refundToken: refundToken,
+                createdAt: now
+            });
+
+            // 3. Create Transaction Record (Debit)
+            const txnRef = db.collection('transactions').doc();
+            transaction.set(txnRef, {
+                userId: userId,
+                userName: userData.name || 'Unknown',
+                type: 'balance_refund_request', // Special type to indicate this deduction
+                amount: refundAmount, // Should be positive or negative? Usually expenses are shown with amount, logic handles sign.
+                // In this system, outflows are usually expenses.
+                details: `Refund Request - ${refundToken}`,
+                date: now,
+                createdAt: now,
+                transactionId: `TXN-REF-${uniqueSuffix}`,
+                status: 'pending' // Maybe useful track that this txn corresponds to a pending refund
+            });
+
+            return {
+                success: true,
+                refundToken: refundToken,
+                newBalance: currentBalance - refundAmount
+            };
+        });
+
+    } catch (error) {
+        console.error('Error requesting balance refund:', error);
+        throw new HttpsError('internal', error.message || 'Refund request failed');
+    }
 });
 
 exports.verifyDiscussionEligibility = onCall(async (request) => {
@@ -520,8 +998,12 @@ exports.verifyDiscussionEligibility = onCall(async (request) => {
         const userData = userDoc.data();
         const now = new Date();
 
-        // 1. Check for expired membership
-        if (userData.nextPaymentDue && new Date(userData.nextPaymentDue) < now) {
+        // 1. Check for expired membership (Adjusted for Grace Period logic)
+        // If in grace period, can they book? Probably NO.
+        const isExpired = userData.nextPaymentDue && new Date(userData.nextPaymentDue) < now;
+
+        if (isExpired) {
+            // Even if in grace period, they shouldn't book discussion rooms until renewed.
             return { eligible: false, reason: "Your membership has expired. Please renew to book discussion rooms." };
         }
 
@@ -736,6 +1218,8 @@ exports.processReadingRoomPurchase = onCall(async (request) => {
 
             // 3. Deduct balance
             const newBalance = currentBalance - totalAmount;
+
+            // Standard initial purchase is 30 days
             transaction.update(userRef, {
                 balance: newBalance,
                 selectedRoomType: roomType,
@@ -747,7 +1231,8 @@ exports.processReadingRoomPurchase = onCall(async (request) => {
                     roomName: assignedRoom.name,
                     seatId: assignedSeat.id,
                     seatLabel: assignedSeat.label
-                }
+                },
+                expiryPolicy: 'standard' // Default to standard policy
             });
 
             // 4. Create seat assignment
@@ -766,9 +1251,11 @@ exports.processReadingRoomPurchase = onCall(async (request) => {
             });
 
             // 5. Create transaction record
+            const readingRoomTxnId = generateTransactionId('RDR');
             const transactionRef = db.collection('transactions').doc();
             transaction.set(transactionRef, {
                 type: 'reading_room',
+                transactionId: readingRoomTxnId,
                 amount: totalAmount,
                 details: `${roomType === 'ac' ? 'AC' : 'Non-AC'} Room Fee`,
                 userId: userId,
@@ -826,6 +1313,7 @@ exports.processReadingRoomPurchase = onCall(async (request) => {
         throw new HttpsError('internal', error.message || 'Failed to process purchase.');
     }
 });
+
 
 /**
  * Callable function to process canteen order
@@ -929,6 +1417,7 @@ exports.processCanteenOrder = onCall(async (request) => {
             });
 
             // Create order
+            const canteenTxnId = generateTransactionId('CAN');
             const orderRef = db.collection('orders').doc();
             transaction.set(orderRef, {
                 userId: userIdToCharge,
@@ -940,6 +1429,7 @@ exports.processCanteenOrder = onCall(async (request) => {
                 note: note || null,
                 location: null,
                 createdAt: new Date().toISOString(),
+                transactionId: canteenTxnId,
                 isProxyOrder: isProxyOrder,
                 processedBy: isProxyOrder ? callerId : null
             });
@@ -1005,9 +1495,11 @@ exports.topUpBalance = onCall(async (request) => {
             });
 
             // Create transaction record
+            const topUpTxnId = generateTransactionId('BTU');
             const transactionRef = db.collection('transactions').doc();
             transaction.set(transactionRef, {
                 type: 'balance_topup',
+                transactionId: topUpTxnId,
                 amount: amount,
                 details: 'Admin Balance Top-up',
                 userId: userId,
@@ -1108,9 +1600,11 @@ exports.approveBalanceLoad = onCall(async (request) => {
             });
 
             // 5. Create Transaction Record
+            const balanceLoadTxnId = generateTransactionId('BLD');
             const transactionRef = db.collection('transactions').doc();
             transaction.set(transactionRef, {
                 type: 'balance_load',
+                transactionId: balanceLoadTxnId,
                 amount: amount,
                 details: 'Wallet Top-up (Mobile Banking)',
                 userId: userId,
@@ -1268,8 +1762,10 @@ exports.processHostelPurchase = onCall(async (request) => {
                 ? `Hostel ${assignedRoom.buildingName} - ${assignedRoom.label} (${months} month${months > 1 ? 's' : ''}) + Registration + Deposit`
                 : `Hostel ${assignedRoom.buildingName} - ${assignedRoom.label} (${months} month${months > 1 ? 's' : ''})`;
 
+            const hostelTxnId = generateTransactionId('HST');
             transaction.set(transactionRef, {
                 type: 'hostel',
+                transactionId: hostelTxnId,
                 amount: totalCost,
                 details: transactionDetails,
                 userId: userId,
@@ -1368,14 +1864,24 @@ exports.renewHostelSubscription = onCall(async (request) => {
         throw new HttpsError('unauthenticated', 'Must be authenticated.');
     }
 
-    const { months } = request.data;
-    const userId = request.auth.uid;
+    const { months, userId: targetUserId } = request.data;
+    let userId = request.auth.uid;
 
     if (!months || months < 1) {
         throw new HttpsError('invalid-argument', 'Invalid number of months.');
     }
 
     const db = admin.firestore();
+
+    // Admin override
+    if (targetUserId && targetUserId !== userId) {
+        const callerDoc = await db.collection('users').doc(userId).get();
+        if (callerDoc.exists && callerDoc.data().role === 'admin') {
+            userId = targetUserId;
+        } else {
+            throw new HttpsError('permission-denied', 'Only admins can renew for others.');
+        }
+    }
 
     try {
         const result = await db.runTransaction(async (transaction) => {
@@ -1430,9 +1936,11 @@ exports.renewHostelSubscription = onCall(async (request) => {
             }
 
             // Create transaction
+            const renewalTxnId = generateTransactionId('HSR');
             const transactionRef = db.collection('transactions').doc();
             transaction.set(transactionRef, {
                 type: 'hostel_renewal',
+                transactionId: renewalTxnId,
                 amount: renewalCost,
                 details: `Hostel Renewal - ${userData.currentHostelRoom.roomLabel} (${months} month${months > 1 ? 's' : ''})`,
                 userId: userId,
