@@ -535,6 +535,28 @@ export default function Statement({ onBack }) {
                                     </div>
                                 )}
                             </div>
+
+                            <div className="txn-drawer-section">
+                                <div className="txn-drawer-section-title">Parties</div>
+                                <div className="txn-drawer-card">
+                                    <div className="txn-drawer-detail-row">
+                                        <span className="txn-drawer-label">From</span>
+                                        <span className="txn-drawer-value">
+                                            {['refund', 'withdrawal', 'cashback', 'refund_request'].includes(selectedTransaction.type || selectedTransaction._type)
+                                                ? 'Mero Reading Room'
+                                                : (user.displayName || 'Me')}
+                                        </span>
+                                    </div>
+                                    <div className="txn-drawer-detail-row">
+                                        <span className="txn-drawer-label">To</span>
+                                        <span className="txn-drawer-value">
+                                            {['refund', 'withdrawal', 'cashback', 'refund_request'].includes(selectedTransaction.type || selectedTransaction._type)
+                                                ? (user.displayName || 'Me')
+                                                : (['canteen_payment', 'canteen_order'].includes(selectedTransaction.type) ? 'Canteen' : 'Mero Reading Room')}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </>

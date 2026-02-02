@@ -23,7 +23,6 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
         const txnQuery = collection(db, 'transactions');
         const ordersQuery = collection(db, 'orders');
 
-        // Real-time listener for transactions
         const unsubscribeTxn = onSnapshot(query(txnQuery, orderBy('createdAt', 'desc')), (snapshot) => {
             const transactions = snapshot.docs.map(doc => ({
                 id: doc.id,
@@ -39,7 +38,6 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
             onDataLoaded?.();
         }, (error) => {
             console.error("Error in transactions listener:", error);
-            // Fallback for missing indexes
             onSnapshot(txnQuery, (snapshot) => {
                 const transactions = snapshot.docs.map(doc => ({
                     id: doc.id,
@@ -56,7 +54,6 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
             });
         });
 
-        // Real-time listener for orders
         const unsubscribeOrders = onSnapshot(query(ordersQuery, orderBy('createdAt', 'desc')), (snapshot) => {
             const orders = snapshot.docs.map(doc => {
                 const data = doc.data();
@@ -320,13 +317,18 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
                                         <div className="txn-drawer-detail-row">
                                             <span className="txn-drawer-label">From</span>
                                             <span className="txn-drawer-value">
-                                                {selectedUserDetails?.mrrNumber ? `${selectedTransaction.userName} (${selectedUserDetails.mrrNumber})` : (selectedTransaction.userName || 'User')}
+                                                {isInflow(selectedTransaction)
+                                                    ? (selectedUserDetails?.mrrNumber ? `${selectedTransaction.userName} (${selectedUserDetails.mrrNumber})` : (selectedTransaction.userName || 'User'))
+                                                    : 'Mero Reading Room'}
                                             </span>
                                         </div>
                                         <div className="txn-drawer-detail-row">
                                             <span className="txn-drawer-label">To</span>
                                             <span className="txn-drawer-value">
-                                                {['balance_load', 'balance_topup', 'reading_room', 'hostel', 'hostel_renewal'].includes(selectedTransaction.type) ? 'Mero Reading Room' : 'Canteen'}
+                                                {isInflow(selectedTransaction)
+                                                    ? (['canteen_payment', 'canteen_order'].includes(selectedTransaction.type) ? 'Canteen' : 'Mero Reading Room')
+                                                    : (selectedUserDetails?.mrrNumber ? `${selectedTransaction.userName} (${selectedUserDetails.mrrNumber})` : (selectedTransaction.userName || 'User'))}
+
                                             </span>
                                         </div>
                                     </div>
