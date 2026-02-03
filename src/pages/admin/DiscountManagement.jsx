@@ -194,9 +194,7 @@ const DiscountManagement = ({ onDataLoaded }) => {
 
     return (
         <div className="std-container">
-            <div className="std-header">
-                <h1 className="page-title">Discount Management</h1>
-            </div>
+
 
             <main className="std-body">
                 {/* Tabs */}

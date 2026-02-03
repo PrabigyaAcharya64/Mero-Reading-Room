@@ -34,7 +34,148 @@ const HostelManagement = ({ onBack, onDataLoaded }) => {
     const [selectedRoom, setSelectedRoom] = useState(null); // For viewing occupants
     const [editingGroup, setEditingGroup] = useState(null);
     const [newPrice, setNewPrice] = useState('');
+    const [newTotalRooms, setNewTotalRooms] = useState('');
     const [msg, setMsg] = useState('');
+
+    // ... (keep existing Renewal State)
+
+    // ... (keep existing helper functions)
+
+    const handleUpdateGroup = async (group) => {
+        if (!newPrice || isNaN(newPrice)) {
+            alert('Please enter a valid price');
+            return;
+        }
+
+        const targetTotal = parseInt(newTotalRooms);
+        if (!targetTotal || isNaN(targetTotal) || targetTotal < 1) {
+            alert('Please enter a valid number of rooms');
+            return;
+        }
+
+        const currentRooms = group.rooms;
+        const currentCount = currentRooms.length;
+
+        // Validation for scaling down
+        if (targetTotal < currentCount) {
+            // Check occupants in potential rooms to delete
+            // We delete highest numbers first ideally, or just empty ones. 
+            // Strategy: Identifty empty rooms.
+            const emptyRooms = currentRooms.filter(r => getOccupants(r.id).length === 0);
+            const occupiedCount = currentCount - emptyRooms.length;
+
+            if (targetTotal < occupiedCount) {
+                alert(`Cannot reduce to ${targetTotal} rooms. You have ${occupiedCount} occupied rooms. Please withdraw occupants first.`);
+                return;
+            }
+
+            const roomsToDeleteCount = currentCount - targetTotal;
+            if (roomsToDeleteCount > emptyRooms.length) {
+                // This shouldn't happen if logic above is correct, but safe check
+                alert(`Cannot find enough empty rooms to delete.`);
+                return;
+            }
+        }
+
+        setIsLoading(true);
+        try {
+            // 1. Update Price for ALL existing rooms
+            const updatePromises = currentRooms.map(room =>
+                updateDoc(doc(db, 'hostelRooms', room.id), { price: parseInt(newPrice) })
+            );
+            await Promise.all(updatePromises);
+
+            // 2. Handle Room Count Changes
+            if (targetTotal > currentCount) {
+                // Scaling Up: Add rooms
+                const roomsToAdd = targetTotal - currentCount;
+
+                // Find max number in current labels to continue sequence
+                // Format: Building-TypeNumber e.g. A-S101
+                // We need to parse strict format or just simple increment if possible.
+                // Regex to extract trailing number: (\d+)$
+                let maxNum = 0;
+                const regex = /(\d+)$/;
+
+                currentRooms.forEach(r => {
+                    const match = r.label.match(regex);
+                    if (match) {
+                        const num = parseInt(match[1]);
+                        if (num > maxNum) maxNum = num;
+                    }
+                });
+
+                // If no number found, fallback to simple count? 
+                // Let's assume standard format derived from add logic.
+                // buildingPrefix-typePrefix-Number
+
+                // We need prefixes. 
+                // Recalculate prefixes based on group data
+                const buildingPrefix = group.buildingId === 'building_a' ? 'A' :
+                    group.buildingId === 'building_b' ? 'B' : 'C';
+
+                // Deduce type prefix from existing label or reconstruction
+                // Easiest is to take the first room's label and remove the number
+                const sampleLabel = currentRooms[0].label;
+                const labelMatch = sampleLabel.match(/^(.*?)(\d+)$/);
+                const labelPrefix = labelMatch ? labelMatch[1] : `${buildingPrefix}-Room`; // Fallback
+
+                // If maxNum is 0 (parsing failed), we might have issues. 
+                // But let's assume valid data from creation.
+
+                const addPromises = [];
+                for (let i = 1; i <= roomsToAdd; i++) {
+                    const nextNum = maxNum + i;
+                    const newLabel = `${labelPrefix}${nextNum}`;
+
+                    addPromises.push(addDoc(collection(db, 'hostelRooms'), {
+                        buildingId: group.buildingId,
+                        buildingName: group.buildingName,
+                        type: group.type,
+                        capacity: group.capacity,
+                        label: newLabel,
+                        price: parseInt(newPrice), // Use new price
+                        createdAt: new Date().toISOString()
+                    }));
+                }
+                await Promise.all(addPromises);
+                alert(`Updated price and created ${roomsToAdd} new rooms.`);
+
+            } else if (targetTotal < currentCount) {
+                // Scaling Down: Delete valid empty rooms
+                const roomsToDeleteCount = currentCount - targetTotal;
+
+                // Sort empty rooms by label number descending (to remove from end)
+                const emptyRooms = currentRooms.filter(r => getOccupants(r.id).length === 0);
+
+                // Helper to get number
+                const getNum = (label) => {
+                    const m = label.match(/(\d+)$/);
+                    return m ? parseInt(m[1]) : 0;
+                };
+
+                emptyRooms.sort((a, b) => getNum(b.label) - getNum(a.label));
+
+                const toDelete = emptyRooms.slice(0, roomsToDeleteCount);
+
+                const deletePromises = toDelete.map(r => deleteDoc(doc(db, 'hostelRooms', r.id)));
+                await Promise.all(deletePromises);
+                alert(`Updated price and deleted ${toDelete.length} empty rooms.`);
+            } else {
+                alert('Price updated successfully.');
+            }
+
+            setEditingGroup(null);
+            setNewPrice('');
+            setNewTotalRooms('');
+            await fetchRooms();
+        } catch (error) {
+            console.error('Error updating group:', error);
+            alert('Failed to update group');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     // Renewal State
     const [renewModalOpen, setRenewModalOpen] = useState(false);
@@ -334,8 +475,14 @@ const HostelManagement = ({ onBack, onDataLoaded }) => {
                 title: `${selectedGroup.buildingName} - ${getRoomTypeLabel(selectedGroup.type)}`,
                 onBack: () => setSelectedGroup(null)
             });
+        } else {
+            // Reset to default
+            setHeader({
+                title: 'Hostel Management',
+                onBack: null // No back button on dashboard
+            });
         }
-    }, [selectedGroup, setHeader]);
+    }, [selectedGroup, setHeader, onBack]);
 
     // If a group is selected, show detail view
     if (selectedGroup) {
@@ -749,6 +896,7 @@ const HostelManagement = ({ onBack, onDataLoaded }) => {
                                                         onClick={() => {
                                                             setEditingGroup(group);
                                                             setNewPrice(group.price.toString());
+                                                            setNewTotalRooms(group.rooms.length.toString());
                                                         }}
                                                         style={{
                                                             background: 'transparent',
@@ -797,6 +945,63 @@ const HostelManagement = ({ onBack, onDataLoaded }) => {
                         </div>
                     )}
                 </div>
+                {/* Edit Group Modal */}
+                {editingGroup && (
+                    <div className="modal-overlay" style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1100,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>
+                        <div style={{ background: 'white', borderRadius: '12px', width: '350px', padding: '24px' }}>
+                            <h3 style={{ marginTop: 0 }}>Edit Category</h3>
+                            <p><strong>{editingGroup.buildingName} - {getRoomTypeLabel(editingGroup.type)}</strong></p>
+
+                            <div style={{ marginBottom: '15px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Monthly Price (Rs.)</label>
+                                <input
+                                    type="number"
+                                    value={newPrice}
+                                    onChange={(e) => setNewPrice(e.target.value)}
+                                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Total Rooms</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={newTotalRooms}
+                                    onChange={(e) => setNewTotalRooms(e.target.value)}
+                                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+                                />
+                                <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                                    Current: {editingGroup.rooms.length} | Occupied: {editingGroup.rooms.length - editingGroup.rooms.filter(r => getOccupants(r.id).length === 0).length}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#f57c00', marginTop: '3px', lineHeight: '1.2' }}>
+                                    Warning: reducing rooms will permanently delete empty rooms with highest numbers first.
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => handleUpdateGroup(editingGroup)}
+                                style={{ width: '100%', padding: '12px', background: '#34C759', color: 'white', border: 'none', borderRadius: '6px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '10px' }}
+                            >
+                                Save Changes
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setEditingGroup(null);
+                                    setNewPrice('');
+                                    setNewTotalRooms('');
+                                }}
+                                style={{ width: '100%', padding: '12px', background: '#f5f5f5', color: '#333', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                )}
             </main >
         </div >
     );

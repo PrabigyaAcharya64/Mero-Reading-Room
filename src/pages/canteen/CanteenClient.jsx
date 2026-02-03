@@ -28,6 +28,8 @@ function CanteenClient({ onBack }) {
   const [orderMessage, setOrderMessage] = useState('');
 
   useEffect(() => {
+    if (!user) return; // Wait for auth
+
     const today = getBusinessDate();
     const todaysMenuRef = doc(db, 'todaysMenu', today);
 
@@ -46,18 +48,20 @@ function CanteenClient({ onBack }) {
         }
       },
       (error) => {
-        console.error('Error listening to menu updates:', error);
+        console.error('Error listening to menu updates:', error.code);
         setTodaysMenu([]);
       }
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
   // ------------------------------------------------------------------
   // Data Fetching (Fixed Menu)
   // ------------------------------------------------------------------
   useEffect(() => {
+    if (!user) return;
+
     const q = query(
       collection(db, 'menuItems'),
       where('isFixed', '==', true)
@@ -73,13 +77,13 @@ function CanteenClient({ onBack }) {
         setFixedMenu(items);
       },
       (error) => {
-        console.error('Error fetching fixed menu:', error);
+        console.error('Error fetching fixed menu:', error.code);
         setFixedMenu([]);
       }
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
   // ------------------------------------------------------------------
   // Cart Actions

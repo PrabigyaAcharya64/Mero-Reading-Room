@@ -135,6 +135,7 @@ function AllMembersView({ onBack, onDataLoaded }) {
                                         <th>MRR ID</th>
                                         <th>Status</th>
                                         <th>Balance</th>
+                                        <th>Loan</th>
                                         <th>Reading Room</th>
                                         <th>Next Payment</th>
                                         <th>Action</th>
@@ -176,6 +177,18 @@ function AllMembersView({ onBack, onDataLoaded }) {
                                                 <span className="amv-balance">{formatBalance(user.balance || 0)}</span>
                                             </td>
                                             <td>
+                                                {user.loan?.has_active_loan ? (
+                                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                        <span className="amv-badge active" style={{ fontSize: '11px' }}>Active</span>
+                                                        <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: 600 }}>
+                                                            {formatBalance(user.loan.current_balance)}
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="amv-badge inactive">No Loan</span>
+                                                )}
+                                            </td>
+                                            <td>
                                                 <div className="amv-room-box">
                                                     <span className={`amv-badge ${seatAssignmentsMap[user.id] ? 'active' : 'inactive'}`}>
                                                         {seatAssignmentsMap[user.id] ? 'Active' : 'Inactive'}
@@ -200,7 +213,7 @@ function AllMembersView({ onBack, onDataLoaded }) {
                                     ))}
                                     {users.length === 0 && (
                                         <tr>
-                                            <td colSpan="7">
+                                            <td colSpan="8">
                                                 <div className="amv-empty">
                                                     <User size={48} className="amv-empty-icon" />
                                                     <p>The directory is currently empty.</p>

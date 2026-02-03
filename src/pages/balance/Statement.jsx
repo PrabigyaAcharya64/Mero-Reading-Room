@@ -113,9 +113,7 @@ export default function Statement({ onBack }) {
     useEffect(() => {
         const completedRequestIds = new Set(transactions.map(t => t.requestId).filter(Boolean));
 
-        // Filter out completed balance requests (loads) if they are already in transactions?
-        // Usually balanceRequests stay 'approved' but don't become transactions automatically unless we duplicate.
-        // The current logic filters active requests.
+
         const activeRequests = requests.filter(r =>
             r.status !== 'approved' && !completedRequestIds.has(r.id)
         );
@@ -123,7 +121,7 @@ export default function Statement({ onBack }) {
         // Include Refunds
         const combined = [...activeRequests, ...transactions, ...refunds];
 
-        // ... (rest of filtering logic)
+
 
         let filtered = combined; // Helper var
 
@@ -316,6 +314,7 @@ export default function Statement({ onBack }) {
                         >
                             Request Refund
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -415,31 +414,44 @@ export default function Statement({ onBack }) {
                                     const isCompleted = item.status === 'completed';
                                     const isRefund = item._type === 'refund_request';
 
+                                    // Determine if it's an inflow (money coming back) or outflow (withdrawal)
+                                    const isWithdrawal = item.serviceType === 'balance_refund';
+                                    const isInflowRefund = !isWithdrawal && ['reading_room', 'hostel'].includes(item.serviceType);
+
+                                    // Status Logic
+                                    const showAsInflow = isCompleted && isInflowRefund;
+                                    const showAsOutflow = isCompleted && isWithdrawal;
+
                                     return (
                                         <div
                                             key={item.id}
                                             className="txn-item"
                                             onClick={() => setSelectedTransaction(item)}
-                                            style={{ borderLeft: isRefund ? '4px solid #f59e0b' : undefined }}
+                                            style={{ borderLeft: isRefund ? (showAsInflow ? '4px solid #16a34a' : '4px solid #f59e0b') : undefined }}
                                         >
-                                            <div className={`txn-icon ${isPending ? 'pending' : 'outflow'}`}>
-                                                {isRejected ? <AlertCircle size={20} /> : <Clock size={20} />}
+                                            <div className={`txn-icon ${isPending ? 'pending' : (showAsInflow ? 'inflow' : 'outflow')}`}>
+                                                {isRejected ? <AlertCircle size={20} /> :
+                                                    isPending ? <Clock size={20} /> :
+                                                        showAsInflow ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
                                             </div>
                                             <div className="txn-details">
                                                 <h4 className="txn-merchant-name">{getMerchantName(item)}</h4>
                                                 <div className="txn-timestamp">{formatDateTime(item.createdAt)}</div>
                                                 <div className="txn-meta-info">
                                                     {isRefund && (
-                                                        <span className="txn-id-badge" style={{ backgroundColor: '#fff7ed', color: '#c2410c' }}>
-                                                            REFUND
+                                                        <span className="txn-id-badge" style={{
+                                                            backgroundColor: showAsInflow ? '#dcfce7' : '#fff7ed',
+                                                            color: showAsInflow ? '#166534' : '#c2410c'
+                                                        }}>
+                                                            {isWithdrawal ? 'WITHDRAW' : 'REFUND'}
                                                         </span>
                                                     )}
                                                     <span className={`txn-status-badge ${item.status}`}>{item.status}</span>
                                                 </div>
                                             </div>
                                             <div className="txn-amount-section">
-                                                <div className="txn-amount" style={{ color: '#6b7280' }}>
-                                                    रु {item.amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                <div className={`txn-amount ${showAsInflow ? 'positive' : 'negative'}`}>
+                                                    {showAsInflow ? '+' : (isWithdrawal ? '-' : '')} रु {item.amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                                 </div>
                                             </div>
                                         </div>
@@ -447,7 +459,7 @@ export default function Statement({ onBack }) {
                                 }
 
                                 // Render Transaction Item
-                                const isInflow = ['balance_load', 'balance_topup'].includes(item.type);
+                                const isInflow = ['balance_load', 'balance_topup', 'refund_credit'].includes(item.type);
 
                                 return (
                                     <div

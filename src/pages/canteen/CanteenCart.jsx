@@ -4,6 +4,7 @@ import Button from '../../components/Button';
 import { useAuth } from '../../auth/AuthProvider';
 import { functions } from '../../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
+import CouponSelector from '../../components/CouponSelector';
 import '../../styles/CanteenCart.css';
 import '../../styles/StandardLayout.css';
 
@@ -155,6 +156,13 @@ const CanteenCart = ({
                       </div>
                     )}
                   </div>
+
+                  {!calculation && !couponCode && (
+                    <CouponSelector
+                      serviceType="canteen"
+                      onSelect={(code) => setCouponCode(code)}
+                    />
+                  )}
 
                   <div className="note-section">
                     <label>Add Note (Optional)</label>

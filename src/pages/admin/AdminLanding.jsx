@@ -57,7 +57,7 @@ function AdminLandingContent() {
   }, [location.pathname, isMobile]);
 
   // Navigate using React Router with loading state
-  const handleNavigate = (view) => {
+  const handleNavigate = useCallback((view) => {
     if (view === '__hover_expand') {
       setIsSidebarHovered(true);
       return;
@@ -68,7 +68,7 @@ function AdminLandingContent() {
     }
     setIsLoading(true);
     navigate(view === 'dashboard' ? '/admin' : `/admin/${view}`);
-  };
+  }, [navigate, setIsLoading]);
 
   const handlePageReady = useCallback(() => {
     setIsLoading(false);
@@ -146,6 +146,8 @@ function AdminLandingContent() {
 
   const isExpanded = isMobile ? isSidebarOpen : isSidebarHovered;
 
+  const handleDashboardBack = useCallback(() => handleNavigate('dashboard'), [handleNavigate]);
+
   return (
     <div className="admin-layout">
       <Sidebar
@@ -199,7 +201,7 @@ function AdminLandingContent() {
             <Route path="/" element={<Dashboard onNavigate={handleNavigate} onDataLoaded={handlePageReady} />} />
             <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
             <Route path="/user-management/*" element={<UserManagementModule onDataLoaded={handlePageReady} />} />
-            <Route path="/hostel" element={<HostelManagement onBack={() => handleNavigate('dashboard')} onDataLoaded={handlePageReady} />} />
+            <Route path="/hostel" element={<HostelManagement onBack={handleDashboardBack} onDataLoaded={handlePageReady} />} />
             <Route path="/canteen/*" element={<CanteenAdminLanding onDataLoaded={handlePageReady} />} />
             <Route path="/messages" element={<AdminMessages onDataLoaded={handlePageReady} />} />
             <Route path="/create-announcement" element={<CreateAnnouncement onDataLoaded={handlePageReady} />} />
@@ -210,7 +212,7 @@ function AdminLandingContent() {
             <Route path="/account-dashboard" element={<AccountDashboard onDataLoaded={handlePageReady} />} />
             <Route path="/expense-earning-management" element={<ExpenseEarningManagement onDataLoaded={handlePageReady} />} />
             <Route path="/discounts" element={<DiscountManagement onDataLoaded={handlePageReady} />} />
-            <Route path="/settings" element={<Settings onBack={() => handleNavigate('dashboard')} />} />
+            <Route path="/settings" element={<Settings onBack={handleDashboardBack} />} />
           </Routes>
         </main>
       </div>

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { ArrowLeft, Upload, X, QrCode, ChevronRight, Wallet } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthProvider';
 import { db, functions } from '../../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -11,6 +12,7 @@ import '../../styles/LoadBalance.css';
 export default function LoadBalance({ onBack, onComplete }) {
     const { user, userBalance } = useAuth();
     const { config } = useConfig();
+    const navigate = useNavigate();
     const [step, setStep] = useState(1);
     const [amount, setAmount] = useState('0');
     const [transactionId, setTransactionId] = useState('');
@@ -148,6 +150,16 @@ export default function LoadBalance({ onBack, onComplete }) {
                     >
                         Confirmed Continue <ChevronRight size={20} />
                     </button>
+
+                    <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                        <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '8px' }}>Need emergency funds?</p>
+                        <button
+                            onClick={() => navigate('/loan-request')}
+                            className="text-blue-600 font-semibold text-sm underline"
+                        >
+                            Request a Loan
+                        </button>
+                    </div>
                 </div>
             </div>
         );

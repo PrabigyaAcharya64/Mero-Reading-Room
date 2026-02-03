@@ -21,10 +21,18 @@ function Settings({ onBack }) {
     const handleChange = (category, field, value, subField = null) => {
         setFormData(prev => {
             const newData = { ...prev };
+            if (!newData[category]) newData[category] = {}; // Ensure category exists
+
             if (subField) {
-                newData[category][field][subField] = parseInt(value) || 0;
+                if (!newData[category][field]) newData[category][field] = {};
+                newData[category][field][subField] = field === 'DAILY_INTEREST_RATE' ? parseFloat(value) : (parseInt(value) || 0);
             } else {
-                newData[category][field] = parseInt(value) || 0;
+                // Special handling for float values like interest rate
+                if (field === 'DAILY_INTEREST_RATE') {
+                    newData[category][field] = parseFloat(value) || 0;
+                } else {
+                    newData[category][field] = parseInt(value) || 0;
+                }
             }
             return newData;
         });
@@ -38,7 +46,8 @@ function Settings({ onBack }) {
         try {
             const result = await updateConfig(formData);
             if (result.success) {
-                setMessage({ type: 'success', text: 'Settings updated successfully!' });
+                // User requested alert instead of inline message
+                window.alert('Settings updated successfully!');
             } else {
                 throw new Error("Update failed");
             }
@@ -62,22 +71,6 @@ function Settings({ onBack }) {
         <div className="std-container" style={{ paddingBottom: '80px' }}>
             <main className="std-body">
                 <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-
-                    {message.text && (
-                        <div style={{
-                            marginBottom: '24px',
-                            padding: '12px',
-                            borderRadius: '8px',
-                            backgroundColor: message.type === 'error' ? '#fee2e2' : '#dcfce7',
-                            color: message.type === 'error' ? '#dc2626' : '#16a34a',
-                            fontWeight: '500',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}>
-                            {message.text}
-                        </div>
-                    )}
 
                     <form onSubmit={handleSave}>
                         {/* Reading Room Section */}
@@ -174,6 +167,48 @@ function Settings({ onBack }) {
                                             onChange={(e) => handleChange('WALLET', 'MIN_LOAD_AMOUNT', e.target.value)}
                                             className="w-full pl-8 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
                                         />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Loan Settings Section */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                            <h2 className="text-xl font-bold mb-4 border-b pb-2">Loan Settings</h2>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Max Loan Amount</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-2 text-gray-500">रु</span>
+                                        <input
+                                            type="number"
+                                            value={formData.LOAN?.MAX_AMOUNT || 0}
+                                            onChange={(e) => handleChange('LOAN', 'MAX_AMOUNT', e.target.value)}
+                                            className="w-full pl-8 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Deadline (Days)</label>
+                                    <input
+                                        type="number"
+                                        value={formData.LOAN?.DEADLINE_DAYS || 0}
+                                        onChange={(e) => handleChange('LOAN', 'DEADLINE_DAYS', e.target.value)}
+                                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Daily Interest Rate (%)</label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            value={formData.LOAN?.DAILY_INTEREST_RATE || 0}
+                                            onChange={(e) => handleChange('LOAN', 'DAILY_INTEREST_RATE', e.target.value)}
+                                            className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
+                                        />
+                                        <span className="absolute right-3 top-2 text-gray-500">%</span>
                                     </div>
                                 </div>
                             </div>

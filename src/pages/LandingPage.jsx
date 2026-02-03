@@ -114,6 +114,8 @@ function LandingPage({ onBack }) {
   };
 
   useEffect(() => {
+    if (!user) return; // Wait for user to be logged in
+
     const now = Timestamp.now();
     const q = query(
       collection(db, 'announcements'),
@@ -129,10 +131,12 @@ function LandingPage({ onBack }) {
       // Sort by createdAt desc in memory since we can't easily do it in query with expiresAt range
       msgs.sort((a, b) => b.createdAt?.toMillis() - a.createdAt?.toMillis());
       setAnnouncements(msgs);
+    }, (error) => {
+      console.log("Announcement listener error (permissions?):", error.code);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user]); // Add user as dependency
 
   // Fetch Personal Notifications
   useEffect(() => {

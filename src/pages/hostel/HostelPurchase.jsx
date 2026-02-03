@@ -7,6 +7,7 @@ import { useLoading } from '../../context/GlobalLoadingContext';
 import { useConfig } from '../../context/ConfigContext';
 import PageHeader from '../../components/PageHeader';
 import { HOSTEL_CONFIG, getRoomTypes, calculateHostelCost } from '../../config/hostelConfig';
+import CouponSelector from '../../components/CouponSelector';
 import '../../styles/Hostel.css';
 import '../../styles/StandardLayout.css';
 
@@ -32,6 +33,13 @@ const HostelPurchase = ({ onBack, onNavigate }) => {
 
     const [roomTypes, setRoomTypes] = useState([]);
     const [availability, setAvailability] = useState({});
+
+    // State for Discount System
+    const [couponCode, setCouponCode] = useState('');
+    const [calculation, setCalculation] = useState(null);
+    const [isCalculating, setIsCalculating] = useState(false);
+    const [couponError, setCouponError] = useState('');
+
 
     useEffect(() => {
         const fetchData = async () => {
@@ -109,6 +117,50 @@ const HostelPurchase = ({ onBack, onNavigate }) => {
 
         fetchData();
     }, [user, setIsLoading]);
+
+    const handleCalculatePrice = async (code = '') => {
+        setIsCalculating(true);
+        setCouponError('');
+        try {
+            const calculatePayment = httpsCallable(functions, 'calculatePayment');
+
+            const result = await calculatePayment({
+                userId: user.uid,
+                serviceType: 'hostel',
+                months: selectedMonths,
+                couponCode: code || null,
+                buildingId: selectedBuildingRoomType.buildingId,
+                roomType: selectedBuildingRoomType.type
+            });
+
+            setCalculation(result.data);
+
+        } catch (err) {
+            console.error(err);
+            setCouponError(err.message || 'Failed to calculate price');
+            setCalculation(null);
+        } finally {
+            setIsCalculating(false);
+        }
+    };
+
+    const handleApplyCoupon = () => {
+        if (!couponCode) return;
+        handleCalculatePrice(couponCode);
+    };
+
+    const handleRemoveCoupon = () => {
+        setCouponCode('');
+        handleCalculatePrice('');
+    };
+
+    // Fetch initial price with automated discounts when reaching confirmation step
+    useEffect(() => {
+        if (step === 3 && selectedBuildingRoomType) {
+            handleCalculatePrice();
+        }
+    }, [step, selectedBuildingRoomType]);
+
 
     const getRoomTypeName = (type) => {
         const names = {
@@ -288,111 +340,6 @@ const HostelPurchase = ({ onBack, onNavigate }) => {
         );
     }
 
-    // State for Discount System
-    const [couponCode, setCouponCode] = useState('');
-    const [calculation, setCalculation] = useState(null);
-    const [isCalculating, setIsCalculating] = useState(false);
-    const [couponError, setCouponError] = useState('');
-
-    // Fetch initial price with automated discounts when reaching confirmation step
-    useEffect(() => {
-        if (step === 3 && selectedBuildingRoomType) {
-            handleCalculatePrice();
-        }
-    }, [step, selectedBuildingRoomType]);
-
-    const handleCalculatePrice = async (code = '') => {
-        setIsCalculating(true);
-        setCouponError('');
-        try {
-            const calculatePayment = httpsCallable(functions, 'calculatePayment');
-            // Determine Base Price logic: 
-            // We can pass roomType and buildingId and let backend decide, 
-            // OR pass backend expected params.
-            // Backend processHostelPurchase calculates basePrice = monthlyRate * months.
-            // calculatePayment expects 'serviceType', 'months'. 
-            // BUT for 'hostel', it defaults to 14500 if we don't fix it.
-            // We updated calculatePayment to use standard rate... 
-            // Actually, we should update calculatePayment to accept 'basePrice' if we want to trust client? 
-            // No, strictly we should pass buildingId/roomType and let backend fetch price.
-            // BUT calculatePayment implementation I wrote uses:
-            // if (serviceType === 'hostel') basePrice = 14500 * months;
-            // This is INACCURATE for different room types.
-            // Fix: We must pass basePrice or have calculatePayment fetch correct room price.
-            // My previous edit to calculatePayment had:
-            // "Logic simplification: standard ... or fetch specific room if passed"
-            // I should pass the actual price from the selected room type to calculatePayment?
-            // "For updated calculateHelper to work properly, pass basePrice?"
-            // No, calculateHelper takes basePrice. calculatePayment calls calculateHelper.
-            // In calculatePayment I need to calculate basePrice correctly.
-            // Since I am already editing frontend, let's fix backend logic later or assume standard for now?
-            // NO, price must be accurate.
-            // I will update calculatePayment to accept `basePrice` as override? 
-            // Or better: Pass `basePrice` from here since we know it.
-            // But verify on backend.
-            // Let's rely on the backend calculating it correctly. 
-            // Wait, calculatePayment currently hardcodes 14500 in my previous view!
-            // I need to fix calculatePayment to accept basePrice or fetch it using buildingId/roomType.
-            // I recall modifying it in Step 154 but the diff was messy.
-            // Let's assume for now I will pass `basePrice` in the request arguments if I didn't enforce it in backend.
-            // Wait, calculatePayment args: { userId, serviceType, couponCode, months, roomType }
-
-            // Let's pass the calculated base price from frontend to be used if backend supports it.
-            // Based on my edit in Step 154, calculatePayment does:
-            // basePrice = 14500 * months;
-            // This is bad. I should have fixed it to use the room price.
-            // BUT I can't fix backend easily right now without checking again.
-            // Let's finish frontend change first, then I might need to quick-fix backend to accept `basePrice` from client (as a "preview" param).
-            // Security risk? calculatePayment is just a calculator (preview). The real check is in processHostelPurchase.
-            // So yes, passing basePrice is fine for preview.
-            // Wait, I need to check if calculatePayment accepts `manualBasePrice`. It doesn't.
-
-            // Quick fix: I will pass `roomType` as 'ac' or 'non-ac' ?? No, hostel types are different.
-            // I'll stick to the plan: Update frontend first.
-
-            // Backend expects: userId, serviceType, couponCode, months, roomType.
-
-            const result = await calculatePayment({
-                userId: user.uid,
-                serviceType: 'hostel',
-                months: selectedMonths,
-                couponCode: code || null,
-                // Passing these so we can maybe use them later or if I update backend
-                buildingId: selectedBuildingRoomType.buildingId,
-                roomType: selectedBuildingRoomType.type
-            });
-
-            // The backend currently might return wrong basePrice (14500).
-            // We can OVERRIDE the basePrice in the result with our correct local basePrice
-            // and re-calculate the final price roughly if we trust the discount amount?
-            // Or better: The discount amounts (percentages) are correct.
-            // If backend returns basePrice 14500 but our price is 12000...
-            // This is a disconnect. I should fix backend `calculatePayment` to look up room price if `buildingId` is provided.
-            // Or just allow passing `basePrice` for calculator.
-
-            // For this step, I will implement frontend assuming backend works, 
-            // but I will acknowledge I need to fix backend `calculatePayment` to be accurate.
-
-            setCalculation(result.data);
-
-        } catch (err) {
-            console.error(err);
-            setCouponError(err.message || 'Failed to calculate price');
-            setCalculation(null);
-        } finally {
-            setIsCalculating(false);
-        }
-    };
-
-    const handleApplyCoupon = () => {
-        if (!couponCode) return;
-        handleCalculatePrice(couponCode);
-    };
-
-    const handleRemoveCoupon = () => {
-        setCouponCode('');
-        handleCalculatePrice('');
-    };
 
     // Step 3: Confirmation
     if (step === 3) {
@@ -524,6 +471,14 @@ const HostelPurchase = ({ onBack, onNavigate }) => {
                                     <p style={{ color: 'green', fontSize: '13px', marginTop: '5px' }}>Coupon applied successfully!</p>
                                 )}
                             </div>
+
+                            {/* Coupon Suggestions */}
+                            {!calculation?.discounts?.some(d => d.type === 'coupon') && (
+                                <CouponSelector
+                                    serviceType="hostel"
+                                    onSelect={(code) => setCouponCode(code)}
+                                />
+                            )}
 
                             <div className="balance-info">
                                 <div className="balance-row">

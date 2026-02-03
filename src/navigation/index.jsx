@@ -8,6 +8,7 @@ import PendingVerification from '../pages/PendingVerification';
 import LandingPage from '../pages/LandingPage';
 import AdminLanding from '../pages/admin/AdminLanding';
 import CanteenAdminLanding from '../pages/Canteen_Admin/CanteenAdminLanding';
+import LoanRequest from '../pages/balance/LoanRequest';
 import { useAuth } from '../auth/AuthProvider';
 import { useLoading } from '../context/GlobalLoadingContext';
 import { doc, getDoc } from 'firebase/firestore';
@@ -137,6 +138,12 @@ export function NavigationRoot() {
                             <LandingPage />}
                 </ProtectedRoute>
             } />
+            <Route path="/loan-request" element={
+                <ProtectedRoute>
+                    <LoanRequest />
+                </ProtectedRoute>
+            } />
+
         </Routes>
     );
 }

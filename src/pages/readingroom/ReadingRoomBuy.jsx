@@ -6,6 +6,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
 import { generateAndSendInvoice } from './ReadingRoomInvoice';
+import CouponSelector from '../../components/CouponSelector';
 import '../../styles/StandardLayout.css';
 
 function ReadingRoomBuy({ onBack, selectedOption, onComplete }) {
@@ -252,6 +253,13 @@ function ReadingRoomBuy({ onBack, selectedOption, onComplete }) {
                                 <div style={{ fontSize: '12px', color: '#16a34a', marginTop: '5px' }}>
                                     Coupon applied successfully!
                                 </div>
+                            )}
+
+                            {!calculation && !couponCode && (
+                                <CouponSelector
+                                    serviceType="readingRoom"
+                                    onSelect={(code) => setCouponCode(code)}
+                                />
                             )}
                         </div>
                     </div>

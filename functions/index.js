@@ -7,6 +7,113 @@ const admin = require("firebase-admin");
 
 admin.initializeApp();
 
+/**
+ * Scheduled function to apply daily compound interest on active loans.
+ * Runs every 24 hours.
+ */
+exports.dailyInterestTask = onSchedule("every 24 hours", async (event) => {
+    const db = admin.firestore();
+    const now = admin.firestore.Timestamp.now();
+
+    try {
+        // 1. Fetch Loan Settings
+        // Use the centralized config document (settings/config)
+        const settingsDoc = await db.collection('settings').doc('config').get();
+        if (!settingsDoc.exists) {
+            console.log("No system config found. Skipping interest calculation.");
+            return;
+        }
+
+        const config = settingsDoc.data();
+        const settings = config.LOAN;
+
+        if (!settings) {
+            console.log("No loan settings configured. Skipping.");
+            return;
+        }
+
+        // Validate settings
+        if (!settings.DAILY_INTEREST_RATE || !settings.DEADLINE_DAYS) {
+            console.error("Invalid loan settings. Missing rate or deadline.");
+            return;
+        }
+
+        const dailyRate = settings.DAILY_INTEREST_RATE;
+        const deadlineDays = settings.DEADLINE_DAYS;
+
+        // 2. Query Overdue Users
+        // Note: Firestore doesn't support complex querying on sub-fields easily with inequality on different fields efficiently without composite indexes.
+        // We will fetch all users with active loans and filter in memory for simplicity, assuming user base isn't massive yet.
+        // Or better, query users where loan.has_active_loan == true.
+
+        const usersRef = db.collection('users');
+        const activeLoanUsers = await usersRef.where('loan.has_active_loan', '==', true).get();
+
+        const batch = db.batch();
+        let updateCount = 0;
+
+        activeLoanUsers.forEach(doc => {
+            const userData = doc.data();
+            const loan = userData.loan;
+
+            if (!loan || !loan.taken_at) return;
+
+            const takenAtDate = loan.taken_at.toDate(); // Convert Firestore Timestamp to Date
+            const nowDate = now.toDate();
+
+            // Calculate days elapsed
+            const diffTime = Math.abs(nowDate - takenAtDate);
+            const daysSinceTaken = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            // Check if overdue
+            if (daysSinceTaken > deadlineDays) {
+                // Apply Interest
+                // current_balance = current_balance * (1 + rate)
+                // dailyRate is stored as percentage? No, user enters % in UI (e.g. 2).
+                // So rate = dailyRate / 100.
+                // Settings.jsx: newValue = parseFloat(value).
+                // LoanRequest.jsx just shows it as %.
+                // Calculation: balance * (1 + rate/100).
+
+                const rateDecimal = dailyRate / 100;
+
+                // IMPORTANT: Check if we already applied interest today to prevent double charging if function retries?
+                // We track `last_interest_applied`.
+
+                const lastApplied = loan.last_interest_applied ? loan.last_interest_applied.toDate() : null;
+
+                // Check if last applied was today (or less than 20 hours ago)
+                if (lastApplied) {
+                    const hoursSinceLast = (nowDate - lastApplied) / (1000 * 60 * 60);
+                    if (hoursSinceLast < 20) {
+                        console.log(`Skipping user ${doc.id}, interest already applied recently.`);
+                        return;
+                    }
+                }
+
+                const newBalance = loan.current_balance * (1 + rateDecimal);
+
+                batch.update(doc.ref, {
+                    "loan.current_balance": newBalance,
+                    "loan.last_interest_applied": now
+                });
+                updateCount++;
+                console.log(`Applied interest for user ${doc.id}. New Balance: ${newBalance}`);
+            }
+        });
+
+        if (updateCount > 0) {
+            await batch.commit();
+            console.log(`Successfully updated loan interest for ${updateCount} users.`);
+        } else {
+            console.log("No overdue loans requiring interest update.");
+        }
+
+    } catch (error) {
+        console.error("Error in dailyInterestTask:", error);
+    }
+});
+
 // Define the secret parameter
 const brevoApiKey = defineSecret("BREVO_API_KEY");
 
@@ -2276,3 +2383,98 @@ async function calculatePriceInternal({ userId, serviceType, couponCode, months,
 
     return { discounts, totalDiscount, finalPrice };
 }
+
+/**
+ * Callable function to request a loan.
+ * Validates eligibility and performs atomic update.
+ */
+exports.requestLoan = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Must be authenticated to request loan.');
+    }
+
+    const { amount } = request.data;
+    const loanAmount = parseFloat(amount);
+    const userId = request.auth.uid;
+
+    if (!loanAmount || isNaN(loanAmount) || loanAmount <= 0) {
+        throw new HttpsError('invalid-argument', 'Invalid loan amount.');
+    }
+
+    const db = admin.firestore();
+
+    try {
+        return await db.runTransaction(async (transaction) => {
+            // 1. Fetch System Config & User Data
+            const configRef = db.collection('settings').doc('config');
+            const userRef = db.collection('users').doc(userId);
+
+            const [configDoc, userDoc] = await Promise.all([
+                transaction.get(configRef),
+                transaction.get(userRef)
+            ]);
+
+            if (!configDoc.exists) {
+                throw new HttpsError('failed-precondition', 'System configuration missing.');
+            }
+            if (!userDoc.exists) {
+                throw new HttpsError('not-found', 'User not found.');
+            }
+
+            const config = configDoc.data();
+            const userData = userDoc.data();
+            const loanSettings = config.LOAN || {};
+            const maxAmount = loanSettings.MAX_AMOUNT || 0;
+
+            // 2. Validate Eligibility
+            if (userData.loan && userData.loan.has_active_loan) {
+                throw new HttpsError('failed-precondition', 'You already have an active loan.');
+            }
+
+            if (loanAmount > maxAmount) {
+                throw new HttpsError('invalid-argument', `Loan amount cannot exceed रु ${maxAmount}`);
+            }
+
+            // 3. Update User (Add Loan & Balance)
+            const currentBalance = userData.balance || 0;
+            const newBalance = currentBalance + loanAmount;
+            const now = admin.firestore.Timestamp.now();
+
+            transaction.update(userRef, {
+                balance: newBalance,
+                loan: {
+                    has_active_loan: true,
+                    loan_amount: loanAmount,
+                    current_balance: loanAmount, // Initial debt equals principal
+                    taken_at: now,
+                    last_interest_applied: now,
+                    status: 'active'
+                }
+            });
+
+            // 4. Create Transaction Record
+            const txnId = generateTransactionId('LOAN');
+            const txnRef = db.collection('transactions').doc(txnId);
+
+            transaction.set(txnRef, {
+                userId: userId,
+                type: 'loan_disbursement',
+                amount: loanAmount,
+                details: 'Loan Taken',
+                status: 'completed',
+                createdAt: now,
+                transactionId: txnId
+            });
+
+            return { success: true, message: "Loan approved and credited." };
+        });
+
+    } catch (error) {
+        console.error("Loan Request Error:", error);
+        // Pass through specific HttpsErrors, wrap others
+        if (error.code && error.code.startsWith('functions/')) {
+            throw error;
+        }
+        throw new HttpsError('internal', error.message || 'Loan request failed.');
+    }
+});

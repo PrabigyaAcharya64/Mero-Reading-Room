@@ -20,44 +20,61 @@ const userManagementIcon = new URL('../assets/usermanagement.svg', import.meta.u
 const hostelIcon = new URL('../assets/hostel.svg', import.meta.url).href;
 const canteenIcon = new URL('../assets/canteen.svg', import.meta.url).href;
 const readingRoomIcon = new URL('../assets/readingroom.svg', import.meta.url).href;
+const statementIcon = new URL('../assets/statement.jpg', import.meta.url).href;
 
 function Sidebar({ currentView, onNavigate, isOpen, isMobile, onClose }) {
-    const { signOutUser } = useAuth();
+
+
+    const { signOutUser, userRole } = useAuth(); // Destructure userRole
     const [unreadMessages, setUnreadMessages] = useState(0);
     const [pendingUsers, setPendingUsers] = useState(0);
     const [pendingRefunds, setPendingRefunds] = useState(0);
 
     // Fetch Counts
     useEffect(() => {
-        // 1. Unread Messages
+        // Only run listeners if user is admin or canteen
+        if (!userRole || (userRole !== 'admin' && userRole !== 'canteen')) {
+            setUnreadMessages(0);
+            setPendingUsers(0);
+            setPendingRefunds(0);
+            return;
+        }
+
+        const unsubscribers = [];
+
+        // 1. Unread Messages (Admin/Canteen may see messages)
+        // Adjust rule if messages are strictly admin. Rules say 'isStaff()'.
         const msgQ = query(collection(db, 'messages'), where('read', '==', false));
         const unsubMsg = onSnapshot(msgQ, (snap) => {
             setUnreadMessages(snap.size);
-        }, (err) => console.error("Error fetching unread messages:", err));
+        }, (err) => console.log("Sidebar: Msg listener restricted.", err.code));
+        unsubscribers.push(unsubMsg);
 
 
-        // 2. Pending Users
-        const userQ = query(collection(db, 'users'), orderBy('submittedAt', 'desc'));
-        const unsubUser = onSnapshot(userQ, (snap) => {
-            const count = snap.docs.filter(doc => {
-                const data = doc.data();
-                return data.mrrNumber && data.submittedAt && data.verified !== true;
-            }).length;
-            setPendingUsers(count);
-        }, (err) => console.error("Error fetching pending users:", err));
+        if (userRole === 'admin') {
+            // 2. Pending Users (Admin Only)
+            const userQ = query(collection(db, 'users'), orderBy('submittedAt', 'desc'));
+            const unsubUser = onSnapshot(userQ, (snap) => {
+                const count = snap.docs.filter(doc => {
+                    const data = doc.data();
+                    return data.mrrNumber && data.submittedAt && data.verified !== true;
+                }).length;
+                setPendingUsers(count);
+            }, (err) => console.log("Sidebar: User listener restricted.", err.code));
+            unsubscribers.push(unsubUser);
 
-        // 3. Pending Refunds
-        const refundQ = query(collection(db, 'refunds'), where('status', '==', 'pending'));
-        const unsubRefund = onSnapshot(refundQ, (snap) => {
-            setPendingRefunds(snap.size);
-        }, (err) => console.error("Error fetching pending refunds:", err));
+            // 3. Pending Refunds (Admin Only)
+            const refundQ = query(collection(db, 'refunds'), where('status', '==', 'pending'));
+            const unsubRefund = onSnapshot(refundQ, (snap) => {
+                setPendingRefunds(snap.size);
+            }, (err) => console.log("Sidebar: Refund listener restricted.", err.code));
+            unsubscribers.push(unsubRefund);
+        }
 
         return () => {
-            unsubMsg();
-            unsubUser();
-            unsubRefund();
+            unsubscribers.forEach(unsub => unsub());
         };
-    }, []);
+    }, [userRole]);
 
     const menuItems = [
         { id: 'dashboard', label: 'Overview', icon: profileIcon },
@@ -86,7 +103,13 @@ function Sidebar({ currentView, onNavigate, isOpen, isMobile, onClose }) {
             lucideIcon: RotateCcw,
             badge: pendingRefunds > 0 ? pendingRefunds : null
         },
-        { id: 'transaction-statement', label: 'Transaction Statement', icon: null, isLucide: true, lucideIcon: Receipt },
+        {
+            id: 'transaction-statement',
+            label: 'Transaction Statement',
+            icon: statementIcon,
+            isLucide: false,
+            lucideIcon: null
+        },
         { id: 'account-dashboard', label: 'Accounts', icon: null, isLucide: true, lucideIcon: Calculator },
         { id: 'discounts', label: 'Discounts', icon: null, isLucide: true, lucideIcon: Receipt }, // Using Receipt as icon placeholder
         { id: 'settings', label: 'Settings', icon: null, isLucide: true, lucideIcon: SettingsIcon },
