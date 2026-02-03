@@ -6,7 +6,7 @@ import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestor
 import { formatBalance } from '../../utils/formatCurrency';
 import { formatDate } from '../../utils/dateFormat';
 import { useLoading } from '../../context/GlobalLoadingContext';
-import { Search, Edit2, User, ChevronRight } from 'lucide-react';
+import { Search, Edit2, User, ChevronRight, AlertCircle, Clock, CheckCircle, BadgeAlert } from 'lucide-react';
 import { useAdminHeader } from '../../context/AdminHeaderContext';
 import '../../styles/StandardLayout.css';
 import '../../styles/AllMembersView.css';
@@ -17,6 +17,7 @@ function AllMembersView({ onBack, onDataLoaded }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUser, setSelectedUser] = useState(null);
     const [seatAssignmentsMap, setSeatAssignmentsMap] = useState({});
+    const [hostelAssignmentsMap, setHostelAssignmentsMap] = useState({});
 
     // Set loading true on mount (handles page refresh case)
     useEffect(() => {
@@ -26,12 +27,14 @@ function AllMembersView({ onBack, onDataLoaded }) {
     useEffect(() => {
         const usersQ = query(collection(db, 'users'), where('verified', '==', true));
         const seatsRef = collection(db, 'seatAssignments');
+        const hostelRef = collection(db, 'hostelAssignments');
 
         let seatsLoaded = false;
+        let hostelLoaded = false;
         let usersLoaded = false;
 
         const checkIfLoaded = () => {
-            if (seatsLoaded && usersLoaded) {
+            if (seatsLoaded && hostelLoaded && usersLoaded) {
                 onDataLoaded?.();
             }
         };
@@ -48,6 +51,17 @@ function AllMembersView({ onBack, onDataLoaded }) {
             checkIfLoaded();
         });
 
+        const hostelUnsub = onSnapshot(hostelRef, (snapshot) => {
+            const map = {};
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.userId) map[data.userId] = data;
+            });
+            setHostelAssignmentsMap(map);
+            hostelLoaded = true;
+            checkIfLoaded();
+        });
+
         const userUnsub = onSnapshot(usersQ, (snapshot) => {
             const userData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             setUsers(userData);
@@ -59,6 +73,7 @@ function AllMembersView({ onBack, onDataLoaded }) {
 
         return () => {
             seatUnsub();
+            hostelUnsub();
             userUnsub();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -113,6 +128,100 @@ function AllMembersView({ onBack, onDataLoaded }) {
         });
     }, [setHeader, searchQuery, setSearchQuery]);
 
+    // Calculate Status Helper
+    const parseDate = (val) => {
+        if (!val) return null;
+        if (typeof val?.toDate === 'function') return val.toDate(); // Firestore Timestamp
+        if (val instanceof Date) return val;
+        if (typeof val === 'number') {
+            // Check if likely seconds or ms. If small, assume seconds.
+            // 2000-01-01 is 946684800.
+            if (val < 10000000000) return new Date(val * 1000);
+            return new Date(val);
+        }
+        return new Date(val); // String or other
+    };
+
+    const getServiceStatus = (assignment, isReadingRoom, user) => {
+        // If not assigned
+        if (!assignment) {
+            // Check History for "Old" status
+            // Reading Room: registrationCompleted (from readingRoomEnrollment)
+            // Hostel: hostelRegistrationPaid (from HostelPurchase)
+            const hasHistory = isReadingRoom
+                ? (user.registrationCompleted === true)
+                : (user.hostelRegistrationPaid === true);
+
+            if (hasHistory) {
+                return { label: 'Old', className: 'amv-badge old', icon: <Clock size={12} />, date: null };
+            }
+            return { label: 'Never Joined', className: 'amv-badge none', icon: <User size={12} />, date: null };
+        }
+
+        const dueDate = parseDate(assignment.nextPaymentDue);
+
+        // Handle invalid/missing date for active assignments
+        if (!dueDate || isNaN(dueDate.getTime())) {
+            // If they have an assignment but no valid date, treat as Active or Special
+            // e.g. "Lifetime" or "No Expiry"
+            return {
+                label: 'Active',
+                className: 'amv-badge active',
+                icon: <CheckCircle size={12} />,
+                date: null,
+                dateLabel: 'No Expiry'
+            };
+        }
+
+        const today = new Date();
+        const oneDay = 1000 * 60 * 60 * 24;
+        const diffTime = dueDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / oneDay);
+
+        // Logic Definition:
+        // Active: > 3 days remaining.
+        // Due Incoming: 3 days or less remaining (including today 0).
+        // Grace Period: expired up to 3 days ago (-1, -2, -3).
+        // Overdue: expired more than 3 days ago (<-3).
+
+        let status = { label: '', className: '', icon: null, date: dueDate, dateLabel: '' };
+
+        if (diffDays > 3) {
+            status = {
+                label: 'Active',
+                className: 'amv-badge active',
+                icon: <CheckCircle size={12} />,
+                date: dueDate,
+                dateLabel: 'Due'
+            };
+        } else if (diffDays >= 0) {
+            status = {
+                label: 'Due Incoming',
+                className: 'amv-badge warning',
+                icon: <AlertCircle size={12} />,
+                date: dueDate,
+                dateLabel: 'Due'
+            };
+        } else if (diffDays >= -3) {
+            status = {
+                label: 'Grace Period',
+                className: 'amv-badge danger',
+                icon: <BadgeAlert size={12} />,
+                date: dueDate,
+                dateLabel: 'Expired'
+            };
+        } else {
+            status = {
+                label: 'Overdue',
+                className: 'amv-badge overdue',
+                icon: <BadgeAlert size={12} />,
+                date: dueDate,
+                dateLabel: 'Expired'
+            };
+        }
+        return status;
+    };
+
     return (
         <div className="amv-container">
             <main className="std-body">
@@ -131,89 +240,112 @@ function AllMembersView({ onBack, onDataLoaded }) {
                             <table className="amv-table">
                                 <thead>
                                     <tr>
-                                        <th>Identity</th>
+                                        <th style={{ width: '250px' }}>Identity</th>
                                         <th>MRR ID</th>
-                                        <th>Status</th>
                                         <th>Balance</th>
                                         <th>Loan</th>
                                         <th>Reading Room</th>
-                                        <th>Next Payment</th>
-                                        <th>Action</th>
+                                        <th>Hostel</th>
+                                        <th style={{ textAlign: 'right' }}>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {paginatedUsers.map(user => (
-                                        <tr key={user.id}>
-                                            <td>
-                                                <div className="amv-user-cell">
-                                                    <div className="amv-avatar">
-                                                        {user.profileImage || user.photoUrl || user.image ? (
-                                                            <img
-                                                                src={user.profileImage || user.photoUrl || user.image}
-                                                                alt={user.name}
-                                                                referrerPolicy="no-referrer"
-                                                            />
-                                                        ) : (
-                                                            <div className="amv-avatar-fallback">
-                                                                {user.name?.charAt(0)?.toUpperCase() || 'U'}
-                                                            </div>
+                                    {paginatedUsers.map(user => {
+                                        const rrAssignment = seatAssignmentsMap[user.id];
+                                        const hostelAssignment = hostelAssignmentsMap[user.id];
+
+                                        const rrStatus = getServiceStatus(rrAssignment, true, user);
+                                        const hostelStatus = getServiceStatus(hostelAssignment, false, user);
+
+                                        // "Due Users" logic: Negative balance implies they owe money
+                                        const isDue = (user.balance || 0) < 0;
+
+                                        return (
+                                            <tr key={user.id}>
+                                                <td>
+                                                    <div className="amv-user-cell">
+                                                        <div className="amv-avatar">
+                                                            {user.profileImage || user.photoUrl || user.image ? (
+                                                                <img
+                                                                    src={user.profileImage || user.photoUrl || user.image}
+                                                                    alt={user.name}
+                                                                    referrerPolicy="no-referrer"
+                                                                />
+                                                            ) : (
+                                                                <div className="amv-avatar-fallback">
+                                                                    {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="amv-user-info">
+                                                            <span className="amv-user-name">{user.name || 'Anonymous Reader'}</span>
+                                                            <span className="amv-user-email">{user.email || '-'}</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span className="amv-mrr-code">{user.mrrNumber || '-'}</span>
+                                                </td>
+                                                <td>
+                                                    {isDue ? (
+                                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                            <span className="amv-badge overdue" style={{ marginBottom: '2px', fontSize: '10px' }}>Due Payment</span>
+                                                            <span className="amv-balance negative" style={{ color: '#dc2626', fontWeight: 'bold' }}>
+                                                                {formatBalance(user.balance || 0)}
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="amv-balance">{formatBalance(user.balance || 0)}</span>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    {user.loan?.has_active_loan ? (
+                                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                            <span className="amv-badge active" style={{ fontSize: '10px', width: 'fit-content' }}>Active Loan</span>
+                                                            <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: 600 }}>
+                                                                {formatBalance(user.loan.current_balance)}
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="amv-text-muted">-</span>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    <div className="status-cell">
+                                                        <span className={rrStatus.className} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                                            {rrStatus.icon} {rrStatus.label}
+                                                        </span>
+                                                        {rrStatus.date && (
+                                                            <span className="amv-timestamp" style={{ fontSize: '11px', marginTop: '2px', display: 'block' }}>
+                                                                {rrStatus.dateLabel}: {formatDate(rrStatus.date)}
+                                                            </span>
                                                         )}
                                                     </div>
-                                                    <div className="amv-user-info">
-                                                        <span className="amv-user-name">{user.name || 'Anonymous Reader'}</span>
-                                                        <span className="amv-user-email">{user.email || '-'}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span className="amv-mrr-code">{user.mrrNumber || '-'}</span>
-                                            </td>
-                                            <td>
-                                                <span className={`amv-badge ${user.verified ? 'verified' : 'pending'}`}>
-                                                    {user.verified ? 'Verified' : 'Pending'}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span className="amv-balance">{formatBalance(user.balance || 0)}</span>
-                                            </td>
-                                            <td>
-                                                {user.loan?.has_active_loan ? (
-                                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                        <span className="amv-badge active" style={{ fontSize: '11px' }}>Active</span>
-                                                        <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: 600 }}>
-                                                            {formatBalance(user.loan.current_balance)}
+                                                </td>
+                                                <td>
+                                                    <div className="status-cell">
+                                                        <span className={hostelStatus.className} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                                            {hostelStatus.icon} {hostelStatus.label}
                                                         </span>
+                                                        {hostelStatus.date && (
+                                                            <span className="amv-timestamp" style={{ fontSize: '11px', marginTop: '2px', display: 'block' }}>
+                                                                {hostelStatus.dateLabel}: {formatDate(hostelStatus.date)}
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                ) : (
-                                                    <span className="amv-badge inactive">No Loan</span>
-                                                )}
-                                            </td>
-                                            <td>
-                                                <div className="amv-room-box">
-                                                    <span className={`amv-badge ${seatAssignmentsMap[user.id] ? 'active' : 'inactive'}`}>
-                                                        {seatAssignmentsMap[user.id] ? 'Active' : 'Inactive'}
-                                                    </span>
-                                                    {seatAssignmentsMap[user.id] && (
-                                                        <span className="amv-room-info">
-                                                            {seatAssignmentsMap[user.id].roomName || 'Room'} • {seatAssignmentsMap[user.id].seatLabel || 'Seat'}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span className="amv-timestamp">{formatDate(user.nextPaymentDue)}</span>
-                                            </td>
-                                            <td>
-                                                <button className="amv-manage-btn" onClick={() => handleEditUser(user)}>
-                                                    <Edit2 size={14} />
-                                                    Manage
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                </td>
+                                                <td style={{ textAlign: 'right' }}>
+                                                    <button className="amv-manage-btn" onClick={() => handleEditUser(user)}>
+                                                        <Edit2 size={14} />
+                                                        Manage
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                     {users.length === 0 && (
                                         <tr>
-                                            <td colSpan="8">
+                                            <td colSpan="7">
                                                 <div className="amv-empty">
                                                     <User size={48} className="amv-empty-icon" />
                                                     <p>The directory is currently empty.</p>

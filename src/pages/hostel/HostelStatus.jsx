@@ -8,6 +8,8 @@ import PageHeader from '../../components/PageHeader';
 import '../../styles/Hostel.css';
 import '../../styles/StandardLayout.css';
 
+import { generateAndSendHostelInvoice } from './HostelInvoice';
+
 const RENEW_OPTIONS = [1, 3, 6, 12, 'custom'];
 
 const HostelStatus = ({ onBack }) => {
@@ -170,6 +172,13 @@ const HostelStatus = ({ onBack }) => {
             const result = await renewHostelSubscription({ months: months });
 
             if (result.data.success) {
+                // Generate and send invoice
+                try {
+                    await generateAndSendHostelInvoice(user.uid, result.data.transactionId);
+                } catch (invoiceError) {
+                    console.error('Invoice generation error:', invoiceError);
+                }
+
                 alert(
                     `Subscription renewed successfully!\n\n` +
                     `Renewed for: ${months} month${months > 1 ? 's' : ''}\n` +

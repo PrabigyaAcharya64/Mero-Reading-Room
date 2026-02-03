@@ -210,8 +210,9 @@ const InvoiceDocument = ({ userData, transactionData, invoiceNumber }) => {
         day: 'numeric'
     });
 
+    // Use details from transaction or fallback
     const packageName = transactionData.details ||
-        `${transactionData.roomType === 'ac' ? 'AC' : 'Non-AC'} Reading Room Package`;
+        `Hostel Room Plan (${transactionData.roomType || 'Standard'}) ${transactionData.months ? `- ${transactionData.months} Month` + (transactionData.months > 1 ? 's' : '') : ''}`;
 
     const paymentDate = new Date(transactionData.date).toLocaleDateString('en-US', {
         year: 'numeric',
@@ -286,7 +287,18 @@ const InvoiceDocument = ({ userData, transactionData, invoiceNumber }) => {
                         </View>
                     )}
 
-                    {/* 3. Discount Row (if any) */}
+                    {/* 3. Deposit Row (if any) */}
+                    {transactionData.breakdown?.deposit > 0 && (
+                        <View style={styles.tableRow}>
+                            <Text style={[styles.tableCell, styles.col1]}>Security Deposit (Refundable)</Text>
+                            <Text style={[styles.tableCell, styles.col2]}>1</Text>
+                            <Text style={[styles.tableCell, styles.col3]}>
+                                {businessDetails.currency} {transactionData.breakdown.deposit.toFixed(2)}
+                            </Text>
+                        </View>
+                    )}
+
+                    {/* 4. Discount Row (if any) */}
                     {transactionData.breakdown?.discounts?.length > 0 && transactionData.breakdown.discounts.map((discount, index) => (
                         <View style={styles.tableRow} key={index}>
                             <Text style={[styles.tableCell, styles.col1]}>Discount: {discount.name}</Text>
@@ -314,7 +326,7 @@ const InvoiceDocument = ({ userData, transactionData, invoiceNumber }) => {
                 <View style={styles.footer}>
                     <Text style={styles.footerTitle}>Notes:</Text>
                     <Text>This is a computer-generated invoice.</Text>
-                    <Text>Thank you for choosing Mero Reading Room. We appreciate your support.</Text>
+                    <Text>Thank you for choosing Mero Reading Room (Hostel Services). We appreciate your support.</Text>
                 </View>
             </Page>
         </Document>
@@ -377,15 +389,9 @@ async function sendInvoiceEmail(userData, transactionData, invoiceBase64, invoic
 }
 
 // ============================================
-// Save Invoice to Firebase
-// ============================================
-// Note: saveInvoiceToFirebase removed as it's now handled by Cloud Function for security.
-
-
-// ============================================
 // Main Function: Generate and Send Invoice
 // ============================================
-export async function generateAndSendInvoice(userId, transactionId) {
+export async function generateAndSendHostelInvoice(userId, transactionId) {
     try {
         // 1. Fetch user data from Firebase
         const userDocRef = doc(db, 'users', userId);
@@ -408,7 +414,7 @@ export async function generateAndSendInvoice(userId, transactionId) {
         const transactionData = transactionSnap.data();
 
         // 3. Generate invoice number
-        const invoiceNumber = `INV-${Date.now()}`;
+        const invoiceNumber = `INV-HST-${Date.now()}`;
 
         // 4. Generate PDF as Base64
         const pdfBase64 = await generatePDFBase64(userData, transactionData, invoiceNumber);
@@ -424,7 +430,7 @@ export async function generateAndSendInvoice(userId, transactionId) {
         };
 
     } catch (error) {
-        console.error('Error in generateAndSendInvoice:', error);
+        console.error('Error in generateAndSendHostelInvoice:', error);
         return {
             success: false,
             error: error.message

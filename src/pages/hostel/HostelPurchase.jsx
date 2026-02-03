@@ -8,6 +8,7 @@ import { useConfig } from '../../context/ConfigContext';
 import PageHeader from '../../components/PageHeader';
 import { HOSTEL_CONFIG, getRoomTypes, calculateHostelCost } from '../../config/hostelConfig';
 import CouponSelector from '../../components/CouponSelector';
+import { generateAndSendHostelInvoice } from './HostelInvoice';
 import '../../styles/Hostel.css';
 import '../../styles/StandardLayout.css';
 
@@ -202,6 +203,13 @@ const HostelPurchase = ({ onBack, onNavigate }) => {
             });
 
             if (result.data.success) {
+                // Generate and send invoice
+                try {
+                    await generateAndSendHostelInvoice(user.uid, result.data.transactionId);
+                } catch (invoiceError) {
+                    console.error('Invoice generation error:', invoiceError);
+                }
+
                 alert(
                     `Hostel room booked successfully!\n\n` +
                     `Building: ${result.data.roomInfo.buildingName}\n` +

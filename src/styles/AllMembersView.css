@@ -79,7 +79,7 @@
     box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
 }
 
-.amv-search-input:focus + .amv-search-icon {
+.amv-search-input:focus+.amv-search-icon {
     color: var(--color-accent);
 }
 
@@ -201,13 +201,41 @@
 }
 
 .amv-badge.active {
-    background-color: rgba(0, 122, 255, 0.1);
-    color: var(--color-accent);
+    background-color: rgba(52, 199, 89, 0.15);
+    /* Slightly stronger green for active service */
+    color: #2e7d32;
 }
 
 .amv-badge.inactive {
     background-color: rgba(255, 59, 48, 0.05);
     color: #FF3B30;
+}
+
+/* New Status Badges */
+.amv-badge.warning {
+    background-color: rgba(255, 149, 0, 0.15);
+    color: #d87600;
+}
+
+.amv-badge.danger {
+    background-color: rgba(255, 59, 48, 0.15);
+    color: #d32f2f;
+}
+
+.amv-badge.overdue {
+    background-color: rgba(185, 28, 28, 0.15);
+    color: #b91c1c;
+}
+
+.amv-badge.old {
+    background-color: rgba(107, 114, 128, 0.1);
+    color: #4b5563;
+}
+
+.amv-badge.none {
+    background-color: transparent;
+    color: #9ca3af;
+    padding-left: 0;
 }
 
 /* Balance Styling */
@@ -216,6 +244,10 @@
     font-weight: 700;
     color: #34C759;
     font-size: 0.9375rem;
+}
+
+.amv-balance.negative {
+    color: #dc2626;
 }
 
 /* Room Info Box */
@@ -228,6 +260,17 @@
 .amv-room-info {
     font-size: 0.75rem;
     font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+/* Status Cell */
+.status-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.amv-timestamp {
     color: var(--color-text-secondary);
 }
 
@@ -281,7 +324,9 @@
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* Empty State */
