@@ -21,6 +21,7 @@ export const ConfigProvider = ({ children }) => {
         // Subscribe to real-time updates from Firestore
         const settingsRef = doc(db, 'settings', 'config');
         const unsubscribe = onSnapshot(settingsRef, (docSnapshot) => {
+            console.log("ConfigContext: Snapshot received", { exists: docSnapshot.exists(), data: docSnapshot.data() });
             if (docSnapshot.exists()) {
                 // deep merge or just simpler replacement?
                 // For now, let's assume the DB structure matches the CONFIG structure.

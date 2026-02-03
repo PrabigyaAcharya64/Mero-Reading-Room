@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 
 import UserDetailView from './UserDetailView';
 import { db } from '../../lib/firebase';
-import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { formatBalance } from '../../utils/formatCurrency';
 import { formatDate } from '../../utils/dateFormat';
 import { useLoading } from '../../context/GlobalLoadingContext';
-import { Search, Edit2, User, ChevronRight, AlertCircle, Clock, CheckCircle, BadgeAlert } from 'lucide-react';
+import { Search, Edit2, User, CheckCircle, AlertCircle, BadgeAlert, Clock, Filter, X } from 'lucide-react';
 import { useAdminHeader } from '../../context/AdminHeaderContext';
 import '../../styles/StandardLayout.css';
 import '../../styles/AllMembersView.css';
@@ -14,10 +14,20 @@ import '../../styles/AllMembersView.css';
 function AllMembersView({ onBack, onDataLoaded }) {
     const { setIsLoading } = useLoading();
     const [users, setUsers] = useState([]);
-    const [searchQuery, setSearchQuery] = useState('');
     const [selectedUser, setSelectedUser] = useState(null);
     const [seatAssignmentsMap, setSeatAssignmentsMap] = useState({});
     const [hostelAssignmentsMap, setHostelAssignmentsMap] = useState({});
+
+    // Filter State
+    const [filters, setFilters] = useState({
+        search: '',
+        balance: 'all', // all, due, positive
+        loan: 'all', // all, active, none
+        readingRoom: 'all', // all, active, due_incoming, overdue, expired, old, none
+        hostel: 'all' // all, active, due_incoming, overdue, expired, old, none
+    });
+
+    const [showFilters, setShowFilters] = useState(false);
 
     // Set loading true on mount (handles page refresh case)
     useEffect(() => {
@@ -79,24 +89,165 @@ function AllMembersView({ onBack, onDataLoaded }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // Helper to calculate status (reused from original)
+    const parseDate = (val) => {
+        if (!val) return null;
+        if (typeof val?.toDate === 'function') return val.toDate();
+        if (val instanceof Date) return val;
+        if (typeof val === 'number') {
+            if (val < 10000000000) return new Date(val * 1000);
+            return new Date(val);
+        }
+        return new Date(val);
+    };
+
+    const getServiceStatus = (assignment, isReadingRoom, user) => {
+        if (!assignment) {
+            const hasHistory = isReadingRoom
+                ? (user.registrationCompleted === true)
+                : (user.hostelRegistrationPaid === true);
+
+            if (hasHistory) {
+                return { label: 'Old', className: 'amv-badge old', icon: <Clock size={12} />, date: null, statusKey: 'old' };
+            }
+            return { label: 'Never Joined', className: 'amv-badge none', icon: <User size={12} />, date: null, statusKey: 'none' };
+        }
+
+        let dueDateVal = assignment.nextPaymentDue;
+
+        // Reading Room assignments might not have nextPaymentDue on the assignment doc 
+        // (it's often on the user doc), so fallback to user.nextPaymentDue
+        if (isReadingRoom && !dueDateVal) {
+            dueDateVal = user.nextPaymentDue;
+        }
+
+        const dueDate = parseDate(dueDateVal);
+
+        if (!dueDate || isNaN(dueDate.getTime())) {
+            return {
+                label: 'Active',
+                className: 'amv-badge active',
+                icon: <CheckCircle size={12} />,
+                date: null,
+                dateLabel: 'No Expiry',
+                statusKey: 'active'
+            };
+        }
+
+        const today = new Date();
+        const oneDay = 1000 * 60 * 60 * 24;
+        const diffTime = dueDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / oneDay);
+
+        let status = { label: '', className: '', icon: null, date: dueDate, dateLabel: '', statusKey: '' };
+
+        if (diffDays > 3) {
+            status = {
+                label: 'Active',
+                className: 'amv-badge active',
+                icon: <CheckCircle size={12} />,
+                date: dueDate,
+                dateLabel: 'Due',
+                statusKey: 'active'
+            };
+        } else if (diffDays >= 0) {
+            status = {
+                label: 'Due Incoming',
+                className: 'amv-badge warning',
+                icon: <AlertCircle size={12} />,
+                date: dueDate,
+                dateLabel: 'Due',
+                statusKey: 'due_incoming'
+            };
+        } else if (diffDays >= -3) {
+            status = {
+                label: 'Grace Period',
+                className: 'amv-badge danger',
+                icon: <BadgeAlert size={12} />,
+                date: dueDate,
+                dateLabel: 'Expired',
+                statusKey: 'overdue' // Treating grace as overdue for filter simplicity or distinct? Let's map to overdue
+            };
+        } else {
+            status = {
+                label: 'Overdue',
+                className: 'amv-badge overdue',
+                icon: <BadgeAlert size={12} />,
+                date: dueDate,
+                dateLabel: 'Expired',
+                statusKey: 'overdue'
+            };
+        }
+        return status;
+    };
+
+    // Filter Logic
     const filteredUsers = users.filter((u) => {
-        const lowerQ = searchQuery.toLowerCase();
-        return (u.name?.toLowerCase().includes(lowerQ) ||
+        // 1. Text Search
+        const lowerQ = filters.search.toLowerCase();
+        const matchesSearch = !lowerQ || (
+            u.name?.toLowerCase().includes(lowerQ) ||
             u.email?.toLowerCase().includes(lowerQ) ||
-            u.mrrNumber?.toLowerCase().includes(lowerQ));
+            u.mrrNumber?.toLowerCase().includes(lowerQ)
+        );
+
+        if (!matchesSearch) return false;
+
+        // 2. Balance Filter
+        if (filters.balance !== 'all') {
+            const balance = u.balance || 0;
+            if (filters.balance === 'due' && balance >= 0) return false;
+            if (filters.balance === 'positive' && balance < 0) return false;
+        }
+
+        // 3. Loan Filter
+        if (filters.loan !== 'all') {
+            const hasLoan = u.loan?.has_active_loan;
+            if (filters.loan === 'active' && !hasLoan) return false;
+            if (filters.loan === 'none' && hasLoan) return false;
+        }
+
+        // 4. Reading Room Status
+        if (filters.readingRoom !== 'all') {
+            const rrAssignment = seatAssignmentsMap[u.id];
+            const rrStatus = getServiceStatus(rrAssignment, true, u);
+
+            // Map statusKey to filter values
+            // filter values: active, due_incoming, overdue, old, none
+            // map grace period to overdue for filter? Or strict matching.
+            if (filters.readingRoom === 'active' && rrStatus.statusKey !== 'active') return false;
+            if (filters.readingRoom === 'due_incoming' && rrStatus.statusKey !== 'due_incoming') return false;
+            if (filters.readingRoom === 'overdue' && rrStatus.statusKey !== 'overdue') return false;
+            if (filters.readingRoom === 'old' && rrStatus.statusKey !== 'old') return false;
+            if (filters.readingRoom === 'none' && rrStatus.statusKey !== 'none') return false;
+        }
+
+        // 5. Hostel Status
+        if (filters.hostel !== 'all') {
+            const hostelAssignment = hostelAssignmentsMap[u.id];
+            const hostelStatus = getServiceStatus(hostelAssignment, false, u);
+
+            if (filters.hostel === 'active' && hostelStatus.statusKey !== 'active') return false;
+            if (filters.hostel === 'due_incoming' && hostelStatus.statusKey !== 'due_incoming') return false;
+            if (filters.hostel === 'overdue' && hostelStatus.statusKey !== 'overdue') return false;
+            if (filters.hostel === 'old' && hostelStatus.statusKey !== 'old') return false;
+            if (filters.hostel === 'none' && hostelStatus.statusKey !== 'none') return false;
+        }
+
+        return true;
     });
 
     // Pagination Logic
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 8;
+    const itemsPerPage = 8; // Maybe increase since we have better filters? Keep 8 for now.
     const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
 
-    // Reset to page 1 when search query changes
+    // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery]);
+    }, [filters]);
 
     const handleEditUser = (user) => setSelectedUser(user);
     const handleCloseModal = () => setSelectedUser(null);
@@ -104,7 +255,6 @@ function AllMembersView({ onBack, onDataLoaded }) {
 
     const handlePageChange = (pageNumber) => {
         setCurrentPage(pageNumber);
-        // Scroll to top of table or container for better UX
         const container = document.querySelector('.std-body');
         if (container) container.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -114,125 +264,157 @@ function AllMembersView({ onBack, onDataLoaded }) {
     useEffect(() => {
         setHeader({
             actionBar: (
-                <div className="amv-search-wrapper" style={{ marginBottom: '0' }}>
-                    <input
-                        type="text"
-                        placeholder="Search by Name, Email or MRR ID..."
-                        className="amv-search-input"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                    <Search className="amv-search-icon" size={20} />
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div className="amv-search-wrapper" style={{ marginBottom: '0', width: '300px' }}>
+                        <input
+                            type="text"
+                            placeholder="Search..."
+                            className="amv-search-input"
+                            value={filters.search}
+                            onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                        />
+                        <Search className="amv-search-icon" size={20} />
+                    </div>
+                    <button
+                        className={`amv-filter-toggle ${showFilters ? 'active' : ''}`}
+                        onClick={() => setShowFilters(!showFilters)}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            border: '1px solid #ddd',
+                            background: showFilters ? '#eee' : '#fff',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '500'
+                        }}
+                    >
+                        <Filter size={16} /> Filters
+                    </button>
                 </div>
             )
         });
-    }, [setHeader, searchQuery, setSearchQuery]);
+    }, [setHeader, filters, showFilters]);
 
-    // Calculate Status Helper
-    const parseDate = (val) => {
-        if (!val) return null;
-        if (typeof val?.toDate === 'function') return val.toDate(); // Firestore Timestamp
-        if (val instanceof Date) return val;
-        if (typeof val === 'number') {
-            // Check if likely seconds or ms. If small, assume seconds.
-            // 2000-01-01 is 946684800.
-            if (val < 10000000000) return new Date(val * 1000);
-            return new Date(val);
-        }
-        return new Date(val); // String or other
-    };
-
-    const getServiceStatus = (assignment, isReadingRoom, user) => {
-        // If not assigned
-        if (!assignment) {
-            // Check History for "Old" status
-            // Reading Room: registrationCompleted (from readingRoomEnrollment)
-            // Hostel: hostelRegistrationPaid (from HostelPurchase)
-            const hasHistory = isReadingRoom
-                ? (user.registrationCompleted === true)
-                : (user.hostelRegistrationPaid === true);
-
-            if (hasHistory) {
-                return { label: 'Old', className: 'amv-badge old', icon: <Clock size={12} />, date: null };
-            }
-            return { label: 'Never Joined', className: 'amv-badge none', icon: <User size={12} />, date: null };
-        }
-
-        const dueDate = parseDate(assignment.nextPaymentDue);
-
-        // Handle invalid/missing date for active assignments
-        if (!dueDate || isNaN(dueDate.getTime())) {
-            // If they have an assignment but no valid date, treat as Active or Special
-            // e.g. "Lifetime" or "No Expiry"
-            return {
-                label: 'Active',
-                className: 'amv-badge active',
-                icon: <CheckCircle size={12} />,
-                date: null,
-                dateLabel: 'No Expiry'
-            };
-        }
-
-        const today = new Date();
-        const oneDay = 1000 * 60 * 60 * 24;
-        const diffTime = dueDate.getTime() - today.getTime();
-        const diffDays = Math.ceil(diffTime / oneDay);
-
-        // Logic Definition:
-        // Active: > 3 days remaining.
-        // Due Incoming: 3 days or less remaining (including today 0).
-        // Grace Period: expired up to 3 days ago (-1, -2, -3).
-        // Overdue: expired more than 3 days ago (<-3).
-
-        let status = { label: '', className: '', icon: null, date: dueDate, dateLabel: '' };
-
-        if (diffDays > 3) {
-            status = {
-                label: 'Active',
-                className: 'amv-badge active',
-                icon: <CheckCircle size={12} />,
-                date: dueDate,
-                dateLabel: 'Due'
-            };
-        } else if (diffDays >= 0) {
-            status = {
-                label: 'Due Incoming',
-                className: 'amv-badge warning',
-                icon: <AlertCircle size={12} />,
-                date: dueDate,
-                dateLabel: 'Due'
-            };
-        } else if (diffDays >= -3) {
-            status = {
-                label: 'Grace Period',
-                className: 'amv-badge danger',
-                icon: <BadgeAlert size={12} />,
-                date: dueDate,
-                dateLabel: 'Expired'
-            };
-        } else {
-            status = {
-                label: 'Overdue',
-                className: 'amv-badge overdue',
-                icon: <BadgeAlert size={12} />,
-                date: dueDate,
-                dateLabel: 'Expired'
-            };
-        }
-        return status;
+    const clearFilters = () => {
+        setFilters({
+            search: '',
+            balance: 'all',
+            loan: 'all',
+            readingRoom: 'all',
+            hostel: 'all'
+        });
     };
 
     return (
         <div className="amv-container">
             <main className="std-body">
-                <div className="amv-stats" style={{ marginBottom: '16px', display: 'inline-block' }}>
-                    {filteredUsers.length} total • Page {currentPage} of {totalPages || 1}
+                {/* Advanced Filters Bar */}
+                {showFilters && (
+                    <div className="amv-filters-panel" style={{
+                        backgroundColor: '#f8f9fa',
+                        padding: '16px',
+                        borderRadius: '8px',
+                        marginBottom: '16px',
+                        border: '1px solid #e9ecef',
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                        gap: '12px',
+                        alignItems: 'end'
+                    }}>
+                        <label className="amv-filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#666' }}>Balance Status</span>
+                            <select
+                                value={filters.balance}
+                                onChange={(e) => setFilters(p => ({ ...p, balance: e.target.value }))}
+                                style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                            >
+                                <option value="all">All</option>
+                                <option value="due">Due Only</option>
+                                <option value="positive">Positive Only</option>
+                            </select>
+                        </label>
+
+                        <label className="amv-filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#666' }}>Loan Status</span>
+                            <select
+                                value={filters.loan}
+                                onChange={(e) => setFilters(p => ({ ...p, loan: e.target.value }))}
+                                style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                            >
+                                <option value="all">All</option>
+                                <option value="active">Active Loan</option>
+                                <option value="none">No Loan</option>
+                            </select>
+                        </label>
+
+                        <label className="amv-filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#666' }}>Reading Room</span>
+                            <select
+                                value={filters.readingRoom}
+                                onChange={(e) => setFilters(p => ({ ...p, readingRoom: e.target.value }))}
+                                style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                            >
+                                <option value="all">All</option>
+                                <option value="active">Active</option>
+                                <option value="due_incoming">Due Incoming</option>
+                                <option value="overdue">Overdue</option>
+                                <option value="old">Old Member</option>
+                                <option value="none">Never Joined</option>
+                            </select>
+                        </label>
+
+                        <label className="amv-filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#666' }}>Hostel</span>
+                            <select
+                                value={filters.hostel}
+                                onChange={(e) => setFilters(p => ({ ...p, hostel: e.target.value }))}
+                                style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                            >
+                                <option value="all">All</option>
+                                <option value="active">Active</option>
+                                <option value="due_incoming">Due Incoming</option>
+                                <option value="overdue">Overdue</option>
+                                <option value="old">Old Member</option>
+                                <option value="none">Never Joined</option>
+                            </select>
+                        </label>
+
+                        <button
+                            onClick={clearFilters}
+                            style={{
+                                padding: '8px',
+                                background: '#fff',
+                                border: '1px solid #ddd',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                color: '#d32f2f',
+                                fontWeight: '500'
+                            }}
+                        >
+                            Reset
+                        </button>
+                    </div>
+                )}
+
+                <div className="amv-stats" style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>{filteredUsers.length} total • Page {currentPage} of {totalPages || 1}</span>
+                    {filteredUsers.length !== users.length && (
+                        <span style={{ fontSize: '12px', color: '#666' }}>
+                            Showing {filteredUsers.length} of {users.length} users
+                        </span>
+                    )}
                 </div>
 
                 {paginatedUsers.length === 0 && users.length > 0 ? (
                     <div className="amv-empty">
                         <User size={48} className="amv-empty-icon" />
                         <p>No members match your search.</p>
+                        <button onClick={clearFilters} style={{ marginTop: '10px', color: '#007bff', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                            Clear Filters
+                        </button>
                     </div>
                 ) : (
                     <>
@@ -240,7 +422,9 @@ function AllMembersView({ onBack, onDataLoaded }) {
                             <table className="amv-table">
                                 <thead>
                                     <tr>
-                                        <th style={{ width: '250px' }}>Identity</th>
+                                        {/* Split Identity into Name and Email */}
+                                        <th style={{ width: '180px' }}>Name</th>
+                                        <th style={{ width: '200px' }}>Email</th>
                                         <th>MRR ID</th>
                                         <th>Balance</th>
                                         <th>Loan</th>
@@ -257,14 +441,14 @@ function AllMembersView({ onBack, onDataLoaded }) {
                                         const rrStatus = getServiceStatus(rrAssignment, true, user);
                                         const hostelStatus = getServiceStatus(hostelAssignment, false, user);
 
-                                        // "Due Users" logic: Negative balance implies they owe money
                                         const isDue = (user.balance || 0) < 0;
 
                                         return (
                                             <tr key={user.id}>
+                                                {/* Name Column */}
                                                 <td>
-                                                    <div className="amv-user-cell">
-                                                        <div className="amv-avatar">
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <div className="amv-avatar" style={{ width: '28px', height: '28px', fontSize: '12px' }}>
                                                             {user.profileImage || user.photoUrl || user.image ? (
                                                                 <img
                                                                     src={user.profileImage || user.photoUrl || user.image}
@@ -277,11 +461,12 @@ function AllMembersView({ onBack, onDataLoaded }) {
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        <div className="amv-user-info">
-                                                            <span className="amv-user-name">{user.name || 'Anonymous Reader'}</span>
-                                                            <span className="amv-user-email">{user.email || '-'}</span>
-                                                        </div>
+                                                        <span className="amv-user-name" style={{ fontSize: '13px' }}>{user.name || 'Anonymous'}</span>
                                                     </div>
+                                                </td>
+                                                {/* Email Column */}
+                                                <td>
+                                                    <span className="amv-user-email" style={{ fontSize: '13px' }}>{user.email || '-'}</span>
                                                 </td>
                                                 <td>
                                                     <span className="amv-mrr-code">{user.mrrNumber || '-'}</span>
@@ -345,7 +530,7 @@ function AllMembersView({ onBack, onDataLoaded }) {
                                     })}
                                     {users.length === 0 && (
                                         <tr>
-                                            <td colSpan="7">
+                                            <td colSpan="8">
                                                 <div className="amv-empty">
                                                     <User size={48} className="amv-empty-icon" />
                                                     <p>The directory is currently empty.</p>

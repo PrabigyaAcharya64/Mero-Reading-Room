@@ -212,7 +212,7 @@ function AdminLandingContent() {
             <Route path="/account-dashboard" element={<AccountDashboard onDataLoaded={handlePageReady} />} />
             <Route path="/expense-earning-management" element={<ExpenseEarningManagement onDataLoaded={handlePageReady} />} />
             <Route path="/discounts" element={<DiscountManagement onDataLoaded={handlePageReady} />} />
-            <Route path="/settings" element={<Settings onBack={handleDashboardBack} />} />
+            <Route path="/settings" element={<Settings onBack={handleDashboardBack} onDataLoaded={handlePageReady} />} />
           </Routes>
         </main>
       </div>

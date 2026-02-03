@@ -3,20 +3,26 @@ import { useConfig } from '../../context/ConfigContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Button from '../../components/Button';
 import { Save, RefreshCw } from 'lucide-react';
-import '../../styles/StandardLayout.css'; // Reusing standard styles
+import '../../styles/StandardLayout.css';
 
 function Settings({ onBack }) {
     const { config, updateConfig, loading } = useConfig();
-    const [formData, setFormData] = useState(null);
+
+
+    const [formData, setFormData] = useState(() => {
+        if (config) {
+            return JSON.parse(JSON.stringify(config));
+        }
+        return null;
+    });
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
 
-    // Load initial data when config is ready
     useEffect(() => {
-        if (config) {
-            setFormData(JSON.parse(JSON.stringify(config))); // Deep copy
+        if (config && !formData) {
+            setFormData(JSON.parse(JSON.stringify(config)));
         }
-    }, [config]);
+    }, [config, formData]);
 
     const handleChange = (category, field, value, subField = null) => {
         setFormData(prev => {
@@ -25,11 +31,24 @@ function Settings({ onBack }) {
 
             if (subField) {
                 if (!newData[category][field]) newData[category][field] = {};
-                newData[category][field][subField] = field === 'DAILY_INTEREST_RATE' ? parseFloat(value) : (parseInt(value) || 0);
+                // Handle numeric vs string fields
+                // SMS Templates are strings, Fees are numbers
+                if (category === 'SMS') {
+                    newData[category][field][subField] = value;
+                } else {
+                    newData[category][field][subField] = field === 'DAILY_INTEREST_RATE' ? parseFloat(value) : (parseInt(value) || 0);
+                }
             } else {
                 // Special handling for float values like interest rate
                 if (field === 'DAILY_INTEREST_RATE') {
                     newData[category][field] = parseFloat(value) || 0;
+                } else if (category === 'SMS') {
+                    // SMS fields like WARNING_TEMPLATE are strings, SEND_HOUR is int
+                    if (field === 'SEND_HOUR') {
+                        newData[category][field] = parseInt(value) || 0;
+                    } else {
+                        newData[category][field] = value;
+                    }
                 } else {
                     newData[category][field] = parseInt(value) || 0;
                 }
@@ -214,6 +233,83 @@ function Settings({ onBack }) {
                             </div>
                         </div>
 
+                        {/* SMS Notification Settings */}
+                        {/* SMS Notification Settings */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                            <h2 className="text-xl font-bold mb-4 border-b pb-2">SMS Notifications</h2>
+                            <p className="text-sm text-gray-500 mb-4">Configure automated expiry notifications sent via DICE SMS.</p>
+
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Send Hour (0-23)</label>
+                                    <div className="text-xs text-gray-500 mb-1">Hour of day to run the check (Kathmandu Time). E.g., 10 for 10 AM.</div>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="23"
+                                        value={formData.SMS?.SEND_HOUR ?? 0}
+                                        onChange={(e) => handleChange('SMS', 'SEND_HOUR', e.target.value)}
+                                        className="w-full md:w-1/3 px-3 py-2 border rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
+                                    />
+                                </div>
+
+                                {/* Reading Room Templates */}
+                                <div className="border-t pt-4">
+                                    <h3 className="text-sm font-semibold text-gray-800 mb-3">Reading Room Templates</h3>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Warning (3 Days Left)</label>
+                                            <div className="text-xs text-gray-500 mb-1">Use <code>{`{{name}}`}</code> for user name and <code>{`{{date}}`}</code> for expiry date.</div>
+                                            <textarea
+                                                rows={2}
+                                                value={formData.SMS?.RR_WARNING_TEMPLATE || formData.SMS?.WARNING_TEMPLATE || ''}
+                                                onChange={(e) => handleChange('SMS', 'RR_WARNING_TEMPLATE', e.target.value)}
+                                                className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
+                                                placeholder="Hello {{name}}, your Reading Room plan expires on {{date}}."
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Grace Period End (Expired 3 Days Ago)</label>
+                                            <textarea
+                                                rows={2}
+                                                value={formData.SMS?.RR_GRACE_END_TEMPLATE || formData.SMS?.GRACE_END_TEMPLATE || ''}
+                                                onChange={(e) => handleChange('SMS', 'RR_GRACE_END_TEMPLATE', e.target.value)}
+                                                className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
+                                                placeholder="Hi {{name}}, your Reading Room grace period has ended."
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Hostel Templates */}
+                                <div className="border-t pt-4">
+                                    <h3 className="text-sm font-semibold text-gray-800 mb-3">Hostel Templates</h3>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Warning (3 Days Left)</label>
+                                            <textarea
+                                                rows={2}
+                                                value={formData.SMS?.HOSTEL_WARNING_TEMPLATE || formData.SMS?.WARNING_TEMPLATE || ''}
+                                                onChange={(e) => handleChange('SMS', 'HOSTEL_WARNING_TEMPLATE', e.target.value)}
+                                                className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
+                                                placeholder="Hello {{name}}, your Hostel plan expires on {{date}}."
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Grace Period End (Expired 3 Days Ago)</label>
+                                            <textarea
+                                                rows={2}
+                                                value={formData.SMS?.HOSTEL_GRACE_END_TEMPLATE || formData.SMS?.GRACE_END_TEMPLATE || ''}
+                                                onChange={(e) => handleChange('SMS', 'HOSTEL_GRACE_END_TEMPLATE', e.target.value)}
+                                                className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
+                                                placeholder="Hi {{name}}, your Hostel grace period has ended."
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Action Buttons */}
                         <div style={{
                             position: 'fixed',
@@ -248,8 +344,8 @@ function Settings({ onBack }) {
                         </div>
                     </form>
                 </div>
-            </main>
-        </div>
+            </main >
+        </div >
     );
 }
 

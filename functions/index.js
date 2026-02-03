@@ -2478,3 +2478,227 @@ exports.requestLoan = onCall(async (request) => {
         throw new HttpsError('internal', error.message || 'Loan request failed.');
     }
 });
+
+/**
+ * Scheduled function to send SMS notifications for expiry warnings and grace period endings.
+ * Runs hourly but sends only at the configured hour.
+ */
+const diceApiKey = defineSecret("DICE_API_KEY");
+
+exports.sendExpirySms = onSchedule(
+    {
+        schedule: "every 60 minutes",
+        secrets: [diceApiKey]
+    },
+    async (event) => {
+        const db = admin.firestore();
+        const KATHMANDU_TZ = "Asia/Kathmandu";
+
+        try {
+            // 1. Fetch SMS Settings
+            const configDoc = await db.collection('settings').doc('config').get();
+            if (!configDoc.exists) {
+                console.log("Settings config not found.");
+                return;
+            }
+
+            const config = configDoc.data();
+            const smsSettings = config.SMS;
+
+            if (!smsSettings || !smsSettings.SEND_HOUR) {
+                console.log("SMS settings or SEND_HOUR not configured.");
+                return;
+            }
+
+            // 2. Check Execution Time
+            const now = new Date();
+            // Parse hour reliably in Kathmandu Time
+            const currentHour = parseInt(new Intl.DateTimeFormat('en-US', {
+                timeZone: KATHMANDU_TZ,
+                hour: 'numeric',
+                hour12: false
+            }).format(now));
+
+            // config.SMS.SEND_HOUR should be stored as integer e.g., 9 or 15
+            if (currentHour !== parseInt(smsSettings.SEND_HOUR)) {
+                console.log(`Current hour (${currentHour}) does not match send hour (${smsSettings.SEND_HOUR}). Skipping.`);
+                return;
+            }
+
+            const apiKey = diceApiKey.value();
+            if (!apiKey) {
+                console.error("DICE_API_KEY secret not found.");
+                return;
+            }
+
+            console.log("Starting SMS Notification Job...");
+
+            // 3. Calculate Date Ranges
+            // Strategy: Convert target days to ISO range for that full day.
+
+            const getDayRange = (offsetDays) => {
+                const d = new Date();
+                d.setDate(d.getDate() + offsetDays); // Add/Sub days
+
+                // Set time to 00:00:00.000 local (assuming users entered locally?)
+                // Actually, nextPaymentDue is usually UTC ISO. 
+                // Note: The prompt asks for "Today + 3 Days" logic.
+                // If today is Feb 3, +3 is Feb 6.
+                // We want any timestamp falling on Feb 6.
+                // But specifically Feb 6 in WHICH timezone? 
+                // Implicitly Kathmandu as it's a Nepali app.
+
+                // Create a date object for the target day in Kathmandu
+                // We'll use string manipulation on the Kathmandu date string to get YYYY-MM-DD
+                const targetIsoString = d.toLocaleDateString("en-CA", { timeZone: KATHMANDU_TZ }); // YYYY-MM-DD
+
+                // Construct ISO range for that YYYY-MM-DD
+                // But we must compare against user.nextPaymentDue (ISO UTC).
+                // So we need: Start of Feb 6 KATHMANDU converted to UTC.
+                // End of Feb 6 KATHMANDU converted to UTC.
+
+                // Start: YYYY-MM-DD 00:00:00 Kathmandu -> UTC
+                // End:   YYYY-MM-DD 23:59:59 Kathmandu -> UTC
+
+                // Helper to create date from string in specific TZ?
+                // It's tricky without a library in pure Node.
+                // Simpler fallback: Treat 'nextPaymentDue' as UTC and ignore TZ offset for simplicity 
+                // UNLESS user strictly needs Kathmandu alignment. 
+                // Given "Today + 3", usually implies "3 x 24h from now" OR "Calendar Day".
+                // Let's stick to UTC Calendar Day to match standard ISO strings.
+                // YYYY-MM-DD (UTC).
+
+                const utcYear = d.getUTCFullYear();
+                const utcMonth = d.getUTCMonth();
+                const utcDay = d.getUTCDate();
+
+                const start = new Date(Date.UTC(utcYear, utcMonth, utcDay, 0, 0, 0, 0));
+                const end = new Date(Date.UTC(utcYear, utcMonth, utcDay, 23, 59, 59, 999));
+
+                return { start: start.toISOString(), end: end.toISOString() };
+            };
+
+            const warningRange = getDayRange(3);  // +3 Days
+            const graceRange = getDayRange(-3);   // -3 Days (Grace End)
+
+            console.log(`Checking Warning Range: ${warningRange.start} - ${warningRange.end}`);
+            console.log(`Checking Grace Range: ${graceRange.start} - ${graceRange.end}`);
+
+            // 4. Run Queries
+            const usersRef = db.collection('users');
+
+            const [
+                rrWarningSnapshot, rrGraceSnapshot,
+                hostelWarningSnapshot, hostelGraceSnapshot
+            ] = await Promise.all([
+                // Reading Room Queries
+                usersRef.where('nextPaymentDue', '>=', warningRange.start)
+                    .where('nextPaymentDue', '<=', warningRange.end)
+                    .get(),
+                usersRef.where('nextPaymentDue', '>=', graceRange.start)
+                    .where('nextPaymentDue', '<=', graceRange.end)
+                    .get(),
+                // Hostel Queries
+                usersRef.where('hostelNextPaymentDue', '>=', warningRange.start)
+                    .where('hostelNextPaymentDue', '<=', warningRange.end)
+                    .get(),
+                usersRef.where('hostelNextPaymentDue', '>=', graceRange.start)
+                    .where('hostelNextPaymentDue', '<=', graceRange.end)
+                    .get()
+            ]);
+
+            console.log(`Found: RR Warn(${rrWarningSnapshot.size}), RR Grace(${rrGraceSnapshot.size}), Hostel Warn(${hostelWarningSnapshot.size}), Hostel Grace(${hostelGraceSnapshot.size})`);
+
+            // 5. Build Notifications
+            const notifications = [];
+
+            // Helper to add to list
+            const processSnapshot = (snapshot, template, dateField = 'nextPaymentDue', type = 'Plan') => {
+                snapshot.forEach(doc => {
+                    const userData = doc.data();
+                    if (!userData.phone_number) return;
+
+                    const dateVal = userData[dateField];
+                    if (!dateVal) return;
+
+                    const dateObj = new Date(dateVal);
+                    const dateStr = dateObj.toISOString().split('T')[0]; // YYYY-MM-DD
+
+                    let message = template
+                        .replace('{{name}}', userData.displayName || userData.name || 'Member')
+                        .replace('{{date}}', dateStr);
+
+                    // Optional: If we want to differentiate in future, we could append type, 
+                    // but sticking to user template for now.
+
+                    notifications.push({
+                        phone_number: userData.phone_number,
+                        message: message,
+                        userId: doc.id
+                    });
+                });
+            };
+
+            // Reading Room Notifications
+            if (smsSettings.RR_WARNING_TEMPLATE) {
+                processSnapshot(rrWarningSnapshot, smsSettings.RR_WARNING_TEMPLATE, 'nextPaymentDue');
+            } else if (smsSettings.WARNING_TEMPLATE) {
+                // Fallback to old generic template if specific one not set
+                processSnapshot(rrWarningSnapshot, smsSettings.WARNING_TEMPLATE, 'nextPaymentDue');
+            }
+
+            if (smsSettings.RR_GRACE_END_TEMPLATE) {
+                processSnapshot(rrGraceSnapshot, smsSettings.RR_GRACE_END_TEMPLATE, 'nextPaymentDue');
+            } else if (smsSettings.GRACE_END_TEMPLATE) {
+                processSnapshot(rrGraceSnapshot, smsSettings.GRACE_END_TEMPLATE, 'nextPaymentDue');
+            }
+
+            // Hostel Notifications
+            if (smsSettings.HOSTEL_WARNING_TEMPLATE) {
+                processSnapshot(hostelWarningSnapshot, smsSettings.HOSTEL_WARNING_TEMPLATE, 'hostelNextPaymentDue');
+            } else if (smsSettings.WARNING_TEMPLATE) {
+                processSnapshot(hostelWarningSnapshot, smsSettings.WARNING_TEMPLATE, 'hostelNextPaymentDue');
+            }
+
+            if (smsSettings.HOSTEL_GRACE_END_TEMPLATE) {
+                processSnapshot(hostelGraceSnapshot, smsSettings.HOSTEL_GRACE_END_TEMPLATE, 'hostelNextPaymentDue');
+            } else if (smsSettings.GRACE_END_TEMPLATE) {
+                processSnapshot(hostelGraceSnapshot, smsSettings.GRACE_END_TEMPLATE, 'hostelNextPaymentDue');
+            }
+
+            // 6. Send SMS Loop
+            const results = await Promise.allSettled(notifications.map(async (notif) => {
+                const response = await fetch("https://dicesms.asia/api/sms/", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Token ${apiKey}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        phone_number: notif.phone_number,
+                        message: notif.message
+                    })
+                });
+
+                if (!response.ok) {
+                    const txt = await response.text();
+                    throw new Error(`API Error ${response.status}: ${txt}`);
+                }
+                return notif.userId;
+            }));
+
+            // 7. Log Results
+            const successCount = results.filter(r => r.status === 'fulfilled').length;
+            const failCount = results.filter(r => r.status === 'rejected').length;
+
+            console.log(`SMS Job Complete. Success: ${successCount}, Failed: ${failCount}`);
+            if (failCount > 0) {
+                const errors = results.filter(r => r.status === 'rejected').map(r => r.reason);
+                console.error("SMS Failures:", errors.slice(0, 5));
+            }
+
+        } catch (error) {
+            console.error("Error in sendExpirySms:", error);
+        }
+    }
+);

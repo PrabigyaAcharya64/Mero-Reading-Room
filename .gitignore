@@ -45,3 +45,6 @@ build/
 # firestore.rules
 # storage.rules
 # firestore.indexes.json
+
+# Secrets
+google-services.json

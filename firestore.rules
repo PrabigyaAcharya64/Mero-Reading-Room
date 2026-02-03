@@ -95,21 +95,7 @@ service cloud.firestore {
       allow create: if isOwner(userId) && !isSettingSensitiveFields();
 
       // Allow updating: Own profile, BUT prevent modifying sensitive fields
-      allow update: if isOwner(userId) && (
-        !isModifyingSensitiveFields()
-        || (
-          // Exception for taking a loan: Allow updating loan status and balance together
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['loan', 'balance'])
-          && request.resource.data.loan.has_active_loan == true
-          && (resource.data.loan == null || resource.data.loan.has_active_loan == false)
-          // Robust math check: Use .get() for safety and ensure loan amount is reasonable
-          && request.resource.data.balance == resource.data.get('balance', 0) + request.resource.data.loan.loan_amount
-          && request.resource.data.loan.loan_amount > 0
-          // Security: Check Max Loan Amount dynamically from settings
-          // Security: Check Max Loan Amount dynamically from settings
-          && request.resource.data.loan.loan_amount <= get(/databases/$(database)/documents/settings/config).data.LOAN.MAX_AMOUNT
-        )
-      );
+      allow update: if isOwner(userId) && !isModifyingSensitiveFields();
 
       // Staff can update everything
       allow update, delete: if isStaff();
