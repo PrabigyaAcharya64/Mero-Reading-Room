@@ -8,13 +8,6 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ['lucide-react'],
-    include: [
-      'firebase/app',
-      'firebase/auth',
-      'firebase/firestore',
-      'firebase/functions',
-      'firebase/storage'
-    ],
     esbuildOptions: {
       supported: {
         bigint: true
@@ -26,22 +19,18 @@ export default defineConfig({
     port: 5173,
     open: false
   },
-  resolve: {
-    alias: {
-      '@firebase/firestore': 'firebase/firestore',
-      '@firebase/auth': 'firebase/auth',
-      '@firebase/app': 'firebase/app',
-      '@firebase/functions': 'firebase/functions',
-      '@firebase/storage': 'firebase/storage',
-    }
-  },
   build: {
     chunkSizeWarningLimit: 2000,
     commonjsOptions: {
       include: [/node_modules/],
-      transformMixedEsModules: true
+      transformMixedEsModules: true,
+      ignoreDynamicRequires: true
     },
     rollupOptions: {
+      external: (id) => {
+        // Don't externalize anything - we want everything bundled
+        return false;
+      },
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
