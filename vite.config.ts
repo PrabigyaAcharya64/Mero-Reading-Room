@@ -7,9 +7,8 @@ export default defineConfig({
     'global': 'window',
   },
   optimizeDeps: {
-    exclude: [
-      'lucide-react'
-    ],
+    exclude: ['lucide-react'],
+    include: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
     esbuildOptions: {
       supported: {
         bigint: true
@@ -22,7 +21,11 @@ export default defineConfig({
     open: false
   },
   resolve: {
-    dedupe: ['firebase', '@firebase/app', '@firebase/auth', '@firebase/firestore'],
+    alias: {
+      '@firebase/firestore': 'firebase/firestore',
+      '@firebase/auth': 'firebase/auth',
+      '@firebase/app': 'firebase/app',
+    }
   },
   build: {
     chunkSizeWarningLimit: 2000,
