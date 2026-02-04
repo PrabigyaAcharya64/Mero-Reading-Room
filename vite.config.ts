@@ -5,10 +5,13 @@ import react from '@vitejs/plugin-react'
 function firebaseRedirectPlugin(): Plugin {
   return {
     name: 'firebase-redirect',
-    resolveId(source) {
+    enforce: 'pre', // Run before other plugins
+    resolveId(source, importer, options) {
+      // Intercept @firebase/* imports
       if (source.startsWith('@firebase/')) {
         const moduleName = source.replace('@firebase/', '');
-        return this.resolve(`firebase/${moduleName}`, undefined, { skipSelf: true });
+        // Return the redirected path
+        return `firebase/${moduleName}`;
       }
       return null;
     }
@@ -17,8 +20,8 @@ function firebaseRedirectPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [
-    react(),
-    firebaseRedirectPlugin()
+    firebaseRedirectPlugin(),
+    react()
   ],
   define: {
     'global': 'window',
@@ -35,6 +38,17 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     open: false
+  },
+  resolve: {
+    alias: {
+      '@firebase/app': 'firebase/app',
+      '@firebase/auth': 'firebase/auth',
+      '@firebase/firestore': 'firebase/firestore',
+      '@firebase/functions': 'firebase/functions',
+      '@firebase/storage': 'firebase/storage',
+      '@firebase/analytics': 'firebase/analytics',
+      '@firebase/performance': 'firebase/performance',
+    }
   },
   build: {
     chunkSizeWarningLimit: 2000,
