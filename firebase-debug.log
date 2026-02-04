@@ -1,0 +1,86 @@
+[debug] [2026-02-04T16:31:09.254Z] ----------------------------------------------------------------------
+[debug] [2026-02-04T16:31:09.255Z] Command:       /usr/local/bin/node /usr/local/bin/firebase deploy --only functions
+[debug] [2026-02-04T16:31:09.255Z] CLI Version:   15.5.1
+[debug] [2026-02-04T16:31:09.255Z] Platform:      darwin
+[debug] [2026-02-04T16:31:09.255Z] Node Version:  v24.11.1
+[debug] [2026-02-04T16:31:09.255Z] Time:          Wed Feb 04 2026 22:16:09 GMT+0545 (Nepal Time)
+[debug] [2026-02-04T16:31:09.255Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-02-04T16:31:09.256Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-02-04T16:31:09.954Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-02-04T16:31:09.955Z] > authorizing via signed-in user (meroreadingroom7@gmail.com)
+[debug] [2026-02-04T16:31:09.955Z] [iam] checking project mero-reading-room-app for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2026-02-04T16:31:09.955Z] Checked if tokens are valid: false, expires at: 1770211120757
+[debug] [2026-02-04T16:31:09.955Z] Checked if tokens are valid: false, expires at: 1770211120757
+[debug] [2026-02-04T16:31:09.955Z] > refreshing access token with scopes: []
+[debug] [2026-02-04T16:31:09.955Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-02-04T16:31:09.955Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-02-04T16:31:10.192Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-02-04T16:31:10.192Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-02-04T16:31:10.201Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/mero-reading-room-app:testIamPermissions [none]
+[debug] [2026-02-04T16:31:10.201Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/mero-reading-room-app:testIamPermissions  x-goog-user-project=mero-reading-room-app
+[debug] [2026-02-04T16:31:10.201Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/mero-reading-room-app:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2026-02-04T16:31:10.589Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2026-02-04T16:31:10.589Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[debug] [2026-02-04T16:31:11.709Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/mero-reading-room-app:testIamPermissions 200
+[debug] [2026-02-04T16:31:11.709Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/mero-reading-room-app:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2026-02-04T16:31:11.709Z] Checked if tokens are valid: true, expires at: 1770226269192
+[debug] [2026-02-04T16:31:11.709Z] Checked if tokens are valid: true, expires at: 1770226269192
+[debug] [2026-02-04T16:31:11.709Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/mero-reading-room-app/serviceAccounts/mero-reading-room-app@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2026-02-04T16:31:11.709Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/mero-reading-room-app/serviceAccounts/mero-reading-room-app@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2026-02-04T16:31:13.534Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/mero-reading-room-app/serviceAccounts/mero-reading-room-app@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2026-02-04T16:31:13.534Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/mero-reading-room-app/serviceAccounts/mero-reading-room-app@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[info] 
+[info] === Deploying to 'mero-reading-room-app'...
+[info] 
+[info] i  deploying functions 
+[debug] [2026-02-04T16:31:13.537Z] Checked if tokens are valid: true, expires at: 1770226269192
+[debug] [2026-02-04T16:31:13.537Z] Checked if tokens are valid: true, expires at: 1770226269192
+[debug] [2026-02-04T16:31:13.537Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/mero-reading-room-app [none]
+[debug] [2026-02-04T16:31:13.848Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/mero-reading-room-app 200
+[debug] [2026-02-04T16:31:13.848Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/mero-reading-room-app {"projectNumber":"949466497845","projectId":"mero-reading-room-app","lifecycleState":"ACTIVE","name":"Mero-Reading-Room","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2025-11-12T14:39:01.310281Z"}
+[info] i  functions: preparing codebase default for deployment 
+[info] i  functions: ensuring required API cloudfunctions.googleapis.com is enabled... 
+[info] i  functions: ensuring required API cloudbuild.googleapis.com is enabled... 
+[info] i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled... 
+[debug] [2026-02-04T16:31:13.850Z] Checked if tokens are valid: true, expires at: 1770226269192
+[debug] [2026-02-04T16:31:13.850Z] Checked if tokens are valid: true, expires at: 1770226269192
+[debug] [2026-02-04T16:31:13.850Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/mero-reading-room-app/adminSdkConfig [none]
+[debug] [2026-02-04T16:31:14.608Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/mero-reading-room-app/adminSdkConfig 200
+[debug] [2026-02-04T16:31:14.608Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/mero-reading-room-app/adminSdkConfig {"projectId":"mero-reading-room-app","storageBucket":"mero-reading-room-app.firebasestorage.app"}
+[debug] [2026-02-04T16:31:14.609Z] Checked if tokens are valid: true, expires at: 1770226269192
+[debug] [2026-02-04T16:31:14.609Z] Checked if tokens are valid: true, expires at: 1770226269192
+[debug] [2026-02-04T16:31:14.609Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/mero-reading-room-app/configs [none]
+[debug] [2026-02-04T16:31:15.247Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/mero-reading-room-app/configs 200
+[debug] [2026-02-04T16:31:15.247Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/mero-reading-room-app/configs {}
+[debug] [2026-02-04T16:31:15.252Z] Validating nodejs source
+[warn] ⚠  functions: Runtime Node.js 20 will be deprecated on 2026-04-30 and will be decommissioned on 2026-10-30, after which you will not be able to deploy without upgrading. Consider upgrading now to avoid disruption. See https://cloud.google.com/functions/docs/runtime-support for full details on the lifecycle policy 
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[debug] [2026-02-04T16:31:16.019Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^13.6.0",
+    "firebase-functions": "^7.0.3",
+    "nodemailer": "^6.9.13"
+  },
+  "private": true
+}
+[debug] [2026-02-04T16:31:16.019Z] Building nodejs source
+[info] i  functions: Loading and analyzing source code for codebase default to determine what to deploy 
+[debug] [2026-02-04T16:31:16.019Z] Could not find functions.yaml. Must use http discovery
+[debug] [2026-02-04T16:31:16.023Z] Found firebase-functions binary at '/Users/prabigyaacharya/Downloads/Mero-Reading-Room-main/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8639
+
+[debug] [2026-02-04T16:31:16.446Z] Got response from /__/functions.yaml {"endpoints":{"dailyInterestTask":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"scheduleTrigger":{"schedule":"every 24 hours","retryConfig":{"retryCount":null,"maxDoublings":null,"maxRetrySeconds":null,"minBackoffSeconds":null,"maxBackoffSeconds":null},"timeZone":null},"entryPoint":"dailyInterestTask"},"onUserVerified":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","secretEnvironmentVariables":[{"key":"BREVO_API_KEY"}],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"users/{userId}"},"retry":false},"entryPoint":"onUserVerified"},"onUserCreated":{"platform":"gcfv1","availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"eventTrigger":{"eventType":"providers/firebase.auth/eventTypes/user.create","eventFilters":{"resource":"projects/mero-reading-room-app"},"retry":false},"labels":{},"entryPoint":"onUserCreated"},"assignSeat":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"callableTrigger":{},"entryPoint":"assignSeat"},"uploadImage":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","secretEnvironmentVariables":[{"key":"IMGBB_API_KEY"}],"labels":{},"callableTrigger":{},"entryPoint":"uploadImage"},"sendInvoiceEmail":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","secretEnvironmentVariables":[{"key":"BREVO_API_KEY"}],"labels":{},"callableTrigger":{},"entryPoint":"sendInvoiceEmail"},"checkStatusExpiration":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"scheduleTrigger":{"schedule":"0 0 * * *","retryConfig":{"retryCount":null,"maxDoublings":null,"maxRetrySeconds":null,"minBackoffSeconds":null,"maxBackoffSeconds":null},"timeZone":null},"entryPoint":"checkStatusExpiration"},"renewReadingRoomSubscription":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"callableTrigger":{},"entryPoint":"renewReadingRoomSubscription"},"withdrawService":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"callableTrigger":{},"entryPoint":"withdrawService"},"requestBalanceRefund":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"callableTrigger":{},"entryPoint":"requestBalanceRefund"},"verifyDiscussionEligibility":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"callableTrigger":{},"entryPoint":"verifyDiscussionEligibility"},"bookDiscussionRoom":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"callableTrigger":{},"entryPoint":"bookDiscussionRoom"},"processReadingRoomPurchase":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"callableTrigger":{},"entryPoint":"processReadingRoomPurchase"},"processCanteenOrder":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"callableTrigger":{},"entryPoint":"processCanteenOrder"},"topUpBalance":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"callableTrigger":{},"entryPoint":"topUpBalance"},"approveBalanceLoad":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"callableTrigger":{},"entryPoint":"approveBalanceLoad"},"processHostelPurchase":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"callableTrigger":{},"entryPoint":"processHostelPurchase"},"getHostelRoommates":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"callableTrigger":{},"entryPoint":"getHostelRoommates"},"renewHostelSubscription":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"callableTrigger":{},"entryPoint":"renewHostelSubscription"},"calculatePayment":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"callableTrigger":{},"entryPoint":"calculatePayment"},"requestLoan":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"callableTrigger":{},"entryPoint":"requestLoan"},"sendExpirySms":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","secretEnvironmentVariables":[{"key":"DICE_API_KEY"}],"labels":{},"scheduleTrigger":{"schedule":"every 60 minutes","retryConfig":{}},"entryPoint":"sendExpirySms"},"sendCustomSms":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","secretEnvironmentVariables":[{"key":"DICE_API_KEY"}],"labels":{},"callableTrigger":{},"entryPoint":"sendCustomSms"}},"specVersion":"v1alpha1","requiredAPIs":[{"api":"cloudscheduler.googleapis.com","reason":"Needed for scheduled functions."}],"extensions":{},"params":[{"type":"secret","name":"BREVO_API_KEY"},{"type":"secret","name":"IMGBB_API_KEY"},{"type":"secret","name":"DICE_API_KEY"}]}

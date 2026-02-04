@@ -1152,6 +1152,61 @@ exports.bookDiscussionRoom = onCall(async (request) => {
     const ROOMS = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7'];
     const db = admin.firestore();
 
+    // Validate that slot is not in the past
+    // Nepal Time is UTC+05:45
+    // Slot ID is the start hour (e.g., '15' -> 15:00)
+    // Slot ends at startHour + 3
+    // We allow booking if NOW < Slot End Time
+
+    // Construct slot end time in UTC
+    // date is "YYYY-MM-DD"
+    const startHour = parseInt(slotId);
+    const endHour = startHour + 3;
+
+    // Create date string for Nepal Time: "YYYY-MM-DDTHH:00:00+05:45"
+    // Note: hours must be padded
+    const paddedEndHour = endHour.toString().padStart(2, '0');
+    // If endHour is 24 (midnight), typical ISO handling might be tricky, but slots go up to 21 (end 24/00).
+    // Let's use simple logic:
+    // Slot End in Nepal Time = YYYY-MM-DD T HH:00:00 +05:45
+
+    // Handle edge case if endHour >= 24 (e.g. 21+3=24). 
+    // This implies next day 00:00.
+    // Simplifying: compare start time. If NOW > Start Time + buffer?
+    // User asked "if its 3 pm why show old time slots".
+    // Implies we can't book slots that have *ended*.
+    // Strictly: can't book slots that have *started*?
+    // "Discussion room" usually booked in advance or for *upcoming* sessions.
+    // If it's 3:30 PM, can I book the 3-6 PM slot?
+    // If I book it, I get 2.5 hours. It's valid.
+    // But if I try to book 12-3 PM, it's invalid.
+
+    let targetDateStr = date;
+    let targetHour = endHour;
+
+    // If endHour is 24, technically it is tomorrow 00:00
+    // But ISO string "24:00" is invalid.
+    // We can use the start time for validation to be safe.
+    // Allow booking if Current Time < End Time.
+
+    let slotEndTimeDate;
+
+    if (endHour === 24) {
+        // Handle midnight transition if needed, or just set to 23:59:59 roughly
+        // Or construct tomorrow 00:00
+        // Simpler: Use timestamp calculation
+        const startIso = `${date}T${slotId.toString().padStart(2, '0')}:00:00+05:45`;
+        const startDate = new Date(startIso);
+        slotEndTimeDate = new Date(startDate.getTime() + 3 * 60 * 60 * 1000);
+    } else {
+        const endIso = `${date}T${targetHour.toString().padStart(2, '0')}:00:00+05:45`;
+        slotEndTimeDate = new Date(endIso);
+    }
+
+    if (Date.now() > slotEndTimeDate.getTime()) {
+        throw new HttpsError('failed-precondition', 'Cannot book a past time slot.');
+    }
+
     try {
         const result = await db.runTransaction(async (transaction) => {
             // 1. Get all bookings for this date

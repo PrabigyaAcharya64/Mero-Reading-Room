@@ -61,7 +61,7 @@ const Discussion = ({ onBack }) => {
     }, [user, onBack]);
 
 
-    const [bookings, setBookings] = useState({});
+    const [bookings, setBookings] = useState({}); // { slotId: [booking1, booking2] }
 
     // UI State
     const [selectedSlot, setSelectedSlot] = useState(null); // { id, label }
@@ -77,9 +77,6 @@ const Discussion = ({ onBack }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Get the "logical" date string (YYYY-MM-DD)
-    // We stick to the 6 AM cycle logic for consistency, or just use calendar date?
-    // "from 6-9... till 9" implies a daily cycle. 
-    // Let's keep the logic: if < 6 AM, it's previous day's cycle (though slots start at 6).
     const getLogicalDateString = () => {
         const now = new Date();
         const currentHour = now.getHours();
@@ -108,7 +105,10 @@ const Discussion = ({ onBack }) => {
             snapshot.forEach(doc => {
                 const data = doc.data();
                 if (data.slotId) {
-                    newBookings[data.slotId] = data;
+                    if (!newBookings[data.slotId]) {
+                        newBookings[data.slotId] = [];
+                    }
+                    newBookings[data.slotId].push({ id: doc.id, ...data });
                 }
             });
             setBookings(newBookings);
@@ -120,9 +120,17 @@ const Discussion = ({ onBack }) => {
         return () => unsubscribe();
     }, []);
 
-    // Check if a user is already part of any booking for the day (as booker or member)
-    const isUserAlreadyBooked = (uid) => {
-        return Object.values(bookings).some(booking => {
+    // Check if the current user has a booking in a specific slot
+    const getMyBookingInSlot = (slotId) => {
+        const slotBookings = bookings[slotId] || [];
+        return slotBookings.find(b =>
+            b.bookedBy === user.uid || (b.members && b.members.some(m => m.uid === user.uid))
+        );
+    };
+
+    // Check if a user is already part of any booking for the day (across all slots)
+    const isUserAlreadyBookedToday = (uid) => {
+        return Object.values(bookings).flat().some(booking => {
             if (booking.bookedBy === uid) return true;
             if (booking.members && booking.members.some(m => m.uid === uid)) return true;
             return false;
@@ -161,10 +169,6 @@ const Discussion = ({ onBack }) => {
             setError('Member already added to list.');
             return;
         }
-        // Check if it's self
-        // We don't strictly have MRR for current user in context easily without fetching, 
-        // but let's assume they might add themselves which is redundant but harmless, 
-        // or we can skip this check.
 
         setIsSubmitting(true);
         const member = await lookupUserByMrr(newMemberMrr);
@@ -172,7 +176,7 @@ const Discussion = ({ onBack }) => {
 
         if (member) {
             // Check if user is already booked today
-            if (isUserAlreadyBooked(member.uid)) {
+            if (isUserAlreadyBookedToday(member.uid)) {
                 setError(`Member ${member.name} is already part of another group today.`);
                 return;
             }
@@ -198,9 +202,15 @@ const Discussion = ({ onBack }) => {
         setPendingMembers([]);
         setNewMemberMrr('');
 
-        if (bookings[slot.id]) {
-            setViewMode('details');
+        const myBooking = getMyBookingInSlot(slot.id);
+
+        if (myBooking) {
+            setViewMode('details'); // View MY booking details
         } else {
+            // If I don't have a booking here, can I book?
+            // Only if slot is not full (7 rooms) AND I haven't booked 2 slots today (handled by cloud function check, but good to know)
+            // AND I don't have a booking in this slot already (handled above)
+            // So we go to 'book' mode, and let 'book' mode show "Full" if full.
             setViewMode('book');
         }
     };
@@ -214,28 +224,12 @@ const Discussion = ({ onBack }) => {
             return;
         }
 
-        // 1. Check if current user is already booked today
-        if (isUserAlreadyBooked(user.uid)) {
-            setError("You are already part of a discussion group for today. You can only join one group per day.");
-            return;
-        }
-
-        // 2. Check if any pending members are already booked today
-        for (const member of pendingMembers) {
-            if (isUserAlreadyBooked(member.uid)) {
-                setError(`Member ${member.name} is already part of another group today.`);
-                return;
-            }
-        }
-
         setIsSubmitting(true);
         setError('');
 
         try {
-            const slotDocId = `${getLogicalDateString()}_${selectedSlot.id}`;
-            const slotRef = doc(db, 'discussion_rooms', slotDocId);
-
-            // Fetch current user's MRR from Firestore
+            // Fetch current user's MRR from Firestore just for local object construction if needed, 
+            // but Cloud Function will handle the heavy lifting.
             const userDocRef = doc(db, 'users', user.uid);
             const userDocSnap = await getDoc(userDocRef);
             let userMrr = 'N/A';
@@ -243,40 +237,32 @@ const Discussion = ({ onBack }) => {
                 userMrr = userDocSnap.data().mrrNumber || 'N/A';
             }
 
-            // Create leader member object
+            // Create leader member object (local construction for potential optimistic UI, but relying on CF response)
             const leaderMember = {
                 uid: user.uid,
                 name: `${user.displayName || 'User'} (Leader)`,
                 mrrNumber: userMrr
             };
 
-            // Combine leader with pending members
             const allMembers = [leaderMember, ...pendingMembers];
 
-            await runTransaction(db, async (transaction) => {
-                const sfDoc = await transaction.get(slotRef);
-                if (sfDoc.exists()) {
-                    throw new Error("This slot has just been booked by someone else.");
-                }
-
-                transaction.set(slotRef, {
-                    date: getLogicalDateString(),
-                    slotId: selectedSlot.id,
-                    slotLabel: selectedSlot.label,
-                    bookedBy: user.uid,
-                    bookerName: user.displayName || 'Unknown',
-                    teamName: groupName, // keeping field name for compatibility, UI shows "Group"
-                    members: allMembers,
-                    createdAt: new Date().toISOString()
-                });
+            // Call Cloud Function
+            const bookDiscussionRoom = httpsCallable(functions, 'bookDiscussionRoom');
+            await bookDiscussionRoom({
+                date: getLogicalDateString(),
+                slotId: selectedSlot.id,
+                slotLabel: selectedSlot.label,
+                teamName: groupName,
+                members: allMembers
             });
 
             setGroupName('');
             setPendingMembers([]);
             setViewMode('details');
+            setSuccessMsg('Booking successful!');
         } catch (err) {
             console.error("Booking failed:", err);
-            setError(err.message);
+            setError(err.message || "Failed to book room.");
         } finally {
             setIsSubmitting(false);
         }
@@ -287,10 +273,12 @@ const Discussion = ({ onBack }) => {
         setError('');
         setSuccessMsg('');
 
+        const myBooking = getMyBookingInSlot(selectedSlot.id);
+        if (!myBooking) return;
+
         if (!newMemberMrr.trim()) return;
 
-        const currentBooking = bookings[selectedSlot.id];
-        if (currentBooking.members && currentBooking.members.some(m => m.mrrNumber === newMemberMrr.trim())) {
+        if (myBooking.members && myBooking.members.some(m => m.mrrNumber === newMemberMrr.trim())) {
             setError('Member is already in the group.');
             return;
         }
@@ -300,17 +288,18 @@ const Discussion = ({ onBack }) => {
 
         if (member) {
             try {
-                // Check if user is already booked today
-                if (isUserAlreadyBooked(member.uid)) {
+                if (isUserAlreadyBookedToday(member.uid)) {
                     setError(`Member ${member.name} is already part of another group today.`);
                     setIsSubmitting(false);
                     return;
                 }
 
-                const slotDocId = `${getLogicalDateString()}_${selectedSlot.id}`;
-                const slotRef = doc(db, 'discussion_rooms', slotDocId);
+                // Update Firestore Document directly (Still okay for simple updates, or should we make a CF?)
+                // Since `bookDiscussionRoom` creates the doc, we can update it directly if we have permission.
+                // Assuming clients can update their own bookings.
+                const bookingRef = doc(db, 'discussion_rooms', myBooking.id); // Using the doc ID we stored
 
-                await updateDoc(slotRef, {
+                await updateDoc(bookingRef, {
                     members: arrayUnion(member)
                 });
 
@@ -329,10 +318,11 @@ const Discussion = ({ onBack }) => {
 
     const handleCancelBooking = async () => {
         if (window.confirm('Are you sure you want to cancel this booking? This action cannot be undone.')) {
+            const myBooking = getMyBookingInSlot(selectedSlot.id);
+            if (!myBooking) return;
+
             try {
-                const dateStr = getLogicalDateString();
-                const docId = `${dateStr}_${selectedSlot.id}`;
-                const docRef = doc(db, 'discussion_rooms', docId);
+                const docRef = doc(db, 'discussion_rooms', myBooking.id);
                 await deleteDoc(docRef);
                 setViewMode('list');
                 setSelectedSlot(null);
@@ -360,31 +350,43 @@ const Discussion = ({ onBack }) => {
                         </p>
 
                         <div className="slots-list">
-                            {SLOTS.map(slot => {
-                                const booking = bookings[slot.id];
-                                const isBooked = !!booking;
-                                const isMyBooking = isBooked && (booking.bookedBy === user.uid || (booking.members && booking.members.some(m => m.uid === user.uid)));
+                            {SLOTS.filter(slot => {
+                                const now = new Date();
+                                const currentHour = now.getHours();
+                                // Slot ends at startHour + 3
+                                // If currentHour >= endHour, the slot is over.
+                                // e.g. 12-3 PM (start 12). Ends at 15. If now is 15 (3 PM), it is over.
+                                return (slot.startHour + 3) > currentHour;
+                            }).map(slot => {
+                                const slotBookings = bookings[slot.id] || [];
+                                const totalBooked = slotBookings.length;
+                                const isFull = totalBooked >= 7;
+                                const myBooking = getMyBookingInSlot(slot.id);
+                                const isMyBooking = !!myBooking;
 
                                 return (
                                     <div
                                         key={slot.id}
                                         onClick={() => handleSlotClick(slot)}
-                                        className={`slot-card ${isBooked ? 'booked' : ''} ${isMyBooking ? 'my-booking' : ''}`}
+                                        className={`slot-card ${isFull && !isMyBooking ? 'booked' : ''} ${isMyBooking ? 'my-booking' : ''}`}
                                     >
                                         <div className="slot-info">
                                             <h3 className="slot-label">{slot.label}</h3>
-                                            {isBooked ? (
+                                            {isMyBooking ? (
                                                 <p className="slot-status">
-                                                    Reserved: <strong>{booking.teamName}</strong>
-                                                    {isMyBooking && <span className="my-group-label">YOU</span>}
+                                                    Reserved: <strong>{myBooking.teamName}</strong>
+                                                    <span className="my-group-label">YOU</span>
                                                 </p>
                                             ) : (
-                                                <p className="slot-status">Available</p>
+                                                <p className="slot-status">
+                                                    {isFull ? 'Full' : 'Available'}
+                                                    {!isFull && <span style={{ fontSize: '0.8em', color: '#666', marginLeft: '5px' }}>({7 - totalBooked} rooms left)</span>}
+                                                </p>
                                             )}
                                         </div>
                                         <div className="slot-action">
                                             <span className="action-badge">
-                                                {isBooked ? (isMyBooking ? 'Edit ›' : 'Details ›') : 'Book ›'}
+                                                {isMyBooking ? 'Edit ›' : (isFull ? 'Full' : 'Book ›')}
                                             </span>
                                         </div>
                                     </div>
@@ -398,9 +400,10 @@ const Discussion = ({ onBack }) => {
     }
 
     // Render Booking Form or Details
-    const booking = bookings[selectedSlot?.id];
-    const isBooked = !!booking;
-    const isMyTeam = isBooked && (booking.bookedBy === user.uid || (booking.members && booking.members.some(m => m.uid === user.uid)));
+    const myBooking = getMyBookingInSlot(selectedSlot?.id);
+    const hasBooking = !!myBooking;
+    const slotBookings = bookings[selectedSlot?.id] || [];
+    const isFull = slotBookings.length >= 7;
 
     return (
         <div className="std-container">
@@ -410,11 +413,27 @@ const Discussion = ({ onBack }) => {
                 <div className="discussion-card">
                     <h2 className="page-title">{selectedSlot?.label}</h2>
                     <p className="page-subtitle">
-                        {isBooked ? `Group: ${booking.teamName}` : 'Session is open for booking'}
+                        {hasBooking ? `Group: ${myBooking.teamName}` : (isFull ? 'All rooms are booked' : 'Session is open for booking')}
                     </p>
 
+                    {/* SHOW ASSIGNED ROOM IF IT'S MY BOOKING */}
+                    {hasBooking && myBooking.roomId && (
+                        <div style={{
+                            backgroundColor: '#e0f2f1',
+                            color: '#00695c',
+                            padding: '12px',
+                            borderRadius: '8px',
+                            marginBottom: '16px',
+                            border: '1px solid #b2dfdb',
+                            fontWeight: '600',
+                            textAlign: 'center'
+                        }}>
+                            Assigned Room: Room {myBooking.roomId.replace('D', '')}
+                        </div>
+                    )}
+
                     {/* BOOKING FORM */}
-                    {!isBooked && (
+                    {!hasBooking && !isFull && (
                         <div className="form-container">
                             <form onSubmit={handleBookRoom}>
                                 <div className="ios-form-group">
@@ -490,14 +509,24 @@ const Discussion = ({ onBack }) => {
                         </div>
                     )}
 
+                    {/* FULL MSG */}
+                    {!hasBooking && isFull && (
+                        <div className="others-booking-view">
+                            <h2>Session Fully Booked</h2>
+                            <p>
+                                All 7 discussion rooms are currently occupied for this time slot.
+                            </p>
+                        </div>
+                    )}
+
                     {/* DETAILS VIEW - MY TEAM */}
-                    {isBooked && isMyTeam && (
+                    {hasBooking && (
                         <div className="form-container">
                             <h3 className="page-subtitle" style={{ padding: '0 8px', marginBottom: '8px' }}>Members</h3>
 
                             <ul className="ios-list">
-                                {booking.members && booking.members.length > 0 && (
-                                    booking.members.filter(m => m && (m.name || typeof m === 'string')).map((member, idx) => {
+                                {myBooking.members && myBooking.members.length > 0 && (
+                                    myBooking.members.filter(m => m && (m.name || typeof m === 'string')).map((member, idx) => {
                                         const name = member.name || (typeof member === 'string' ? member : 'Unknown');
                                         const mrr = member.mrrNumber || '';
                                         return (
@@ -538,7 +567,7 @@ const Discussion = ({ onBack }) => {
                             {error && <p className="error-msg">{error}</p>}
                             {successMsg && <p className="success-msg">{successMsg}</p>}
 
-                            {booking.bookedBy === user.uid && (
+                            {myBooking.bookedBy === user.uid && (
                                 <div style={{ marginTop: '24px' }}>
                                     <button
                                         className="btn-ios-danger"
@@ -548,17 +577,6 @@ const Discussion = ({ onBack }) => {
                                     </button>
                                 </div>
                             )}
-                        </div>
-                    )}
-
-                    {/* DETAILS VIEW - OTHERS */}
-                    {isBooked && !isMyTeam && (
-                        <div className="others-booking-view">
-                            <h2>Session Booked</h2>
-                            <p>
-                                This slot is currently occupied by<br />
-                                <strong style={{ color: 'var(--ios-text)' }}>{booking.teamName}</strong>
-                            </p>
                         </div>
                     )}
                 </div>
