@@ -8,7 +8,13 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ['lucide-react'],
-    include: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+    include: [
+      'firebase/app',
+      'firebase/auth',
+      'firebase/firestore',
+      'firebase/functions',
+      'firebase/storage'
+    ],
     esbuildOptions: {
       supported: {
         bigint: true
@@ -25,6 +31,8 @@ export default defineConfig({
       '@firebase/firestore': 'firebase/firestore',
       '@firebase/auth': 'firebase/auth',
       '@firebase/app': 'firebase/app',
+      '@firebase/functions': 'firebase/functions',
+      '@firebase/storage': 'firebase/storage',
     }
   },
   build: {
