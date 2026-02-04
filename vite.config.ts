@@ -1,63 +1,65 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'path'
-import fs from 'fs'
-import { createRequire } from 'node:module'
 
+// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    react()
-  ],
+  plugins: [react()],
   define: {
     'global': 'window',
   },
-  optimizeDeps: {
-    exclude: ['lucide-react'],
-    esbuildOptions: {
-      supported: {
-        bigint: true
-      }
+  resolve: {
+    // Force Vite to use the single copy of firebase to avoid dual-package hazards
+    dedupe: ['firebase', '@firebase/app', '@firebase/auth', '@firebase/firestore'],
+    alias: {
+      // Explicitly point to the ESM build to avoid CJS/ESM interop issues
+      // 'firebase/auth': 'firebase/auth/dist/index.esm.js',
+      // 'firebase/firestore': 'firebase/firestore/dist/index.esm.js',
+      // 'firebase/app': 'firebase/app/dist/index.esm.js',
     }
   },
-  server: {
-    host: '0.0.0.0',
-    port: 5173,
-    open: false
+  optimizeDeps: {
+    // Pre-bundle these dependencies to convert CJS -> ESM and cache them
+    include: [
+      'firebase/app',
+      'firebase/auth',
+      'firebase/firestore',
+      'firebase/storage',
+      'firebase/functions',
+      '@capacitor-firebase/authentication',
+      'lucide-react',
+      'recharts'
+    ],
+    esbuildOptions: {
+      // Allow top-level 'this', common in older libs or polyfills
+      supported: {
+        bigint: true
+      },
+    },
   },
   build: {
     chunkSizeWarningLimit: 2000,
     commonjsOptions: {
       transformMixedEsModules: true,
-      ignoreDynamicRequires: true
+      // Help Vite handle the complex exports of newer Firebase versions
+      include: [/firebase/, /node_modules/]
     },
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('firebase') || id.includes('@firebase')) {
+            if (id.includes('@firebase') || id.includes('firebase')) {
               return 'firebase'
             }
-            if (id.includes('@react-pdf/renderer')) {
-              return 'pdf-renderer'
-            }
-            if (id.includes('recharts')) {
-              return 'charts'
-            }
-            if (id.includes('@heroui/react')) {
-              return 'ui-kit'
-            }
-            if (id.includes('lucide-react')) {
-              return 'icons'
-            }
-            if (id.includes('framer-motion')) {
-              return 'animations'
-            }
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
-              return 'vendor-core'
+            if (id.includes('react')) {
+              return 'vendor'
             }
           }
         }
       }
     }
+  },
+  ssr: {
+    // Ensure these are processed by Vite's pipeline during SSR/Build
+    noExternal: ['@capacitor-firebase/authentication', 'firebase']
   }
 })
