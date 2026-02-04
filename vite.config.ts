@@ -1,8 +1,25 @@
-import { defineConfig } from 'vite'
+import { defineConfig, Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// Custom plugin to redirect @firebase/* imports to firebase/*
+function firebaseRedirectPlugin(): Plugin {
+  return {
+    name: 'firebase-redirect',
+    resolveId(source) {
+      if (source.startsWith('@firebase/')) {
+        const moduleName = source.replace('@firebase/', '');
+        return this.resolve(`firebase/${moduleName}`, undefined, { skipSelf: true });
+      }
+      return null;
+    }
+  };
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    firebaseRedirectPlugin()
+  ],
   define: {
     'global': 'window',
   },
@@ -27,10 +44,6 @@ export default defineConfig({
       ignoreDynamicRequires: true
     },
     rollupOptions: {
-      external: (id) => {
-        // Don't externalize anything - we want everything bundled
-        return false;
-      },
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
