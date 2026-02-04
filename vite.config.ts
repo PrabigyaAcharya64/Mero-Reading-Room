@@ -1,13 +1,14 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'path'
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    // Explicitly alias @firebase/logger to its ESM entry point to bypass Vercel's resolution errors
+    // Explicitly alias @firebase/logger to its CommonJS entry point using dynamic resolution
     alias: {
-      '@firebase/logger': path.resolve(process.cwd(), 'node_modules/@firebase/logger/dist/esm/index.esm2017.js'),
+      '@firebase/logger': require.resolve('@firebase/logger'),
     },
     // Dedupe ensures we don't load two copies of Firebase (one from app, one from plugin)
     dedupe: ['firebase', '@firebase']
