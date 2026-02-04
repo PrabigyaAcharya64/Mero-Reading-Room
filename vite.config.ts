@@ -21,6 +21,9 @@ export default defineConfig({
     port: 5173,
     open: false
   },
+  resolve: {
+    dedupe: ['firebase', '@firebase/app', '@firebase/auth', '@firebase/firestore'],
+  },
   build: {
     chunkSizeWarningLimit: 2000,
     commonjsOptions: {
