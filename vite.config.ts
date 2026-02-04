@@ -1,53 +1,84 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import fs from 'fs'
 import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url);
 
 function createFirebaseAliases() {
-  const mappings = {
-    '@firebase/app': 'dist/esm/index.esm.js',
-    '@firebase/auth': 'dist/esm/index.js',
-    '@firebase/firestore': 'dist/index.esm.js',
-    '@firebase/functions': 'dist/esm/index.esm.js',
-    '@firebase/storage': 'dist/index.esm.js',
-    '@firebase/database': 'dist/index.esm.js',
-    '@firebase/analytics': 'dist/esm/index.esm.js',
-    '@firebase/performance': 'dist/esm/index.esm.js',
-    '@firebase/messaging': 'dist/esm/index.esm.js',
-    '@firebase/installations': 'dist/esm/index.esm.js',
-    '@firebase/remote-config': 'dist/esm/index.esm.js',
-    '@firebase/app-check': 'dist/esm/index.esm.js',
-    '@firebase/auth-compat': 'dist/index.esm.js',
-    '@firebase/database-compat': 'dist/index.esm.js',
-    '@firebase/firestore-compat': 'dist/index.esm.js',
-    '@firebase/functions-compat': 'dist/esm/index.esm.js',
-    '@firebase/installations-compat': 'dist/esm/index.esm.js',
-    '@firebase/messaging-compat': 'dist/esm/index.esm.js',
-    '@firebase/performance-compat': 'dist/esm/index.esm.js',
-    '@firebase/remote-config-compat': 'dist/esm/index.esm.js',
-    '@firebase/storage-compat': 'dist/esm/index.esm.js',
-    '@firebase/analytics-compat': 'dist/esm/index.esm.js',
-    '@firebase/app-compat': 'dist/esm/index.esm.js',
-    '@firebase/app-check-compat': 'dist/esm/index.esm.js',
-    '@firebase/ai': 'dist/esm/index.esm.js',
-    '@firebase/component': 'dist/esm/index.esm.js',
-    '@firebase/data-connect': 'dist/index.esm.js',
-    '@firebase/logger': 'dist/esm/index.esm.js',
-    '@firebase/util': 'dist/index.esm.js',
-  };
+  const firebasePackages = [
+    '@firebase/app',
+    '@firebase/auth',
+    '@firebase/firestore',
+    '@firebase/functions',
+    '@firebase/storage',
+    '@firebase/database',
+    '@firebase/analytics',
+    '@firebase/performance',
+    '@firebase/messaging',
+    '@firebase/installations',
+    '@firebase/remote-config',
+    '@firebase/app-check',
+    '@firebase/auth-compat',
+    '@firebase/database-compat',
+    '@firebase/firestore-compat',
+    '@firebase/functions-compat',
+    '@firebase/installations-compat',
+    '@firebase/messaging-compat',
+    '@firebase/performance-compat',
+    '@firebase/remote-config-compat',
+    '@firebase/storage-compat',
+    '@firebase/analytics-compat',
+    '@firebase/app-compat',
+    '@firebase/app-check-compat',
+    '@firebase/ai',
+    '@firebase/component',
+    '@firebase/data-connect',
+    '@firebase/logger',
+    '@firebase/util',
+  ];
 
   const aliases: Record<string, string> = {};
-  for (const [pkg, internalPath] of Object.entries(mappings)) {
+
+  firebasePackages.forEach(pkg => {
     try {
       const pkgJsonPath = require.resolve(`${pkg}/package.json`);
       const pkgRoot = path.dirname(pkgJsonPath);
-      aliases[pkg] = path.join(pkgRoot, internalPath);
+      const pkgJson = require(pkgJsonPath);
+
+      // Prioritize ESM entry points
+      let entry = pkgJson.browser || pkgJson.module || pkgJson['react-native'] || pkgJson.main;
+
+      // Handle 'exports' field if present (more standard in modern pkgs)
+      if (!entry && pkgJson.exports) {
+        if (typeof pkgJson.exports === 'string') {
+          entry = pkgJson.exports;
+        } else if (pkgJson.exports['.']) {
+          const exp = pkgJson.exports['.'];
+          entry = exp.browser || exp.import || exp.default || exp.require;
+        }
+      }
+
+      // If entry is an object (common in modern firebase), try to find a string path
+      if (typeof entry === 'object') {
+        entry = entry.browser || entry.import || entry.default || entry.esm;
+      }
+
+      if (entry) {
+        const absolutePath = path.resolve(pkgRoot, entry);
+        if (fs.existsSync(absolutePath)) {
+          aliases[pkg] = absolutePath;
+          // console.log(`[Firebase Alias] ${pkg} -> ${absolutePath}`); 
+        } else {
+          console.warn(`[Firebase Alias Warn] Resolved path for ${pkg} does not exist: ${absolutePath}`);
+        }
+      }
     } catch (e) {
-      // Package not installed, skip
+      // console.log(`[Firebase Alias] Could not resolve ${pkg}`);
     }
-  }
+  });
+
   return aliases;
 }
 
