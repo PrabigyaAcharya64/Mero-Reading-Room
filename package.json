@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "type": "module",
   "engines": {
-    "node": "24.x"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "vite",
@@ -33,7 +33,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.0.10",
-    "@types/react": "^19.2.9",
+    "@types/react": "^18.3.3",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.23",
