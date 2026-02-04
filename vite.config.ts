@@ -1,28 +1,18 @@
-import { defineConfig, Plugin } from 'vite'
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-
-// Custom plugin to redirect @firebase/* imports to firebase/*
-function firebaseRedirectPlugin(): Plugin {
-  return {
-    name: 'firebase-redirect',
-    enforce: 'pre', // Run before other plugins
-    resolveId(source, importer, options) {
-      // Intercept @firebase/* imports
-      if (source.startsWith('@firebase/')) {
-        const moduleName = source.replace('@firebase/', '');
-        // Return the redirected path
-        return `firebase/${moduleName}`;
-      }
-      return null;
-    }
-  };
-}
+import path from 'path'
 
 export default defineConfig({
   plugins: [
-    firebaseRedirectPlugin(),
     react()
   ],
+  resolve: {
+    alias: {
+      '@firebase/firestore': path.resolve(__dirname, 'node_modules/@firebase/firestore/dist/index.esm.js'),
+      '@firebase/auth': path.resolve(__dirname, 'node_modules/@firebase/auth/dist/esm/index.js'),
+      '@firebase/app': path.resolve(__dirname, 'node_modules/@firebase/app/dist/esm/index.esm.js'),
+    }
+  },
   define: {
     'global': 'window',
   },
@@ -39,21 +29,9 @@ export default defineConfig({
     port: 5173,
     open: false
   },
-  resolve: {
-    alias: {
-      '@firebase/app': 'firebase/app',
-      '@firebase/auth': 'firebase/auth',
-      '@firebase/firestore': 'firebase/firestore',
-      '@firebase/functions': 'firebase/functions',
-      '@firebase/storage': 'firebase/storage',
-      '@firebase/analytics': 'firebase/analytics',
-      '@firebase/performance': 'firebase/performance',
-    }
-  },
   build: {
     chunkSizeWarningLimit: 2000,
     commonjsOptions: {
-      include: [/node_modules/],
       transformMixedEsModules: true,
       ignoreDynamicRequires: true
     },
