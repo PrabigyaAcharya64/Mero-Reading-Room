@@ -1,17 +1,28 @@
 import { defineConfig, Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// Custom plugin to redirect @firebase/* imports to firebase/*
-function firebaseRedirectPlugin(): Plugin {
+// Custom plugin to handle @firebase/* imports
+function firebaseResolverPlugin(): Plugin {
+  const firebaseModules = new Set([
+    'app', 'auth', 'firestore', 'functions', 
+    'storage', 'analytics', 'performance', 'messaging'
+  ]);
+
   return {
-    name: 'firebase-redirect',
-    enforce: 'pre', // Run before other plugins
-    resolveId(source, importer, options) {
-      // Intercept @firebase/* imports
-      if (source.startsWith('@firebase/')) {
-        const moduleName = source.replace('@firebase/', '');
-        // Return the redirected path
-        return `firebase/${moduleName}`;
+    name: 'firebase-resolver',
+    enforce: 'pre',
+    resolveId(source, importer) {
+      // Only intercept @firebase/* imports that come from node_modules dependencies
+      // NOT from firebase's own internal files
+      if (source.startsWith('@firebase/') && 
+          importer && 
+          !importer.includes('node_modules/firebase/')) {
+        
+        const moduleName = source.replace('@firebase/', '').split('/')[0];
+        
+        if (firebaseModules.has(moduleName)) {
+          return `firebase/${moduleName}`;
+        }
       }
       return null;
     }
@@ -20,7 +31,7 @@ function firebaseRedirectPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [
-    firebaseRedirectPlugin(),
+    firebaseResolverPlugin(),
     react()
   ],
   define: {
@@ -38,17 +49,6 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     open: false
-  },
-  resolve: {
-    alias: {
-      '@firebase/app': 'firebase/app',
-      '@firebase/auth': 'firebase/auth',
-      '@firebase/firestore': 'firebase/firestore',
-      '@firebase/functions': 'firebase/functions',
-      '@firebase/storage': 'firebase/storage',
-      '@firebase/analytics': 'firebase/analytics',
-      '@firebase/performance': 'firebase/performance',
-    }
   },
   build: {
     chunkSizeWarningLimit: 2000,
