@@ -353,7 +353,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const googleUser = await FirebaseAuthentication.signInWithGoogle({
           mode: 'redirect',
           scopes: ['email', 'profile'],
-          useCredentialManager: false,
         });
         const credential = GoogleAuthProvider.credential(googleUser.credential?.idToken);
         const result = await signInWithCredential(auth, credential);
