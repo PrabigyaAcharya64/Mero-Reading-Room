@@ -4,33 +4,27 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: {
-      // Force all internal firebase calls to use the main ESM entry point
-      // '@firebase/app': 'firebase/app',
-      // '@firebase/auth': 'firebase/auth',
-      // '@firebase/firestore': 'firebase/firestore',
-      // '@firebase/functions': 'firebase/functions',
-      // '@firebase/storage': 'firebase/storage',
-    },
-    dedupe: ['firebase']
+    // FIX: Removed the specific aliases causing the loop.
+    // We only keep 'dedupe' to ensure plugins don't load a second instance of Firebase.
+    dedupe: ['firebase', '@firebase']
   },
   build: {
     chunkSizeWarningLimit: 2000,
     commonjsOptions: {
-      // This tells the CJS plugin: "Do not touch these files"
-      exclude: [/node_modules\/@firebase/, /node_modules\/firebase/],
+      // Allow Vite to mix CommonJS and ESM (helpful for Capacitor plugins)
       transformMixedEsModules: true
     },
     rollupOptions: {
       output: {
         manualChunks: {
+          // Keep Firebase grouped to prevent bundle fragmentation
           firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore']
         }
       }
     }
   },
-  // Ensure Capacitor plugins are treated as source code to be bundled
-  ssr: {
-    noExternal: ['@capacitor-firebase/authentication']
+  // Ensure Capacitor plugins are processed correctly
+  optimizeDeps: {
+    exclude: ['@capacitor-firebase/authentication']
   }
 })
