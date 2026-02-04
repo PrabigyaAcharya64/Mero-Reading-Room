@@ -5,20 +5,19 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   define: {
+    // This is often necessary for some older libraries, but be careful with it
     'global': 'window',
   },
   resolve: {
-    // Force Vite to use the single copy of firebase to avoid dual-package hazards
     dedupe: ['firebase', '@firebase/app', '@firebase/auth', '@firebase/firestore'],
     alias: {
-      // Explicitly point to the ESM build to avoid CJS/ESM interop issues
-      // 'firebase/auth': 'firebase/auth/dist/index.esm.js',
-      // 'firebase/firestore': 'firebase/firestore/dist/index.esm.js',
-      // 'firebase/app': 'firebase/app/dist/index.esm.js',
+      // FIX: Redirect internal @firebase imports to the main package
+      // '@firebase/firestore': 'firebase/firestore',
+      // '@firebase/auth': 'firebase/auth',
+      // '@firebase/app': 'firebase/app',
     }
   },
   optimizeDeps: {
-    // Pre-bundle these dependencies to convert CJS -> ESM and cache them
     include: [
       'firebase/app',
       'firebase/auth',
@@ -28,20 +27,16 @@ export default defineConfig({
       '@capacitor-firebase/authentication',
       'lucide-react',
       'recharts'
-    ],
-    esbuildOptions: {
-      // Allow top-level 'this', common in older libs or polyfills
-      supported: {
-        bigint: true
-      },
-    },
+    ]
   },
   build: {
     chunkSizeWarningLimit: 2000,
     commonjsOptions: {
       transformMixedEsModules: true,
-      // Help Vite handle the complex exports of newer Firebase versions
-      include: [/firebase/, /node_modules/]
+      // FIX: Remove /firebase/ from here. It is already ESM.
+      // Only include node_modules generally if absolutely necessary, 
+      // Otherwise remove this specific include block entirely or keep it minimal.
+      // include: []
     },
     rollupOptions: {
       output: {
@@ -57,9 +52,5 @@ export default defineConfig({
         }
       }
     }
-  },
-  ssr: {
-    // Ensure these are processed by Vite's pipeline during SSR/Build
-    noExternal: ['@capacitor-firebase/authentication', 'firebase']
   }
 })
