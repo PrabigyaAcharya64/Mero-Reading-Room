@@ -4,53 +4,22 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  define: {
-    // This is often necessary for some older libraries, but be careful with it
-    'global': 'window',
-  },
+  // Remove the 'global': 'window' unless you specifically have a library 
+  // complaining about 'global' being undefined.
+
   resolve: {
-    dedupe: ['firebase', '@firebase/app', '@firebase/auth', '@firebase/firestore'],
-    alias: {
-      // FIX: Redirect internal @firebase imports to the main package
-      // '@firebase/firestore': 'firebase/firestore',
-      // '@firebase/auth': 'firebase/auth',
-      // '@firebase/app': 'firebase/app',
-    }
+    // Keep dedupe to ensure only one version of Firebase is loaded
+    dedupe: ['firebase']
   },
-  optimizeDeps: {
-    include: [
-      'firebase/app',
-      'firebase/auth',
-      'firebase/firestore',
-      'firebase/storage',
-      'firebase/functions',
-      '@capacitor-firebase/authentication',
-      'lucide-react',
-      'recharts'
-    ]
-  },
+
+  // Let's stop trying to manually chunk Firebase for a moment 
+  // to see if a standard build succeeds.
   build: {
     chunkSizeWarningLimit: 2000,
     commonjsOptions: {
-      transformMixedEsModules: true,
-      // FIX: Remove /firebase/ from here. It is already ESM.
-      // Only include node_modules generally if absolutely necessary, 
-      // Otherwise remove this specific include block entirely or keep it minimal.
+      // Set this to an empty array to ensure NO firebase packages 
+      // are accidentally treated as CommonJS.
       // include: []
-    },
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('@firebase') || id.includes('firebase')) {
-              return 'firebase'
-            }
-            if (id.includes('react')) {
-              return 'vendor'
-            }
-          }
-        }
-      }
     }
   }
 })
