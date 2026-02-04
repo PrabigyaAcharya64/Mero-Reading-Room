@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, orderBy, deleteField } from 'firebase/firestore';
-import { useLoading } from '../../context/GlobalLoadingContext';
+import LoadingSpinner from '../../components/LoadingSpinner'; // Import LoadingSpinner
 import Button from '../../components/Button';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
 import '../../styles/NewUsers.css';
@@ -16,7 +16,7 @@ const userManagementIcon = new URL('../../assets/usermanagement.svg', import.met
 function NewUsers({ onBack, onDataLoaded }) {
 
   const { user } = useAuth();
-  const { setIsLoading } = useLoading();
+  const [isPageLoading, setIsPageLoading] = useState(true); // Local loading state
   const [pendingUsers, setPendingUsers] = useState([]);
   const [verifying, setVerifying] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,19 +27,16 @@ function NewUsers({ onBack, onDataLoaded }) {
     setCurrentPage(1);
   }, [searchQuery]);
 
-  // Set loading true on mount (handles page refresh case)
-  useEffect(() => {
-    setIsLoading(true);
-  }, []);
-
   useEffect(() => {
     // Standard Batch Reveal Pattern: Promise.all for all initial fetches
     (async () => {
       try {
-        await loadUsers();
+        const minLoadTime = new Promise(resolve => setTimeout(resolve, 1000));
+        await Promise.all([loadUsers(), minLoadTime]);
       } catch (error) {
         console.error("Error loading users:", error);
       } finally {
+        setIsPageLoading(false); // Turn off local loading
         onDataLoaded?.();
       }
     })();
@@ -166,137 +163,145 @@ function NewUsers({ onBack, onDataLoaded }) {
   return (
     <div className="std-container">
       <main className="std-body">
-        <div className="nu-search-container" style={{ marginBottom: '20px' }}>
-          <input
-            type="text"
-            placeholder="Search pending requests..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="nu-search-input"
-          />
-        </div>
-
-
-        {displayUsers.length === 0 ? (
-          <div className="nu-empty">
-            <p>No pending verification requests at this time.</p>
+        {isPageLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', width: '100%', minHeight: '200px' }}>
+            <LoadingSpinner />
           </div>
         ) : (
-          <div className="nu-grid">
-            {displayUsers.map((userData) => (
-              <div key={userData.id} className="nu-card">
-                {/* Photo */}
-                <div className="nu-card__photo">
-                  {userData.photoUrl ? (
-                    <img
-                      src={userData.photoUrl}
-                      alt={userData.name || 'User'}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <span>👤</span>
-                  )}
-                </div>
+          <>
+            <div className="nu-search-container" style={{ marginBottom: '20px' }}>
+              <input
+                type="text"
+                placeholder="Search pending requests..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="nu-search-input"
+              />
+            </div>
 
-                {/* User Info */}
-                <div className="nu-card__content">
-                  <h3 className="nu-card__name">
-                    {userData.name || 'N/A'}
-                  </h3>
 
-                  <div className="nu-card__row">
-                    <span className="nu-card__label">MRR ID:</span>
-                    <span className="nu-card__value">{userData.mrrNumber || 'N/A'}</span>
-                  </div>
-
-                  <div className="nu-card__row">
-                    <span className="nu-card__label">Email:</span>
-                    <span className="nu-card__value">{userData.email || 'N/A'}</span>
-                  </div>
-
-                  <div className="nu-card__row">
-                    <span className="nu-card__label">Phone:</span>
-                    <span className="nu-card__value">{userData.phoneNumber || 'N/A'}</span>
-                  </div>
-
-                  <div className="nu-card__row">
-                    <span className="nu-card__label">DOB:</span>
-                    <span className="nu-card__value">
-                      {userData.dateOfBirth
-                        ? new Date(userData.dateOfBirth).toLocaleDateString()
-                        : 'N/A'}
-                    </span>
-                  </div>
-
-                  <div className="nu-card__row">
-                    <span className="nu-card__label">Interest:</span>
-                    <span className="nu-card__value">
-                      {Array.isArray(userData.interestedIn)
-                        ? userData.interestedIn.join(', ')
-                        : userData.interestedIn || 'N/A'}
-                    </span>
-                  </div>
-
-                  <div className="nu-card__meta">
-                    Submitted: {userData.submittedAt
-                      ? new Date(userData.submittedAt).toLocaleString()
-                      : 'N/A'}
-                    {userData.verifiedAt && (
-                      <span style={{ color: '#2e7d32', marginLeft: '0.5rem' }}>
-                        • Verified
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="nu-card__actions" style={{ gap: '10px' }}>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => handleVerify(userData.id)}
-                      loading={verifying === userData.id}
-                      disabled={verifying !== null && verifying !== userData.id}
-                      style={{ backgroundColor: '#2e7d32', borderColor: '#2e7d32' }}
-                    >
-                      ✓ Verify
-                    </Button>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => handleReject(userData.id)}
-                      loading={verifying === userData.id}
-                      disabled={verifying !== null && verifying !== userData.id}
-                    >
-                      ✗ Reject
-                    </Button>
-                  </div>
-                </div>
+            {displayUsers.length === 0 ? (
+              <div className="nu-empty">
+                <p>No pending verification requests at this time.</p>
               </div>
-            ))}
-          </div>
-        )}
+            ) : (
+              <div className="nu-grid">
+                {displayUsers.map((userData) => (
+                  <div key={userData.id} className="nu-card">
+                    {/* Photo */}
+                    <div className="nu-card__photo">
+                      {userData.photoUrl ? (
+                        <img
+                          src={userData.photoUrl}
+                          alt={userData.name || 'User'}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <span>👤</span>
+                      )}
+                    </div>
 
-        {/* Pagination Controls */}
-        {filteredUsers.length > 0 && (
-          <div className="nu-pagination">
-            <button
-              className="nu-pagination-btn"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </button>
-            <span className="nu-pagination-info">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              className="nu-pagination-btn"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </button>
-          </div>
+                    {/* User Info */}
+                    <div className="nu-card__content">
+                      <h3 className="nu-card__name">
+                        {userData.name || 'N/A'}
+                      </h3>
+
+                      <div className="nu-card__row">
+                        <span className="nu-card__label">MRR ID:</span>
+                        <span className="nu-card__value">{userData.mrrNumber || 'N/A'}</span>
+                      </div>
+
+                      <div className="nu-card__row">
+                        <span className="nu-card__label">Email:</span>
+                        <span className="nu-card__value">{userData.email || 'N/A'}</span>
+                      </div>
+
+                      <div className="nu-card__row">
+                        <span className="nu-card__label">Phone:</span>
+                        <span className="nu-card__value">{userData.phoneNumber || 'N/A'}</span>
+                      </div>
+
+                      <div className="nu-card__row">
+                        <span className="nu-card__label">DOB:</span>
+                        <span className="nu-card__value">
+                          {userData.dateOfBirth
+                            ? new Date(userData.dateOfBirth).toLocaleDateString()
+                            : 'N/A'}
+                        </span>
+                      </div>
+
+                      <div className="nu-card__row">
+                        <span className="nu-card__label">Interest:</span>
+                        <span className="nu-card__value">
+                          {Array.isArray(userData.interestedIn)
+                            ? userData.interestedIn.join(', ')
+                            : userData.interestedIn || 'N/A'}
+                        </span>
+                      </div>
+
+                      <div className="nu-card__meta">
+                        Submitted: {userData.submittedAt
+                          ? new Date(userData.submittedAt).toLocaleString()
+                          : 'N/A'}
+                        {userData.verifiedAt && (
+                          <span style={{ color: '#2e7d32', marginLeft: '0.5rem' }}>
+                            • Verified
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="nu-card__actions" style={{ gap: '10px' }}>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleVerify(userData.id)}
+                          loading={verifying === userData.id}
+                          disabled={verifying !== null && verifying !== userData.id}
+                          style={{ backgroundColor: '#2e7d32', borderColor: '#2e7d32' }}
+                        >
+                          ✓ Verify
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => handleReject(userData.id)}
+                          loading={verifying === userData.id}
+                          disabled={verifying !== null && verifying !== userData.id}
+                        >
+                          ✗ Reject
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Pagination Controls */}
+            {filteredUsers.length > 0 && (
+              <div className="nu-pagination">
+                <button
+                  className="nu-pagination-btn"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </button>
+                <span className="nu-pagination-info">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  className="nu-pagination-btn"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>

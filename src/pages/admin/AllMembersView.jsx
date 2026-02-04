@@ -5,14 +5,14 @@ import { db } from '../../lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { formatBalance } from '../../utils/formatCurrency';
 import { formatDate } from '../../utils/dateFormat';
-import { useLoading } from '../../context/GlobalLoadingContext';
+import LoadingSpinner from '../../components/LoadingSpinner'; // Import LoadingSpinner
 import { Search, Edit2, User, CheckCircle, AlertCircle, BadgeAlert, Clock, Filter, X } from 'lucide-react';
 import { useAdminHeader } from '../../context/AdminHeaderContext';
 import '../../styles/StandardLayout.css';
 import '../../styles/AllMembersView.css';
 
 function AllMembersView({ onBack, onDataLoaded }) {
-    const { setIsLoading } = useLoading();
+    const [isPageLoading, setIsPageLoading] = useState(true); // Local loading state
     const [users, setUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
     const [seatAssignmentsMap, setSeatAssignmentsMap] = useState({});
@@ -29,11 +29,6 @@ function AllMembersView({ onBack, onDataLoaded }) {
 
     const [showFilters, setShowFilters] = useState(false);
 
-    // Set loading true on mount (handles page refresh case)
-    useEffect(() => {
-        setIsLoading(true);
-    }, []);
-
     useEffect(() => {
         const usersQ = query(collection(db, 'users'), where('verified', '==', true));
         const seatsRef = collection(db, 'seatAssignments');
@@ -45,6 +40,7 @@ function AllMembersView({ onBack, onDataLoaded }) {
 
         const checkIfLoaded = () => {
             if (seatsLoaded && hostelLoaded && usersLoaded) {
+                setIsPageLoading(false); // Turn off local loading
                 onDataLoaded?.();
             }
         };
@@ -311,267 +307,275 @@ function AllMembersView({ onBack, onDataLoaded }) {
     return (
         <div className="amv-container">
             <main className="std-body">
-                {/* Advanced Filters Bar */}
-                {showFilters && (
-                    <div className="amv-filters-panel" style={{
-                        backgroundColor: '#f8f9fa',
-                        padding: '16px',
-                        borderRadius: '8px',
-                        marginBottom: '16px',
-                        border: '1px solid #e9ecef',
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                        gap: '12px',
-                        alignItems: 'end'
-                    }}>
-                        <label className="amv-filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#666' }}>Balance Status</span>
-                            <select
-                                value={filters.balance}
-                                onChange={(e) => setFilters(p => ({ ...p, balance: e.target.value }))}
-                                style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
-                            >
-                                <option value="all">All</option>
-                                <option value="due">Due Only</option>
-                                <option value="positive">Positive Only</option>
-                            </select>
-                        </label>
-
-                        <label className="amv-filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#666' }}>Loan Status</span>
-                            <select
-                                value={filters.loan}
-                                onChange={(e) => setFilters(p => ({ ...p, loan: e.target.value }))}
-                                style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
-                            >
-                                <option value="all">All</option>
-                                <option value="active">Active Loan</option>
-                                <option value="none">No Loan</option>
-                            </select>
-                        </label>
-
-                        <label className="amv-filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#666' }}>Reading Room</span>
-                            <select
-                                value={filters.readingRoom}
-                                onChange={(e) => setFilters(p => ({ ...p, readingRoom: e.target.value }))}
-                                style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
-                            >
-                                <option value="all">All</option>
-                                <option value="active">Active</option>
-                                <option value="due_incoming">Due Incoming</option>
-                                <option value="overdue">Overdue</option>
-                                <option value="old">Old Member</option>
-                                <option value="none">Never Joined</option>
-                            </select>
-                        </label>
-
-                        <label className="amv-filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#666' }}>Hostel</span>
-                            <select
-                                value={filters.hostel}
-                                onChange={(e) => setFilters(p => ({ ...p, hostel: e.target.value }))}
-                                style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
-                            >
-                                <option value="all">All</option>
-                                <option value="active">Active</option>
-                                <option value="due_incoming">Due Incoming</option>
-                                <option value="overdue">Overdue</option>
-                                <option value="old">Old Member</option>
-                                <option value="none">Never Joined</option>
-                            </select>
-                        </label>
-
-                        <button
-                            onClick={clearFilters}
-                            style={{
-                                padding: '8px',
-                                background: '#fff',
-                                border: '1px solid #ddd',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                color: '#d32f2f',
-                                fontWeight: '500'
-                            }}
-                        >
-                            Reset
-                        </button>
-                    </div>
-                )}
-
-                <div className="amv-stats" style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>{filteredUsers.length} total • Page {currentPage} of {totalPages || 1}</span>
-                    {filteredUsers.length !== users.length && (
-                        <span style={{ fontSize: '12px', color: '#666' }}>
-                            Showing {filteredUsers.length} of {users.length} users
-                        </span>
-                    )}
-                </div>
-
-                {paginatedUsers.length === 0 && users.length > 0 ? (
-                    <div className="amv-empty">
-                        <User size={48} className="amv-empty-icon" />
-                        <p>No members match your search.</p>
-                        <button onClick={clearFilters} style={{ marginTop: '10px', color: '#007bff', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
-                            Clear Filters
-                        </button>
+                {isPageLoading ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', width: '100%', minHeight: '200px' }}>
+                        <LoadingSpinner />
                     </div>
                 ) : (
                     <>
-                        <div className="amv-table-wrapper">
-                            <table className="amv-table">
-                                <thead>
-                                    <tr>
-                                        {/* Split Identity into Name and Email */}
-                                        <th style={{ width: '180px' }}>Name</th>
-                                        <th style={{ width: '200px' }}>Email</th>
-                                        <th>MRR ID</th>
-                                        <th>Balance</th>
-                                        <th>Loan</th>
-                                        <th>Reading Room</th>
-                                        <th>Hostel</th>
-                                        <th style={{ textAlign: 'right' }}>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {paginatedUsers.map(user => {
-                                        const rrAssignment = seatAssignmentsMap[user.id];
-                                        const hostelAssignment = hostelAssignmentsMap[user.id];
+                        {/* Advanced Filters Bar */}
+                        {showFilters && (
+                            <div className="amv-filters-panel" style={{
+                                backgroundColor: '#f8f9fa',
+                                padding: '16px',
+                                borderRadius: '8px',
+                                marginBottom: '16px',
+                                border: '1px solid #e9ecef',
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                                gap: '12px',
+                                alignItems: 'end'
+                            }}>
+                                <label className="amv-filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#666' }}>Balance Status</span>
+                                    <select
+                                        value={filters.balance}
+                                        onChange={(e) => setFilters(p => ({ ...p, balance: e.target.value }))}
+                                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                                    >
+                                        <option value="all">All</option>
+                                        <option value="due">Due Only</option>
+                                        <option value="positive">Positive Only</option>
+                                    </select>
+                                </label>
 
-                                        const rrStatus = getServiceStatus(rrAssignment, true, user);
-                                        const hostelStatus = getServiceStatus(hostelAssignment, false, user);
+                                <label className="amv-filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#666' }}>Loan Status</span>
+                                    <select
+                                        value={filters.loan}
+                                        onChange={(e) => setFilters(p => ({ ...p, loan: e.target.value }))}
+                                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                                    >
+                                        <option value="all">All</option>
+                                        <option value="active">Active Loan</option>
+                                        <option value="none">No Loan</option>
+                                    </select>
+                                </label>
 
-                                        const isDue = (user.balance || 0) < 0;
+                                <label className="amv-filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#666' }}>Reading Room</span>
+                                    <select
+                                        value={filters.readingRoom}
+                                        onChange={(e) => setFilters(p => ({ ...p, readingRoom: e.target.value }))}
+                                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                                    >
+                                        <option value="all">All</option>
+                                        <option value="active">Active</option>
+                                        <option value="due_incoming">Due Incoming</option>
+                                        <option value="overdue">Overdue</option>
+                                        <option value="old">Old Member</option>
+                                        <option value="none">Never Joined</option>
+                                    </select>
+                                </label>
 
-                                        return (
-                                            <tr key={user.id}>
-                                                {/* Name Column */}
-                                                <td>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                        <div className="amv-avatar" style={{ width: '28px', height: '28px', fontSize: '12px' }}>
-                                                            {user.profileImage || user.photoUrl || user.image ? (
-                                                                <img
-                                                                    src={user.profileImage || user.photoUrl || user.image}
-                                                                    alt={user.name}
-                                                                    referrerPolicy="no-referrer"
-                                                                />
-                                                            ) : (
-                                                                <div className="amv-avatar-fallback">
-                                                                    {user.name?.charAt(0)?.toUpperCase() || 'U'}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <span className="amv-user-name" style={{ fontSize: '13px' }}>{user.name || 'Anonymous'}</span>
-                                                    </div>
-                                                </td>
-                                                {/* Email Column */}
-                                                <td>
-                                                    <span className="amv-user-email" style={{ fontSize: '13px' }}>{user.email || '-'}</span>
-                                                </td>
-                                                <td>
-                                                    <span className="amv-mrr-code">{user.mrrNumber || '-'}</span>
-                                                </td>
-                                                <td>
-                                                    {isDue ? (
-                                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                            <span className="amv-badge overdue" style={{ marginBottom: '2px', fontSize: '10px' }}>Due Payment</span>
-                                                            <span className="amv-balance negative" style={{ color: '#dc2626', fontWeight: 'bold' }}>
-                                                                {formatBalance(user.balance || 0)}
-                                                            </span>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="amv-balance">{formatBalance(user.balance || 0)}</span>
-                                                    )}
-                                                </td>
-                                                <td>
-                                                    {user.loan?.has_active_loan ? (
-                                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                            <span className="amv-badge active" style={{ fontSize: '10px', width: 'fit-content' }}>Active Loan</span>
-                                                            <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: 600 }}>
-                                                                {formatBalance(user.loan.current_balance)}
-                                                            </span>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="amv-text-muted">-</span>
-                                                    )}
-                                                </td>
-                                                <td>
-                                                    <div className="status-cell">
-                                                        <span className={rrStatus.className} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                                            {rrStatus.icon} {rrStatus.label}
-                                                        </span>
-                                                        {rrStatus.date && (
-                                                            <span className="amv-timestamp" style={{ fontSize: '11px', marginTop: '2px', display: 'block' }}>
-                                                                {rrStatus.dateLabel}: {formatDate(rrStatus.date)}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div className="status-cell">
-                                                        <span className={hostelStatus.className} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                                            {hostelStatus.icon} {hostelStatus.label}
-                                                        </span>
-                                                        {hostelStatus.date && (
-                                                            <span className="amv-timestamp" style={{ fontSize: '11px', marginTop: '2px', display: 'block' }}>
-                                                                {hostelStatus.dateLabel}: {formatDate(hostelStatus.date)}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td style={{ textAlign: 'right' }}>
-                                                    <button className="amv-manage-btn" onClick={() => handleEditUser(user)}>
-                                                        <Edit2 size={14} />
-                                                        Manage
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                    {users.length === 0 && (
-                                        <tr>
-                                            <td colSpan="8">
-                                                <div className="amv-empty">
-                                                    <User size={48} className="amv-empty-icon" />
-                                                    <p>The directory is currently empty.</p>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {totalPages > 1 && (
-                            <div className="amv-pagination">
-                                <button
-                                    className="amv-page-nav"
-                                    disabled={currentPage === 1}
-                                    onClick={() => handlePageChange(currentPage - 1)}
-                                >
-                                    Previous
-                                </button>
-
-                                <div className="amv-page-numbers">
-                                    {[...Array(totalPages)].map((_, i) => (
-                                        <button
-                                            key={i + 1}
-                                            className={`amv-page-btn ${currentPage === i + 1 ? 'active' : ''}`}
-                                            onClick={() => handlePageChange(i + 1)}
-                                        >
-                                            {i + 1}
-                                        </button>
-                                    ))}
-                                </div>
+                                <label className="amv-filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#666' }}>Hostel</span>
+                                    <select
+                                        value={filters.hostel}
+                                        onChange={(e) => setFilters(p => ({ ...p, hostel: e.target.value }))}
+                                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                                    >
+                                        <option value="all">All</option>
+                                        <option value="active">Active</option>
+                                        <option value="due_incoming">Due Incoming</option>
+                                        <option value="overdue">Overdue</option>
+                                        <option value="old">Old Member</option>
+                                        <option value="none">Never Joined</option>
+                                    </select>
+                                </label>
 
                                 <button
-                                    className="amv-page-nav"
-                                    disabled={currentPage === totalPages}
-                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    onClick={clearFilters}
+                                    style={{
+                                        padding: '8px',
+                                        background: '#fff',
+                                        border: '1px solid #ddd',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
+                                        color: '#d32f2f',
+                                        fontWeight: '500'
+                                    }}
                                 >
-                                    Next
+                                    Reset
                                 </button>
                             </div>
+                        )}
+
+                        <div className="amv-stats" style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span>{filteredUsers.length} total • Page {currentPage} of {totalPages || 1}</span>
+                            {filteredUsers.length !== users.length && (
+                                <span style={{ fontSize: '12px', color: '#666' }}>
+                                    Showing {filteredUsers.length} of {users.length} users
+                                </span>
+                            )}
+                        </div>
+
+                        {paginatedUsers.length === 0 && users.length > 0 ? (
+                            <div className="amv-empty">
+                                <User size={48} className="amv-empty-icon" />
+                                <p>No members match your search.</p>
+                                <button onClick={clearFilters} style={{ marginTop: '10px', color: '#007bff', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                                    Clear Filters
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="amv-table-wrapper">
+                                    <table className="amv-table">
+                                        <thead>
+                                            <tr>
+                                                {/* Split Identity into Name and Email */}
+                                                <th style={{ width: '180px' }}>Name</th>
+                                                <th style={{ width: '200px' }}>Email</th>
+                                                <th>MRR ID</th>
+                                                <th>Balance</th>
+                                                <th>Loan</th>
+                                                <th>Reading Room</th>
+                                                <th>Hostel</th>
+                                                <th style={{ textAlign: 'right' }}>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {paginatedUsers.map(user => {
+                                                const rrAssignment = seatAssignmentsMap[user.id];
+                                                const hostelAssignment = hostelAssignmentsMap[user.id];
+
+                                                const rrStatus = getServiceStatus(rrAssignment, true, user);
+                                                const hostelStatus = getServiceStatus(hostelAssignment, false, user);
+
+                                                const isDue = (user.balance || 0) < 0;
+
+                                                return (
+                                                    <tr key={user.id}>
+                                                        {/* Name Column */}
+                                                        <td>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                <div className="amv-avatar" style={{ width: '28px', height: '28px', fontSize: '12px' }}>
+                                                                    {user.profileImage || user.photoUrl || user.image ? (
+                                                                        <img
+                                                                            src={user.profileImage || user.photoUrl || user.image}
+                                                                            alt={user.name}
+                                                                            referrerPolicy="no-referrer"
+                                                                        />
+                                                                    ) : (
+                                                                        <div className="amv-avatar-fallback">
+                                                                            {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <span className="amv-user-name" style={{ fontSize: '13px' }}>{user.name || 'Anonymous'}</span>
+                                                            </div>
+                                                        </td>
+                                                        {/* Email Column */}
+                                                        <td>
+                                                            <span className="amv-user-email" style={{ fontSize: '13px' }}>{user.email || '-'}</span>
+                                                        </td>
+                                                        <td>
+                                                            <span className="amv-mrr-code">{user.mrrNumber || '-'}</span>
+                                                        </td>
+                                                        <td>
+                                                            {isDue ? (
+                                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                                    <span className="amv-badge overdue" style={{ marginBottom: '2px', fontSize: '10px' }}>Due Payment</span>
+                                                                    <span className="amv-balance negative" style={{ color: '#dc2626', fontWeight: 'bold' }}>
+                                                                        {formatBalance(user.balance || 0)}
+                                                                    </span>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="amv-balance">{formatBalance(user.balance || 0)}</span>
+                                                            )}
+                                                        </td>
+                                                        <td>
+                                                            {user.loan?.has_active_loan ? (
+                                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                                    <span className="amv-badge active" style={{ fontSize: '10px', width: 'fit-content' }}>Active Loan</span>
+                                                                    <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: 600 }}>
+                                                                        {formatBalance(user.loan.current_balance)}
+                                                                    </span>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="amv-text-muted">-</span>
+                                                            )}
+                                                        </td>
+                                                        <td>
+                                                            <div className="status-cell">
+                                                                <span className={rrStatus.className} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                                                    {rrStatus.icon} {rrStatus.label}
+                                                                </span>
+                                                                {rrStatus.date && (
+                                                                    <span className="amv-timestamp" style={{ fontSize: '11px', marginTop: '2px', display: 'block' }}>
+                                                                        {rrStatus.dateLabel}: {formatDate(rrStatus.date)}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <div className="status-cell">
+                                                                <span className={hostelStatus.className} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                                                    {hostelStatus.icon} {hostelStatus.label}
+                                                                </span>
+                                                                {hostelStatus.date && (
+                                                                    <span className="amv-timestamp" style={{ fontSize: '11px', marginTop: '2px', display: 'block' }}>
+                                                                        {hostelStatus.dateLabel}: {formatDate(hostelStatus.date)}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td style={{ textAlign: 'right' }}>
+                                                            <button className="amv-manage-btn" onClick={() => handleEditUser(user)}>
+                                                                <Edit2 size={14} />
+                                                                Manage
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                            {users.length === 0 && (
+                                                <tr>
+                                                    <td colSpan="8">
+                                                        <div className="amv-empty">
+                                                            <User size={48} className="amv-empty-icon" />
+                                                            <p>The directory is currently empty.</p>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {totalPages > 1 && (
+                                    <div className="amv-pagination">
+                                        <button
+                                            className="amv-page-nav"
+                                            disabled={currentPage === 1}
+                                            onClick={() => handlePageChange(currentPage - 1)}
+                                        >
+                                            Previous
+                                        </button>
+
+                                        <div className="amv-page-numbers">
+                                            {[...Array(totalPages)].map((_, i) => (
+                                                <button
+                                                    key={i + 1}
+                                                    className={`amv-page-btn ${currentPage === i + 1 ? 'active' : ''}`}
+                                                    onClick={() => handlePageChange(i + 1)}
+                                                >
+                                                    {i + 1}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <button
+                                            className="amv-page-nav"
+                                            disabled={currentPage === totalPages}
+                                            onClick={() => handlePageChange(currentPage + 1)}
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </>
                 )}

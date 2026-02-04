@@ -3,33 +3,84 @@ import { useConfig } from '../../context/ConfigContext';
 import { Save, RefreshCw } from 'lucide-react';
 import Button from '../../components/Button';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageTransition from '../../components/PageTransition';
+import { useAdminHeader } from '../../context/AdminHeaderContext';
 
-function Settings({ onBack }) { // onBack prop is now unused but kept for compatibility if passed
-    const { config, updateConfig, loading } = useConfig();
-    const [formData, setFormData] = useState(null);
-    const [saving, setSaving] = useState(false);
-
-    // Sync formData with config when config loads or changes
-    useEffect(() => {
-        if (config) {
-            setFormData(JSON.parse(JSON.stringify(config)));
+// Robust Default Configuration
+const DEFAULT_FORM_STATE = {
+    READING_ROOM: {
+        REGISTRATION_FEE: 1000,
+        MONTHLY_FEE: {
+            NON_AC: 3500,
+            AC: 3750
         }
-    }, [config]);
+    },
+    HOSTEL: {
+        REGISTRATION_FEE: 4000,
+        REFUNDABLE_DEPOSIT: 5000
+    },
+    DISCOUNTS: {
+        REFERRAL_DISCOUNT_PERCENT: 5,
+        BULK_BOOKING_DISCOUNT: 10,
+        BUNDLE_DISCOUNT: 500
+    },
+    SMS: {
+        SEND_HOUR: 10,
+        RR_WARNING_TEMPLATE: "Hello {{name}}, your Reading Room subscription expires on {{date}}. Please renew.",
+        RR_GRACE_END_TEMPLATE: "Hello {{name}}, your Reading Room grace period ends on {{date}}.",
+        HOSTEL_WARNING_TEMPLATE: "Hello {{name}}, your Hostel subscription expires on {{date}}. Please pay to avoid penalties.",
+        HOSTEL_GRACE_END_TEMPLATE: "Hello {{name}}, your Hostel grace period ends on {{date}}."
+    }
+};
 
-    const handleChange = (section, key, value, subSection = null) => {
-        setFormData(prev => {
-            const temp = { ...prev };
-            if (subSection) {
-                temp[section][subSection][key] = value;
+const deepMerge = (target, source) => {
+    const output = { ...target };
+    if (source && typeof source === 'object') {
+        Object.keys(source).forEach(key => {
+            if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+                if (!(key in target)) {
+                    Object.assign(output, { [key]: source[key] });
+                } else {
+                    output[key] = deepMerge(target[key], source[key]);
+                }
             } else {
-                temp[section][key] = value;
+                Object.assign(output, { [key]: source[key] });
             }
-            return temp;
         });
-    };
+    }
+    return output;
+};
 
+function Settings({ onBack, onDataLoaded }) {
+    const { config, updateConfig, loading } = useConfig();
+
+    // 1. Initialize State with a deep copy of defaults
+    const [formData, setFormData] = useState(() => JSON.parse(JSON.stringify(DEFAULT_FORM_STATE)));
+
+    // Notify parent layout that page is ready (turns off global loader)
+    useEffect(() => {
+        if (onDataLoaded) {
+            onDataLoaded();
+        }
+    }, [onDataLoaded]);
+
+    // 2. Track if we have synced with server to prevent overwriting user edits later
+    const [hasSynced, setHasSynced] = useState(false);
+
+    const [saving, setSaving] = useState(false);
+    const { setHeader } = useAdminHeader();
+
+    // 3. Sync ONLY once when config first loads
+    useEffect(() => {
+        if (config && !hasSynced) {
+            setFormData(prev => deepMerge(prev, config));
+            setHasSynced(true);
+        }
+    }, [config, hasSynced]);
+
+    // Handle Save (Moved to global header)
     const handleSave = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         setSaving(true);
         const result = await updateConfig(formData);
         setSaving(false);
@@ -40,8 +91,59 @@ function Settings({ onBack }) { // onBack prop is now unused but kept for compat
         }
     };
 
-    // Show loader ONLY if we have absolutely no data yet
-    if (loading && !formData) {
+    // Set Header Buttons
+    useEffect(() => {
+        setHeader({
+            title: 'System Settings',
+            onBack: null, // explicitly remove back button logic if any
+            actionBar: (
+                <div className="flex gap-4 justify-end">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setFormData(JSON.parse(JSON.stringify(DEFAULT_FORM_STATE)))} // Simplified reset
+                        disabled={saving}
+                        className="!px-6"
+                    >
+                        <RefreshCw size={18} className="mr-2" />
+                        Reset Defaults
+                    </Button>
+                    <Button
+                        type="button" // changed from submit since form is below
+                        onClick={handleSave}
+                        variant="primary"
+                        loading={saving}
+                        disabled={saving}
+                        className="!px-8"
+                    >
+                        <Save size={18} className="mr-2" />
+                        Save Changes
+                    </Button>
+                </div>
+            )
+        });
+    }, [setHeader, saving, formData, handleSave]); // Depend on formData/handleSave so closure is fresh
+
+
+    const handleChange = (section, key, value, subSection = null) => {
+        setFormData(prev => {
+            const newState = { ...prev };
+            newState[section] = { ...prev[section] };
+
+            if (subSection) {
+                newState[section][subSection] = { ...(prev[section]?.[subSection] || {}) };
+                newState[section][subSection][key] = value;
+            } else {
+                newState[section][key] = value;
+            }
+            return newState;
+        });
+    };
+
+    // 5. BLOCKING LOADER: Only show if we have NO defaults AND we are loading
+    const isBlockingLoad = loading && !config && !formData;
+
+    if (isBlockingLoad) {
         return (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
                 <LoadingSpinner />
@@ -49,241 +151,228 @@ function Settings({ onBack }) { // onBack prop is now unused but kept for compat
         );
     }
 
-    // Safety fallback
     if (!formData) return null;
 
     return (
-        <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+        <PageTransition>
+            <div className="std-container">
+                {/* PageHeader removed as requested */}
 
-            <form onSubmit={handleSave}>
-                {/* Reading Room Section */}
-                <section style={{ marginBottom: '40px' }}>
-                    <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', color: '#333' }}>
-                        Reading Room Configuration
-                    </h2>
-                    <div style={{ display: 'grid', gap: '20px', gridTemplateColumns: '1fr 1fr' }}>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-                                Registration Fee (One-time)
-                            </label>
-                            <input
-                                type="number"
-                                value={formData.READING_ROOM?.REGISTRATION_FEE || 0}
-                                onChange={(e) => handleChange('READING_ROOM', 'REGISTRATION_FEE', Number(e.target.value))}
-                                style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
-                            />
+                <main className="std-body">
+                    <form onSubmit={(e) => e.preventDefault()} className="max-w-4xl mx-auto space-y-8 pb-20">
+                        {/* Reading Room Section */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+                            <h2 className="text-lg font-bold mb-6 text-gray-800 border-b pb-2">
+                                Reading Room Configuration
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                                        Registration Fee (One-time)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        value={formData.READING_ROOM?.REGISTRATION_FEE ?? DEFAULT_FORM_STATE.READING_ROOM.REGISTRATION_FEE}
+                                        onChange={(e) => handleChange('READING_ROOM', 'REGISTRATION_FEE', Number(e.target.value))}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                                        Non-AC Monthly Fee
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        value={formData.READING_ROOM?.MONTHLY_FEE?.NON_AC ?? DEFAULT_FORM_STATE.READING_ROOM.MONTHLY_FEE.NON_AC}
+                                        onChange={(e) => handleChange('READING_ROOM', 'NON_AC', Number(e.target.value), 'MONTHLY_FEE')}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                                        AC Monthly Fee
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        value={formData.READING_ROOM?.MONTHLY_FEE?.AC ?? DEFAULT_FORM_STATE.READING_ROOM.MONTHLY_FEE.AC}
+                                        onChange={(e) => handleChange('READING_ROOM', 'AC', Number(e.target.value), 'MONTHLY_FEE')}
+                                    />
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-                                Non-AC Monthly Fee
-                            </label>
-                            <input
-                                type="number"
-                                value={formData.READING_ROOM?.MONTHLY_FEE?.NON_AC || 0}
-                                onChange={(e) => handleChange('READING_ROOM', 'NON_AC', Number(e.target.value), 'MONTHLY_FEE')}
-                                style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
-                            />
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-                                AC Monthly Fee
-                            </label>
-                            <input
-                                type="number"
-                                value={formData.READING_ROOM?.MONTHLY_FEE?.AC || 0}
-                                onChange={(e) => handleChange('READING_ROOM', 'AC', Number(e.target.value), 'MONTHLY_FEE')}
-                                style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
-                            />
-                        </div>
-                    </div>
-                </section>
 
-                {/* Hostel Section */}
-                <section style={{ marginBottom: '40px' }}>
-                    <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', color: '#333' }}>
-                        Hostel Configuration
-                    </h2>
-                    <div style={{ display: 'grid', gap: '20px', gridTemplateColumns: '1fr 1fr' }}>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-                                Registration Fee
-                            </label>
-                            <input
-                                type="number"
-                                value={formData.HOSTEL?.REGISTRATION_FEE || 0}
-                                onChange={(e) => handleChange('HOSTEL', 'REGISTRATION_FEE', Number(e.target.value))}
-                                style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
-                            />
+                        {/* Hostel Section */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+                            <h2 className="text-lg font-bold mb-6 text-gray-800 border-b pb-2">
+                                Hostel Configuration
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                                        Registration Fee
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        value={formData.HOSTEL?.REGISTRATION_FEE ?? DEFAULT_FORM_STATE.HOSTEL.REGISTRATION_FEE}
+                                        onChange={(e) => handleChange('HOSTEL', 'REGISTRATION_FEE', Number(e.target.value))}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                                        Refundable Deposit
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        value={formData.HOSTEL?.REFUNDABLE_DEPOSIT ?? DEFAULT_FORM_STATE.HOSTEL.REFUNDABLE_DEPOSIT}
+                                        onChange={(e) => handleChange('HOSTEL', 'REFUNDABLE_DEPOSIT', Number(e.target.value))}
+                                    />
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-                                Refundable Deposit
-                            </label>
-                            <input
-                                type="number"
-                                value={formData.HOSTEL?.REFUNDABLE_DEPOSIT || 0}
-                                onChange={(e) => handleChange('HOSTEL', 'REFUNDABLE_DEPOSIT', Number(e.target.value))}
-                                style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
-                            />
-                        </div>
-                    </div>
-                </section>
 
-                {/* Discounts Section */}
-                <section style={{ marginBottom: '40px' }}>
-                    <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', color: '#333' }}>
-                        Discounts & Loyalty
-                    </h2>
-                    <div style={{ display: 'grid', gap: '20px', gridTemplateColumns: '1fr 1fr' }}>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-                                Referral Discount (%)
-                            </label>
-                            <input
-                                type="number"
-                                value={formData.DISCOUNTS?.REFERRAL_DISCOUNT_PERCENT || 0}
-                                onChange={(e) => handleChange('DISCOUNTS', 'REFERRAL_DISCOUNT_PERCENT', Number(e.target.value))}
-                                style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
-                            />
+                        {/* Discounts Section */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+                            <h2 className="text-lg font-bold mb-6 text-gray-800 border-b pb-2">
+                                Discounts & Loyalty
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                                        Referral Discount (%)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        value={formData.DISCOUNTS?.REFERRAL_DISCOUNT_PERCENT ?? DEFAULT_FORM_STATE.DISCOUNTS.REFERRAL_DISCOUNT_PERCENT}
+                                        onChange={(e) => handleChange('DISCOUNTS', 'REFERRAL_DISCOUNT_PERCENT', Number(e.target.value))}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                                        Bulk Booking Discount (%)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        value={formData.DISCOUNTS?.BULK_BOOKING_DISCOUNT ?? DEFAULT_FORM_STATE.DISCOUNTS.BULK_BOOKING_DISCOUNT}
+                                        onChange={(e) => handleChange('DISCOUNTS', 'BULK_BOOKING_DISCOUNT', Number(e.target.value))}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                                        Bundle Discount (Flat Amount)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        value={formData.DISCOUNTS?.BUNDLE_DISCOUNT ?? DEFAULT_FORM_STATE.DISCOUNTS.BUNDLE_DISCOUNT}
+                                        onChange={(e) => handleChange('DISCOUNTS', 'BUNDLE_DISCOUNT', Number(e.target.value))}
+                                    />
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-                                Bulk Booking Discount (%)
-                            </label>
-                            <input
-                                type="number"
-                                value={formData.DISCOUNTS?.BULK_BOOKING_DISCOUNT || 0}
-                                onChange={(e) => handleChange('DISCOUNTS', 'BULK_BOOKING_DISCOUNT', Number(e.target.value))}
-                                style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
-                            />
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-                                Bundle Discount (Flat Amount)
-                            </label>
-                            <input
-                                type="number"
-                                value={formData.DISCOUNTS?.BUNDLE_DISCOUNT || 0}
-                                onChange={(e) => handleChange('DISCOUNTS', 'BUNDLE_DISCOUNT', Number(e.target.value))}
-                                style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
-                            />
-                        </div>
-                    </div>
-                </section>
 
-                {/* SMS Section */}
-                <section style={{ marginBottom: '40px' }}>
-                    <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', color: '#333' }}>
-                        SMS Notifications
-                    </h2>
+                        {/* SMS Section */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+                            <h2 className="text-lg font-bold mb-6 text-gray-800 border-b pb-2">
+                                SMS Notifications
+                            </h2>
 
-                    <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
-                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-                            Daily Send Hour (0-23)
-                        </label>
-                        <input
-                            type="number"
-                            min="0" max="23"
-                            value={formData.SMS?.SEND_HOUR ?? 10}
-                            onChange={(e) => handleChange('SMS', 'SEND_HOUR', Number(e.target.value))}
-                            style={{ width: '100px', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
-                        />
-                        <p style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                            Hour of the day to send automated expiry warnings (Kathmandu Time)
-                        </p>
-                    </div>
-
-                    <div style={{ display: 'grid', gap: '30px', gridTemplateColumns: '1fr 1fr' }}>
-                        {/* Reading Room SMS */}
-                        <div>
-                            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '15px' }}>Reading Room Messages</h3>
-                            <div style={{ marginBottom: '15px' }}>
-                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-                                    Warning Message (3 days before)
+                            <div className="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                <label className="block mb-2 text-sm font-medium text-gray-700">
+                                    Daily Send Hour (0-23)
                                 </label>
-                                <textarea
-                                    value={formData.SMS?.RR_WARNING_TEMPLATE || formData.SMS?.WARNING_TEMPLATE || ''}
-                                    onChange={(e) => handleChange('SMS', 'RR_WARNING_TEMPLATE', e.target.value)}
-                                    placeholder="Hello {{name}}, your Reading Room subscription expires on {{date}}. Please renew."
-                                    rows="4"
-                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
+                                <input
+                                    type="number"
+                                    min="0" max="23"
+                                    className="w-32 p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    value={formData.SMS?.SEND_HOUR ?? DEFAULT_FORM_STATE.SMS.SEND_HOUR}
+                                    onChange={(e) => handleChange('SMS', 'SEND_HOUR', Number(e.target.value))}
                                 />
-                                <p style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                                    Use <strong>{'{{name}}'}</strong> and <strong>{'{{date}}'}</strong> as variables.
+                                <p className="mt-1 text-xs text-gray-500">
+                                    Hour of the day to send automated expiry warnings (Kathmandu Time)
                                 </p>
                             </div>
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-                                    Grace Period End Message
-                                </label>
-                                <textarea
-                                    value={formData.SMS?.RR_GRACE_END_TEMPLATE || formData.SMS?.GRACE_END_TEMPLATE || ''}
-                                    onChange={(e) => handleChange('SMS', 'RR_GRACE_END_TEMPLATE', e.target.value)}
-                                    placeholder="Hello {{name}}, your Reading Room grace period ends on {{date}}."
-                                    rows="4"
-                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
-                                />
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {/* Reading Room SMS */}
+                                <div>
+                                    <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                        Reading Room Messages
+                                    </h3>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block mb-2 text-sm font-medium text-gray-700">
+                                                Warning Message (3 days before)
+                                            </label>
+                                            <textarea
+                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                                value={formData.SMS?.RR_WARNING_TEMPLATE ?? formData.SMS?.WARNING_TEMPLATE ?? DEFAULT_FORM_STATE.SMS.RR_WARNING_TEMPLATE}
+                                                onChange={(e) => handleChange('SMS', 'RR_WARNING_TEMPLATE', e.target.value)}
+                                                rows="4"
+                                            />
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                Use <strong>{'{{name}}'}</strong> and <strong>{'{{date}}'}</strong> as variables.
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label className="block mb-2 text-sm font-medium text-gray-700">
+                                                Grace Period End Message
+                                            </label>
+                                            <textarea
+                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                                value={formData.SMS?.RR_GRACE_END_TEMPLATE ?? formData.SMS?.GRACE_END_TEMPLATE ?? DEFAULT_FORM_STATE.SMS.RR_GRACE_END_TEMPLATE}
+                                                onChange={(e) => handleChange('SMS', 'RR_GRACE_END_TEMPLATE', e.target.value)}
+                                                rows="4"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Hostel SMS */}
+                                <div>
+                                    <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                        Hostel Messages
+                                    </h3>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block mb-2 text-sm font-medium text-gray-700">
+                                                Warning Message (3 days before)
+                                            </label>
+                                            <textarea
+                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                                value={formData.SMS?.HOSTEL_WARNING_TEMPLATE ?? formData.SMS?.WARNING_TEMPLATE ?? DEFAULT_FORM_STATE.SMS.HOSTEL_WARNING_TEMPLATE}
+                                                onChange={(e) => handleChange('SMS', 'HOSTEL_WARNING_TEMPLATE', e.target.value)}
+                                                rows="4"
+                                            />
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                Use <strong>{'{{name}}'}</strong> and <strong>{'{{date}}'}</strong> as variables.
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label className="block mb-2 text-sm font-medium text-gray-700">
+                                                Grace Period End Message
+                                            </label>
+                                            <textarea
+                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                                value={formData.SMS?.HOSTEL_GRACE_END_TEMPLATE ?? formData.SMS?.GRACE_END_TEMPLATE ?? DEFAULT_FORM_STATE.SMS.HOSTEL_GRACE_END_TEMPLATE}
+                                                onChange={(e) => handleChange('SMS', 'HOSTEL_GRACE_END_TEMPLATE', e.target.value)}
+                                                rows="4"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Hostel SMS */}
-                        <div>
-                            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '15px' }}>Hostel Messages</h3>
-                            <div style={{ marginBottom: '15px' }}>
-                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-                                    Warning Message (3 days before)
-                                </label>
-                                <textarea
-                                    value={formData.SMS?.HOSTEL_WARNING_TEMPLATE || formData.SMS?.WARNING_TEMPLATE || ''}
-                                    onChange={(e) => handleChange('SMS', 'HOSTEL_WARNING_TEMPLATE', e.target.value)}
-                                    placeholder="Hello {{name}}, your Hostel subscription expires on {{date}}. Please pay to avoid penalties."
-                                    rows="4"
-                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
-                                />
-                                <p style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                                    Use <strong>{'{{name}}'}</strong> and <strong>{'{{date}}'}</strong> as variables.
-                                </p>
-                            </div>
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-                                    Grace Period End Message
-                                </label>
-                                <textarea
-                                    value={formData.SMS?.HOSTEL_GRACE_END_TEMPLATE || formData.SMS?.GRACE_END_TEMPLATE || ''}
-                                    onChange={(e) => handleChange('SMS', 'HOSTEL_GRACE_END_TEMPLATE', e.target.value)}
-                                    placeholder="Hello {{name}}, your Hostel grace period ends on {{date}}."
-                                    rows="4"
-                                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-
-                <div style={{ marginTop: '40px', display: 'flex', gap: '20px', justifyContent: 'flex-end', position: 'sticky', bottom: '20px', backgroundColor: 'white', padding: '20px', borderTop: '1px solid #eee', boxShadow: '0 -2px 10px rgba(0,0,0,0.05)' }}>
-                    <Button
-                        type="submit"
-                        variant="primary"
-                        loading={saving}
-                        disabled={saving}
-                        style={{ padding: '12px 40px' }}
-                    >
-                        <Save size={18} style={{ marginRight: '8px' }} />
-                        Save Changes
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setFormData(JSON.parse(JSON.stringify(config)))} // Reset to current config
-                        disabled={saving}
-                    >
-                        <RefreshCw size={18} style={{ marginRight: '8px' }} />
-                        Reset
-                    </Button>
-                </div>
-            </form>
-        </div>
+                        {/* Buttons removed from bottom */}
+                    </form>
+                </main>
+            </div>
+        </PageTransition>
     );
 }
 
