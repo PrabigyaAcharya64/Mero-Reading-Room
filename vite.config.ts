@@ -4,93 +4,10 @@ import path from 'path'
 import fs from 'fs'
 import { createRequire } from 'node:module'
 
-const require = createRequire(import.meta.url);
-
-function createFirebaseAliases() {
-  const firebasePackages = [
-    '@firebase/app',
-    '@firebase/auth',
-    '@firebase/firestore',
-    '@firebase/functions',
-    '@firebase/storage',
-    '@firebase/database',
-    '@firebase/analytics',
-    '@firebase/performance',
-    '@firebase/messaging',
-    '@firebase/installations',
-    '@firebase/remote-config',
-    '@firebase/app-check',
-    '@firebase/auth-compat',
-    '@firebase/database-compat',
-    '@firebase/firestore-compat',
-    '@firebase/functions-compat',
-    '@firebase/installations-compat',
-    '@firebase/messaging-compat',
-    '@firebase/performance-compat',
-    '@firebase/remote-config-compat',
-    '@firebase/storage-compat',
-    '@firebase/analytics-compat',
-    '@firebase/app-compat',
-    '@firebase/app-check-compat',
-    '@firebase/ai',
-    '@firebase/component',
-    '@firebase/data-connect',
-    '@firebase/logger',
-    '@firebase/util',
-  ];
-
-  const aliases: Record<string, string> = {};
-
-  firebasePackages.forEach(pkg => {
-    try {
-      const pkgJsonPath = require.resolve(`${pkg}/package.json`);
-      const pkgRoot = path.dirname(pkgJsonPath);
-      const pkgJson = require(pkgJsonPath);
-
-      // Prioritize ESM entry points
-      let entry = pkgJson.browser || pkgJson.module || pkgJson['react-native'] || pkgJson.main;
-
-      // Handle 'exports' field if present (more standard in modern pkgs)
-      if (!entry && pkgJson.exports) {
-        if (typeof pkgJson.exports === 'string') {
-          entry = pkgJson.exports;
-        } else if (pkgJson.exports['.']) {
-          const exp = pkgJson.exports['.'];
-          entry = exp.browser || exp.import || exp.default || exp.require;
-        }
-      }
-
-      // If entry is an object (common in modern firebase), try to find a string path
-      if (typeof entry === 'object') {
-        entry = entry.browser || entry.import || entry.default || entry.esm;
-      }
-
-      if (entry) {
-        const absolutePath = path.resolve(pkgRoot, entry);
-        if (fs.existsSync(absolutePath)) {
-          aliases[pkg] = absolutePath;
-          // console.log(`[Firebase Alias] ${pkg} -> ${absolutePath}`); 
-        } else {
-          console.warn(`[Firebase Alias Warn] Resolved path for ${pkg} does not exist: ${absolutePath}`);
-        }
-      }
-    } catch (e) {
-      // console.log(`[Firebase Alias] Could not resolve ${pkg}`);
-    }
-  });
-
-  return aliases;
-}
-
 export default defineConfig({
   plugins: [
     react()
   ],
-  resolve: {
-    alias: {
-      ...createFirebaseAliases()
-    }
-  },
   define: {
     'global': 'window',
   },
