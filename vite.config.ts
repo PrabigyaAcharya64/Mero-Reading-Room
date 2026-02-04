@@ -8,12 +8,6 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: [
-      'firebase',
-      'firebase/app',
-      'firebase/auth',
-      'firebase/firestore',
-      'firebase/storage',
-      'firebase/functions',
       'lucide-react'
     ],
     esbuildOptions: {

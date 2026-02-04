@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { useConfig } from '../../context/ConfigContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/LoadBalance.css'; // Reusing similar styles
+import { functions } from '../../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
 
 export default function LoanRequest() {
     const { user, userBalance } = useAuth();
@@ -39,9 +41,6 @@ export default function LoanRequest() {
         setError('');
 
         try {
-            const { functions } = await import('../../lib/firebase');
-            const { httpsCallable } = await import('firebase/functions');
-
             const requestLoan = httpsCallable(functions, 'requestLoan');
             const response = await requestLoan({ amount: loanAmount });
 
