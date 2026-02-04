@@ -306,7 +306,7 @@ function Dashboard({ onNavigate, onDataLoaded }) {
                                 )}
                             </div>
                         </div>
-                        <ResponsiveContainer width="100%" height="85%">
+                        <ResponsiveContainer width="100%" height="85%" minWidth={0} minHeight={0}>
                             <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorRr" x1="0" y1="0" x2="0" y2="1">
@@ -348,7 +348,7 @@ function Dashboard({ onNavigate, onDataLoaded }) {
                         minWidth: 0
                     }}>
                         <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', marginBottom: '24px' }}>Revenue Sources</h3>
-                        <ResponsiveContainer width="100%" height="60%">
+                        <ResponsiveContainer width="100%" height="60%" minWidth={0} minHeight={0}>
                             <BarChart data={salesBreakdown} layout="vertical" margin={{ top: 0, right: 30, left: 20, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f3f4f6" />
                                 <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />

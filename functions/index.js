@@ -2702,3 +2702,106 @@ exports.sendExpirySms = onSchedule(
         }
     }
 );
+
+/**
+ * Callable function to send custom SMS to selected users via DiCE SMS.
+ * Uses the same API pattern as sendExpirySms.
+ */
+exports.sendCustomSms = onCall(
+    { secrets: [diceApiKey] },
+    async (request) => {
+        if (!request.auth) {
+            throw new HttpsError('unauthenticated', 'Must be authenticated.');
+        }
+
+        const { userIds, message } = request.data;
+        if (!userIds || !Array.isArray(userIds) || !message) {
+            throw new HttpsError('invalid-argument', 'Invalid arguments.');
+        }
+
+        if (userIds.length === 0) return { success: true, successCount: 0 };
+
+        console.log(`[sendCustomSms] Request received. UserIDs count: ${userIds.length}`);
+
+        const db = admin.firestore();
+        const usersRef = db.collection('users');
+
+        // Fetch Phone Numbers
+        const numbers = [];
+        const fetchPromises = userIds.map(uid => usersRef.doc(uid).get());
+        const snapshots = await Promise.all(fetchPromises);
+
+        snapshots.forEach((snap, index) => {
+            if (snap.exists) {
+                const data = snap.data();
+                const phone = data.phoneNumber || data.phone || data.mobile || data.phone_number;
+
+                // Debug log for first user to check structure
+                if (index === 0) {
+                    console.log(`[sendCustomSms] First user fields:`, Object.keys(data));
+                    console.log(`[sendCustomSms] First user phone resolved to:`, phone);
+                }
+
+                if (phone) {
+                    numbers.push(phone);
+                } else {
+                    console.log(`[sendCustomSms] No phone found for user ${snap.id}`);
+                }
+            } else {
+                console.log(`[sendCustomSms] User doc does not exist: ${snap.id}`);
+            }
+        });
+
+        if (numbers.length === 0) {
+            console.warn("[sendCustomSms] No valid phone numbers found among selected users.");
+            return {
+                success: true,
+                successCount: 0,
+                message: "No valid phone numbers found from selected users. Check logs for field names."
+            };
+        }
+
+        const apiKey = diceApiKey.value();
+        if (!apiKey) {
+            throw new HttpsError('internal', 'DICE_API_KEY not configured.');
+        }
+
+        // Debug: Check key format (masking mostly)
+        console.log(`[sendCustomSms] Using API Key. Length: ${apiKey.length}, Starts with: ${apiKey.substring(0, 4)}***`);
+
+        console.log(`Sending custom SMS to ${numbers.length} users.`);
+
+        // Send via DiCE SMS (POST)
+        // Attempting 'Bearer' instead of 'Token' as 401 occurred.
+        const results = await Promise.allSettled(numbers.map(async (num) => {
+            const response = await fetch("https://dicesms.asia/api/sms/", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Token ${apiKey}`, // Reverting to Token as Bearer gave 'not provided'
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    phone_number: num,
+                    message: message
+                })
+            });
+
+            if (!response.ok) {
+                const txt = await response.text();
+                console.error(`[sendCustomSms] API Error for ${num}: ${response.status} - ${txt}`);
+                throw new Error(`API Error ${response.status}: ${txt}`);
+            }
+            return num;
+        }));
+
+        const successCount = results.filter(r => r.status === 'fulfilled').length;
+        const failures = results.filter(r => r.status === 'rejected').map(r => ({ error: r.reason.message }));
+
+        return {
+            success: true,
+            successCount,
+            failureCount: failures.length,
+            failures: failures.slice(0, 10) // Return first 10 errors
+        };
+    }
+);

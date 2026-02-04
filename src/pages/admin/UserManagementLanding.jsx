@@ -7,7 +7,7 @@ import { collection, query, onSnapshot, orderBy, getDocs } from 'firebase/firest
 import LoadingSpinner from '../../components/LoadingSpinner'; // Import LoadingSpinner
 
 const newUserIcon = new URL('../../assets/newuser.svg', import.meta.url).href;
-const usersIcon = new URL(/* @vite-ignore */ '../../assets/users.svg', import.meta.url).href;
+const usersIcon = new URL(/* @vite-ignore */ '../../assets/usermanagement.svg', import.meta.url).href;
 
 function UserManagementLanding({ onBack, onNavigate, onDataLoaded }) {
     const [isPageLoading, setIsPageLoading] = useState(true); // Local loading state

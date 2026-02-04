@@ -6,7 +6,10 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { formatBalance } from '../../utils/formatCurrency';
 import { formatDate } from '../../utils/dateFormat';
 import LoadingSpinner from '../../components/LoadingSpinner'; // Import LoadingSpinner
-import { Search, Edit2, User, CheckCircle, AlertCircle, BadgeAlert, Clock, Filter, X } from 'lucide-react';
+import { functions } from '../../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
+import SendSmsModal from '../../components/SendSmsModal';
+import { Search, Edit2, User, CheckCircle, AlertCircle, BadgeAlert, Clock, Filter, X, MessageSquare } from 'lucide-react';
 import { useAdminHeader } from '../../context/AdminHeaderContext';
 import '../../styles/StandardLayout.css';
 import '../../styles/AllMembersView.css';
@@ -17,6 +20,11 @@ function AllMembersView({ onBack, onDataLoaded }) {
     const [selectedUser, setSelectedUser] = useState(null);
     const [seatAssignmentsMap, setSeatAssignmentsMap] = useState({});
     const [hostelAssignmentsMap, setHostelAssignmentsMap] = useState({});
+
+    // SMS Selection State
+    const [selectedUserIds, setSelectedUserIds] = useState(new Set());
+    const [isSmsModalOpen, setIsSmsModalOpen] = useState(false);
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
 
     // Filter State
     const [filters, setFilters] = useState({
@@ -243,7 +251,59 @@ function AllMembersView({ onBack, onDataLoaded }) {
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
+        setSelectedUserIds(new Set()); // Clear selection on filter change for safety/clarity
     }, [filters]);
+
+    const toggleSelectUser = (userId) => {
+        const newSelected = new Set(selectedUserIds);
+        if (newSelected.has(userId)) {
+            newSelected.delete(userId);
+        } else {
+            newSelected.add(userId);
+        }
+        setSelectedUserIds(newSelected);
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedUserIds.size === filteredUsers.length && filteredUsers.length > 0) {
+            setSelectedUserIds(new Set());
+        } else {
+            setSelectedUserIds(new Set(filteredUsers.map(u => u.id)));
+        }
+    };
+
+    // Toggle Selection Mode
+    const toggleSelectionMode = () => {
+        if (isSelectionMode) {
+            // Exiting mode: clear selections
+            setSelectedUserIds(new Set());
+        }
+        setIsSelectionMode(!isSelectionMode);
+    };
+
+    const handleSendSms = async (message) => {
+        try {
+            console.log("Sending SMS to user IDs:", Array.from(selectedUserIds));
+            const sendFn = httpsCallable(functions, 'sendCustomSms');
+            const result = await sendFn({
+                userIds: Array.from(selectedUserIds),
+                message
+            });
+            console.log("SMS Send Result:", result.data);
+
+            if (result.data.success) {
+                alert(`Successfully sent SMS to ${result.data.successCount} users.`);
+                setSelectedUserIds(new Set());
+                setIsSmsModalOpen(false);
+            } else {
+                alert('Failed to send some messages. Check console.');
+            }
+        } catch (error) {
+            console.error("SMS Error:", error);
+            alert(`Error sending SMS: ${error.message}`);
+            throw error; // Re-throw for modal handling if needed
+        }
+    };
 
     const handleEditUser = (user) => setSelectedUser(user);
     const handleCloseModal = () => setSelectedUser(null);
@@ -261,6 +321,9 @@ function AllMembersView({ onBack, onDataLoaded }) {
         setHeader({
             actionBar: (
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    {/* Header Image for Action Bar if needed, but usually header replaces title. 
+                        Let's put the button here. */}
+
                     <div className="amv-search-wrapper" style={{ marginBottom: '0', width: '300px' }}>
                         <input
                             type="text"
@@ -271,6 +334,29 @@ function AllMembersView({ onBack, onDataLoaded }) {
                         />
                         <Search className="amv-search-icon" size={20} />
                     </div>
+
+                    <button
+                        className={`amv-action-btn ${isSelectionMode ? 'active' : ''}`}
+                        onClick={toggleSelectionMode}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            border: isSelectionMode ? '1px solid #1a1a1a' : '1px solid #ddd',
+                            background: isSelectionMode ? '#1a1a1a' : '#fff',
+                            color: isSelectionMode ? '#fff' : '#333',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        <MessageSquare size={16} />
+                        {isSelectionMode ? 'Cancel Selection' : 'Bulk SMS'}
+                    </button>
+
                     <button
                         className={`amv-filter-toggle ${showFilters ? 'active' : ''}`}
                         onClick={() => setShowFilters(!showFilters)}
@@ -292,7 +378,8 @@ function AllMembersView({ onBack, onDataLoaded }) {
                 </div>
             )
         });
-    }, [setHeader, filters, showFilters]);
+    }, [setHeader, filters, showFilters, isSelectionMode]);
+
 
     const clearFilters = () => {
         setFilters({
@@ -424,9 +511,20 @@ function AllMembersView({ onBack, onDataLoaded }) {
                                     <table className="amv-table">
                                         <thead>
                                             <tr>
+                                                {isSelectionMode && (
+                                                    <th style={{ width: '40px', textAlign: 'center' }}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={filteredUsers.length > 0 && selectedUserIds.size === filteredUsers.length}
+                                                            onChange={toggleSelectAll}
+                                                            style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+                                                        />
+                                                    </th>
+                                                )}
                                                 {/* Split Identity into Name and Email */}
                                                 <th style={{ width: '180px' }}>Name</th>
                                                 <th style={{ width: '200px' }}>Email</th>
+                                                <th style={{ width: '120px' }}>Mobile No</th>
                                                 <th>MRR ID</th>
                                                 <th>Balance</th>
                                                 <th>Loan</th>
@@ -446,7 +544,17 @@ function AllMembersView({ onBack, onDataLoaded }) {
                                                 const isDue = (user.balance || 0) < 0;
 
                                                 return (
-                                                    <tr key={user.id}>
+                                                    <tr key={user.id} className={selectedUserIds.has(user.id) ? 'amv-row-selected' : ''}>
+                                                        {isSelectionMode && (
+                                                            <td style={{ textAlign: 'center' }}>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedUserIds.has(user.id)}
+                                                                    onChange={() => toggleSelectUser(user.id)}
+                                                                    style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+                                                                />
+                                                            </td>
+                                                        )}
                                                         {/* Name Column */}
                                                         <td>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -469,6 +577,12 @@ function AllMembersView({ onBack, onDataLoaded }) {
                                                         {/* Email Column */}
                                                         <td>
                                                             <span className="amv-user-email" style={{ fontSize: '13px' }}>{user.email || '-'}</span>
+                                                        </td>
+                                                        {/* Mobile Column */}
+                                                        <td>
+                                                            <span style={{ fontSize: '13px', color: '#555' }}>
+                                                                {user.phoneNumber || user.mobile || user.phone || '-'}
+                                                            </span>
                                                         </td>
                                                         <td>
                                                             <span className="amv-mrr-code">{user.mrrNumber || '-'}</span>
@@ -532,7 +646,7 @@ function AllMembersView({ onBack, onDataLoaded }) {
                                             })}
                                             {users.length === 0 && (
                                                 <tr>
-                                                    <td colSpan="8">
+                                                    <td colSpan={isSelectionMode ? "9" : "8"}>
                                                         <div className="amv-empty">
                                                             <User size={48} className="amv-empty-icon" />
                                                             <p>The directory is currently empty.</p>
@@ -590,6 +704,62 @@ function AllMembersView({ onBack, onDataLoaded }) {
                     onUpdate={handleUserUpdate}
                 />
             )}
+
+            {/* Floating Selection Bar */}
+            {selectedUserIds.size > 0 && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: '24px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    backgroundColor: '#1a1a1a',
+                    color: 'white',
+                    padding: '12px 24px',
+                    borderRadius: '50px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '24px',
+                    zIndex: 100
+                }}>
+                    <span style={{ fontWeight: '500' }}>{selectedUserIds.size} users selected</span>
+                    <div style={{ height: '20px', width: '1px', backgroundColor: '#444' }}></div>
+                    <button
+                        onClick={() => setIsSmsModalOpen(true)}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#fff',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontWeight: '600'
+                        }}
+                    >
+                        <MessageSquare size={18} /> Send SMS
+                    </button>
+                    <button
+                        onClick={() => setSelectedUserIds(new Set())}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#aaa',
+                            cursor: 'pointer',
+                            marginLeft: '8px'
+                        }}
+                    >
+                        <X size={18} />
+                    </button>
+                </div>
+            )}
+
+            <SendSmsModal
+                isOpen={isSmsModalOpen}
+                onClose={() => setIsSmsModalOpen(false)}
+                onSend={handleSendSms}
+                userCount={selectedUserIds.size}
+            />
         </div>
     );
 }

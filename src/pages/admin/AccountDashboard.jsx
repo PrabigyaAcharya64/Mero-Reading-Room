@@ -461,7 +461,7 @@ export default function AccountDashboard({ onDataLoaded }) {
                         </div>
                         <div className="chart-container">
                             {areaChartData.some(d => d.earnings > 0 || d.expenses > 0) ? (
-                                <ResponsiveContainer width="100%" height="100%">
+                                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                                     <AreaChart data={areaChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                         <defs>
                                             <linearGradient id="colorEarnings" x1="0" y1="0" x2="0" y2="1">
@@ -505,7 +505,7 @@ export default function AccountDashboard({ onDataLoaded }) {
                         </div>
                         <div className="chart-container small">
                             {expensePieData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height="100%">
+                                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                                     <PieChart>
                                         <Pie
                                             data={expensePieData}
@@ -551,7 +551,7 @@ export default function AccountDashboard({ onDataLoaded }) {
                             </div>
                         </div>
                         <div className="chart-container">
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                                 <BarChart data={earningsBreakdownData} layout="vertical" margin={{ top: 10, right: 30, left: 80, bottom: 10 }}>
                                     <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f3f4f6" />
                                     <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />

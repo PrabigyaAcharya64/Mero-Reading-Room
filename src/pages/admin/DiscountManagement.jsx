@@ -3,11 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../../lib/firebase';
 import { doc, getDoc, setDoc, collection, addDoc, deleteDoc, onSnapshot, query, orderBy, writeBatch } from 'firebase/firestore'; // Import writeBatch
 import { useLoading } from '../../context/GlobalLoadingContext';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import { Trash2, Plus, Save, Search, Check } from 'lucide-react'; // Add icons
 import '../../styles/StandardLayout.css';
 
 const DiscountManagement = ({ onDataLoaded }) => {
-    const { setIsLoading } = useLoading();
+    const [isPageLoading, setIsPageLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('settings');
 
     // Settings State
@@ -41,27 +42,58 @@ const DiscountManagement = ({ onDataLoaded }) => {
 
     // Initial Load
     useEffect(() => {
-        const fetchSettings = async () => {
-            setIsLoading(true);
+        let settingsLoaded = false;
+        let couponsLoaded = false;
+        let usersLoaded = false;
+
+        const checkIfAllLoaded = () => {
+            if (settingsLoaded && couponsLoaded && usersLoaded) {
+                setIsPageLoading(false);
+                if (onDataLoaded) onDataLoaded();
+            }
+        };
+
+        const minLoadTime = new Promise(resolve => setTimeout(resolve, 1000));
+
+        const init = async () => {
             try {
+                // Fetch Settings (One-time)
                 const docRef = doc(db, 'settings', 'discounts');
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
                     setSettings(prev => ({ ...prev, ...docSnap.data() }));
                 }
+                settingsLoaded = true;
+                checkIfAllLoaded();
             } catch (err) {
                 console.error("Error loading settings:", err);
-            } finally {
-                setIsLoading(false);
-                if (onDataLoaded) onDataLoaded();
+                settingsLoaded = true; // Proceed even on error
+                checkIfAllLoaded();
             }
         };
+
+        // Wait for minLoadTime then start init (or parallel?) -> Parallel best
+        Promise.all([init(), minLoadTime]).then(() => {
+            // ensure settingsLoaded is treated as true here if it wasn't already?
+            // Actually init() handles settingsLoaded. 
+            // checks need to happen inside listeners too.
+        });
 
         const fetchCoupons = () => {
             const q = query(collection(db, 'coupons'), orderBy('code'));
             const unsubscribe = onSnapshot(q, (snapshot) => {
                 const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setCoupons(list);
+                if (!couponsLoaded) {
+                    couponsLoaded = true;
+                    checkIfAllLoaded();
+                }
+            }, (error) => {
+                console.error("Coupons error:", error);
+                if (!couponsLoaded) {
+                    couponsLoaded = true;
+                    checkIfAllLoaded();
+                }
             });
             return unsubscribe;
         };
@@ -76,11 +108,20 @@ const DiscountManagement = ({ onDataLoaded }) => {
                 }));
                 setAvailableUsers(users);
                 setFilteredUsers(users);
+                if (!usersLoaded) {
+                    usersLoaded = true;
+                    checkIfAllLoaded();
+                }
+            }, (error) => {
+                console.error("Users error:", error);
+                if (!usersLoaded) {
+                    usersLoaded = true;
+                    checkIfAllLoaded();
+                }
             });
             return unsubscribe;
         };
 
-        fetchSettings();
         const unsubCoupons = fetchCoupons();
         const unsubUsers = fetchUsers();
 
@@ -88,7 +129,7 @@ const DiscountManagement = ({ onDataLoaded }) => {
             unsubCoupons();
             unsubUsers();
         };
-    }, [setIsLoading, onDataLoaded]);
+    }, []);
 
     // Filter users when search changes
     useEffect(() => {
@@ -107,7 +148,7 @@ const DiscountManagement = ({ onDataLoaded }) => {
 
     // Handle Settings Save
     const handleSaveSettings = async () => {
-        setIsLoading(true);
+        setIsPageLoading(true);
         try {
             await setDoc(doc(db, 'settings', 'discounts'), settings);
             alert('Settings saved successfully!');
@@ -115,14 +156,14 @@ const DiscountManagement = ({ onDataLoaded }) => {
             console.error(err);
             alert('Failed to save settings.');
         } finally {
-            setIsLoading(false);
+            setIsPageLoading(false);
         }
     };
 
     // Handle Coupon Create
     const handleCreateCoupon = async (e) => {
         e.preventDefault();
-        setIsLoading(true);
+        setIsPageLoading(true);
         try {
             const batch = writeBatch(db);
             const couponRef = doc(collection(db, 'coupons'));
@@ -177,7 +218,7 @@ const DiscountManagement = ({ onDataLoaded }) => {
             console.error(err);
             alert('Error creating coupon.');
         } finally {
-            setIsLoading(false);
+            setIsPageLoading(false);
         }
     };
 
@@ -197,156 +238,164 @@ const DiscountManagement = ({ onDataLoaded }) => {
 
 
             <main className="std-body">
-                {/* Tabs */}
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
-                    <button
-                        onClick={() => setActiveTab('settings')}
-                        style={{
-                            padding: '10px 20px',
-                            borderRadius: '4px',
-                            border: 'none',
-                            backgroundColor: activeTab === 'settings' ? '#000' : 'transparent',
-                            color: activeTab === 'settings' ? '#fff' : '#000',
-                            cursor: 'pointer',
-                            fontWeight: 'bold'
-                        }}
-                    >
-                        General Settings
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('coupons')}
-                        style={{
-                            padding: '10px 20px',
-                            borderRadius: '4px',
-                            border: 'none',
-                            backgroundColor: activeTab === 'coupons' ? '#000' : 'transparent',
-                            color: activeTab === 'coupons' ? '#fff' : '#000',
-                            cursor: 'pointer',
-                            fontWeight: 'bold'
-                        }}
-                    >
-                        Manage Coupons
-                    </button>
-                </div>
-
-                {/* Settings Tab */}
-                {activeTab === 'settings' && (
-                    <div className="card" style={{ maxWidth: '600px', padding: '20px', border: '1px solid #eee', borderRadius: '8px' }}>
-                        <h3>Automated Discount Configuration</h3>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '20px' }}>
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Referral Discount (%)</label>
-                                <input
-                                    type="number"
-                                    value={settings.REFERRAL_PERCENT}
-                                    onChange={(e) => setSettings({ ...settings, REFERRAL_PERCENT: e.target.value === '' ? '' : parseFloat(e.target.value) })}
-                                    style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                                />
-                            </div>
-
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Bulk Booking Discount (6+ Months) (%)</label>
-                                <input
-                                    type="number"
-                                    value={settings.BULK_PERCENT}
-                                    onChange={(e) => setSettings({ ...settings, BULK_PERCENT: e.target.value === '' ? '' : parseFloat(e.target.value) })}
-                                    style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                                />
-                            </div>
-
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Bundle Discount (Fixed Amount)</label>
-                                <input
-                                    type="number"
-                                    value={settings.BUNDLE_FIXED}
-                                    onChange={(e) => setSettings({ ...settings, BUNDLE_FIXED: e.target.value === '' ? '' : parseFloat(e.target.value) })}
-                                    style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                                />
-                            </div>
-
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Loyalty Threshold (Meals)</label>
-                                <input
-                                    type="number"
-                                    value={settings.LOYALTY_THRESHOLD}
-                                    onChange={(e) => setSettings({ ...settings, LOYALTY_THRESHOLD: e.target.value === '' ? '' : parseFloat(e.target.value) })}
-                                    style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                                />
-                            </div>
-
-                            <button
-                                onClick={handleSaveSettings}
-                                className="btn btn-black"
-                                style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', marginTop: '10px' }}
-                            >
-                                <Save size={18} /> Save Settings
-                            </button>
-                        </div>
+                {isPageLoading ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', width: '100%', minHeight: '200px' }}>
+                        <LoadingSpinner />
                     </div>
-                )}
-
-                {/* Coupons Tab */}
-                {activeTab === 'coupons' && (
-                    <div>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
+                ) : (
+                    <>
+                        {/* Tabs */}
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
                             <button
-                                className="btn btn-black"
-                                onClick={() => setShowCouponModal(true)}
-                                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                                onClick={() => setActiveTab('settings')}
+                                style={{
+                                    padding: '10px 20px',
+                                    borderRadius: '4px',
+                                    border: 'none',
+                                    backgroundColor: activeTab === 'settings' ? '#000' : 'transparent',
+                                    color: activeTab === 'settings' ? '#fff' : '#000',
+                                    cursor: 'pointer',
+                                    fontWeight: 'bold'
+                                }}
                             >
-                                <Plus size={18} /> New Coupon
+                                General Settings
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('coupons')}
+                                style={{
+                                    padding: '10px 20px',
+                                    borderRadius: '4px',
+                                    border: 'none',
+                                    backgroundColor: activeTab === 'coupons' ? '#000' : 'transparent',
+                                    color: activeTab === 'coupons' ? '#fff' : '#000',
+                                    cursor: 'pointer',
+                                    fontWeight: 'bold'
+                                }}
+                            >
+                                Manage Coupons
                             </button>
                         </div>
 
-                        <div style={{ display: 'grid', gap: '15px', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
-                            {coupons.map(coupon => (
-                                <div key={coupon.id} style={{ padding: '15px', border: '1px solid #eee', borderRadius: '8px', position: 'relative', backgroundColor: 'white' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                        <div>
-                                            <h4 style={{ margin: '0 0 5px 0', fontSize: '18px', fontFamily: 'monospace' }}>{coupon.code}</h4>
-                                            <span style={{
-                                                display: 'inline-block',
-                                                padding: '2px 8px',
-                                                borderRadius: '12px',
-                                                backgroundColor: '#f3f4f6',
-                                                fontSize: '12px',
-                                                marginBottom: '10px'
-                                            }}>
-                                                {coupon.type === 'percentage' ? `${coupon.value}% OFF` : `Rs. ${coupon.value} OFF`}
-                                            </span>
-                                        </div>
-                                        <button
-                                            onClick={() => handleDeleteCoupon(coupon.id)}
-                                            style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#ef4444' }}
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
+                        {/* Settings Tab */}
+                        {activeTab === 'settings' && (
+                            <div className="card" style={{ maxWidth: '600px', padding: '20px', border: '1px solid #eee', borderRadius: '8px' }}>
+                                <h3>Automated Discount Configuration</h3>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '20px' }}>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Referral Discount (%)</label>
+                                        <input
+                                            type="number"
+                                            value={settings.REFERRAL_PERCENT}
+                                            onChange={(e) => setSettings({ ...settings, REFERRAL_PERCENT: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                                            style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                                        />
                                     </div>
 
-                                    <div style={{ fontSize: '13px', color: '#666', lineHeight: '1.6' }}>
-                                        {coupon.minAmount > 0 && <div>Min Spend: Rs. {coupon.minAmount}</div>}
-                                        {coupon.expiryDate && <div>Expires: {new Date(coupon.expiryDate).toLocaleDateString()}</div>}
-                                        <div>Usage: {coupon.usedCount} / {coupon.usageLimit || '∞'}</div>
-                                        <div>Stackable: {coupon.stackable ? 'Yes' : 'No'}</div>
-                                        <div style={{ marginTop: '5px' }}>
-                                            {coupon.applicableServices?.map(s => (
-                                                <span key={s} style={{ marginRight: '5px', fontSize: '11px', border: '1px solid #ddd', padding: '1px 4px', borderRadius: '3px' }}>
-                                                    {s}
-                                                </span>
-                                            ))}
-                                        </div>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Bulk Booking Discount (6+ Months) (%)</label>
+                                        <input
+                                            type="number"
+                                            value={settings.BULK_PERCENT}
+                                            onChange={(e) => setSettings({ ...settings, BULK_PERCENT: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                                            style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                                        />
                                     </div>
-                                </div>
-                            ))}
 
-                            {coupons.length === 0 && (
-                                <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px', color: '#999' }}>
-                                    No coupons created yet.
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Bundle Discount (Fixed Amount)</label>
+                                        <input
+                                            type="number"
+                                            value={settings.BUNDLE_FIXED}
+                                            onChange={(e) => setSettings({ ...settings, BUNDLE_FIXED: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                                            style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Loyalty Threshold (Meals)</label>
+                                        <input
+                                            type="number"
+                                            value={settings.LOYALTY_THRESHOLD}
+                                            onChange={(e) => setSettings({ ...settings, LOYALTY_THRESHOLD: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                                            style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                                        />
+                                    </div>
+
+                                    <button
+                                        onClick={handleSaveSettings}
+                                        className="btn btn-black"
+                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', marginTop: '10px' }}
+                                    >
+                                        <Save size={18} /> Save Settings
+                                    </button>
                                 </div>
-                            )}
-                        </div>
-                    </div>
+                            </div>
+                        )}
+
+                        {/* Coupons Tab */}
+                        {activeTab === 'coupons' && (
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
+                                    <button
+                                        className="btn btn-black"
+                                        onClick={() => setShowCouponModal(true)}
+                                        style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                                    >
+                                        <Plus size={18} /> New Coupon
+                                    </button>
+                                </div>
+
+                                <div style={{ display: 'grid', gap: '15px', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+                                    {coupons.map(coupon => (
+                                        <div key={coupon.id} style={{ padding: '15px', border: '1px solid #eee', borderRadius: '8px', position: 'relative', backgroundColor: 'white' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                <div>
+                                                    <h4 style={{ margin: '0 0 5px 0', fontSize: '18px', fontFamily: 'monospace' }}>{coupon.code}</h4>
+                                                    <span style={{
+                                                        display: 'inline-block',
+                                                        padding: '2px 8px',
+                                                        borderRadius: '12px',
+                                                        backgroundColor: '#f3f4f6',
+                                                        fontSize: '12px',
+                                                        marginBottom: '10px'
+                                                    }}>
+                                                        {coupon.type === 'percentage' ? `${coupon.value}% OFF` : `Rs. ${coupon.value} OFF`}
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleDeleteCoupon(coupon.id)}
+                                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#ef4444' }}
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+
+                                            <div style={{ fontSize: '13px', color: '#666', lineHeight: '1.6' }}>
+                                                {coupon.minAmount > 0 && <div>Min Spend: Rs. {coupon.minAmount}</div>}
+                                                {coupon.expiryDate && <div>Expires: {new Date(coupon.expiryDate).toLocaleDateString()}</div>}
+                                                <div>Usage: {coupon.usedCount} / {coupon.usageLimit || '∞'}</div>
+                                                <div>Stackable: {coupon.stackable ? 'Yes' : 'No'}</div>
+                                                <div style={{ marginTop: '5px' }}>
+                                                    {coupon.applicableServices?.map(s => (
+                                                        <span key={s} style={{ marginRight: '5px', fontSize: '11px', border: '1px solid #ddd', padding: '1px 4px', borderRadius: '3px' }}>
+                                                            {s}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {coupons.length === 0 && (
+                                        <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px', color: '#999' }}>
+                                            No coupons created yet.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </>
                 )}
             </main>
 
