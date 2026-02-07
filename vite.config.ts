@@ -5,6 +5,10 @@ const require = createRequire(import.meta.url);
 
 export default defineConfig({
   plugins: [react()],
+  // Polyfill process.env for browser compatibility (Firebase references this)
+  define: {
+    'process.env': {}
+  },
   resolve: {
     // Explicitly alias all @firebase/* packages to their entry points using dynamic resolution
     // This fixes the Vercel build error: "Failed to resolve entry for package @firebase/firestore"
