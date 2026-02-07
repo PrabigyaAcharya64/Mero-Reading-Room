@@ -16,7 +16,20 @@ export default defineConfig({
       '@firebase/app': path.resolve(__dirname, 'node_modules/@firebase/app/dist/esm/index.esm.js'),
     }
   },
+  server: {
+    port: 5173,
+    open: false
+  },
   build: {
-    chunkSizeWarningLimit: 1600,
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
+          utils: ['html2canvas', 'ldrs']
+        }
+      }
+    }
   }
 })
