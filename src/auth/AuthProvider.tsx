@@ -21,7 +21,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { Capacitor } from '@capacitor/core';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
+// FirebaseAuthentication is now dynamically imported only on native platforms
 import { auth, db } from '../lib/firebase';
 
 type AuthContextState = {
@@ -344,6 +344,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogleHandler = useCallback(async () => {
     try {
       if (Capacitor.isNativePlatform()) {
+        // Dynamically import @capacitor-firebase/authentication only on native platforms
+        // This avoids bundling it in web builds where it causes resolution issues
+        const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+
         try {
           await FirebaseAuthentication.signOut();
         } catch (signOutError) {
