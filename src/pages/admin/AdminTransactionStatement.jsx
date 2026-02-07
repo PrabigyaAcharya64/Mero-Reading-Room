@@ -223,6 +223,11 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
                 </div>
             )
         });
+
+        // Cleanup: Remove action bar when leaving this page
+        return () => {
+            setHeader(prev => ({ ...prev, actionBar: null }));
+        };
     }, [setHeader, searchQuery, setSearchQuery, dateRange, setDateRange, customStartDate, setCustomStartDate, customEndDate, setCustomEndDate]);
 
     return (

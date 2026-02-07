@@ -185,6 +185,11 @@ export default function AdminBalanceLoad({ onBack, onDataLoaded }) {
                 </div>
             )
         });
+
+        // Cleanup: Remove action bar when leaving this page
+        return () => {
+            setHeader(prev => ({ ...prev, actionBar: null }));
+        };
     }, [setHeader, activeTab, requests.length]);
 
     return (

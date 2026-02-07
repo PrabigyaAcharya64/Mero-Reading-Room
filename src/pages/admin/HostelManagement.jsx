@@ -482,6 +482,11 @@ const HostelManagement = ({ onBack, onDataLoaded }) => {
                 onBack: null // No back button on dashboard
             });
         }
+
+        // Cleanup: Reset header when leaving this page
+        return () => {
+            setHeader(prev => ({ ...prev, title: '', onBack: null }));
+        };
     }, [selectedGroup, setHeader, onBack]);
 
     // If a group is selected, show detail view
