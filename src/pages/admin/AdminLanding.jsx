@@ -100,9 +100,9 @@ function AdminLandingContent() {
   }, []);
 
   // Reset header when view changes
-  useEffect(() => {
-    resetHeader();
-  }, [location.pathname, resetHeader]);
+  // useEffect(() => {
+  //   resetHeader();
+  // }, [location.pathname, resetHeader]);
 
   // Determine active sidebar item from location
   const currentView = useMemo(() => {
