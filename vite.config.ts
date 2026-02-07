@@ -5,9 +5,10 @@ const require = createRequire(import.meta.url);
 
 export default defineConfig({
   plugins: [react()],
-  // Polyfill process.env for browser compatibility (Firebase references this)
+  // Polyfill process for browser compatibility (Firebase references this)
   define: {
-    'process.env': {}
+    'process': JSON.stringify({ env: {} }),
+    'process.env': JSON.stringify({})
   },
   resolve: {
     // Explicitly alias all @firebase/* packages to their entry points using dynamic resolution
