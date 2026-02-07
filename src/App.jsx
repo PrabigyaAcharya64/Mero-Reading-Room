@@ -16,7 +16,26 @@ function AppShell() {
 
     if (loading) return null;
 
-    return <NavigationRoot />;
+    return (
+        <>
+            <NavigationRoot />
+            <div style={{
+                position: 'fixed',
+                bottom: 5,
+                right: 5,
+                background: '#dc2626',
+                color: 'white',
+                padding: '4px 8px',
+                borderRadius: '4px',
+                zIndex: 9999,
+                fontSize: '11px',
+                fontWeight: 'bold',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+            }}>
+                v4.0 - Bulk SMS Fix
+            </div>
+        </>
+    );
 }
 
 function App() {
