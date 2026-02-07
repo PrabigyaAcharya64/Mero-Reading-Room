@@ -115,8 +115,7 @@ const RefundRequests = ({ onDataLoaded }) => {
         return () => clearTimeout(timer);
     }, [activeTab]);
 
-    // ... (keep existing useEffect for data fetching) ...
-
+   
     return (
         <div className="std-container">
             {/* Header Area */}

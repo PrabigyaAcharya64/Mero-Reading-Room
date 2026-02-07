@@ -15,9 +15,7 @@ const businessDetails = {
     currency: 'Rs'
 };
 
-// ============================================
-// PDF Styles
-// ============================================
+
 const styles = StyleSheet.create({
     page: {
         padding: 40,

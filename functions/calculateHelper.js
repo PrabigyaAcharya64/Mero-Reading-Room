@@ -1,12 +1,6 @@
 
-/**
- * Shared Helper: Calculate Final Price with Discounts
- * Used by calculatePayment (UI) and processHostelPurchase (Transaction)
- */
 async function calculatePriceInternal({ userId, serviceType, couponCode, months, basePrice, db }) {
     const discounts = [];
-
-    // 1. Fetch Dynamic Settings
     let discountSettings = {
         REFERRAL_PERCENT: 5,
         BULK_PERCENT: 10,
@@ -23,9 +17,6 @@ async function calculatePriceInternal({ userId, serviceType, couponCode, months,
         console.error("Error fetching discount settings:", e);
     }
 
-    // 2. Automated Discounts
-
-    // A. Bulk Discount (6+ months)
     if (months >= 6) {
         const amount = Math.round(basePrice * (discountSettings.BULK_PERCENT / 100));
         discounts.push({
@@ -36,7 +27,6 @@ async function calculatePriceInternal({ userId, serviceType, couponCode, months,
         });
     }
 
-    // B. Bundle Discount (Check active services)
     const userDoc = await db.collection('users').doc(userId).get();
     if (userDoc.exists) {
         const userData = userDoc.data();
@@ -57,7 +47,6 @@ async function calculatePriceInternal({ userId, serviceType, couponCode, months,
         }
     }
 
-    // 3. Coupon Validation
     if (couponCode) {
         const couponRef = db.collection('coupons').where('code', '==', couponCode).limit(1);
         const couponSnap = await couponRef.get();
@@ -84,10 +73,9 @@ async function calculatePriceInternal({ userId, serviceType, couponCode, months,
             }
 
             if (isValid) {
-                // Check stackable
                 const hasAutomated = discounts.length > 0;
                 if (!coupon.stackable && hasAutomated) {
-                    discounts.length = 0; // Clear automated if not stackable
+                    discounts.length = 0; 
                 }
 
                 let amount = 0;
@@ -103,7 +91,7 @@ async function calculatePriceInternal({ userId, serviceType, couponCode, months,
                     amount: amount,
                     type: 'coupon',
                     code: couponCode,
-                    docId: couponDoc.id // Needed for incrementing usage
+                    docId: couponDoc.id 
                 });
             } else {
                 throw new Error(invalidReason);

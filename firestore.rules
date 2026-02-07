@@ -120,25 +120,21 @@ service cloud.firestore {
 
     match /discussion_rooms/{slotDocId} {
 
+      // Allow all logged-in users to read discussion rooms (for viewing available slots)
       allow read: if loggedIn();
 
+      // CREATE: BLOCKED for clients. Must use bookDiscussionRoom Cloud Function.
+      allow create: if false;
 
-      allow create: if loggedIn()
-
-        && request.resource.data.bookedBy == request.auth.uid
-
-        && hasActiveAccess();
-
-
+      // UPDATE: Allow users to update their own bookings (e.g., adding members)
+      // But only the booker can modify
       allow update: if loggedIn()
-
         && hasActiveAccess()
-
+        && resource.data.bookedBy == request.auth.uid
         && request.resource.data.bookedBy == resource.data.bookedBy;
 
-
+      // DELETE: Allow user to cancel their own booking
       allow delete: if loggedIn()
-
         && (resource.data.bookedBy == request.auth.uid || isAdmin());
 
     }
@@ -266,6 +262,22 @@ service cloud.firestore {
 
 
     match /readingRoomEnrollments/{id} {
+
+      // Allow staff to read all enrollments
+      allow read: if isStaff();
+      
+      // Allow users to read their own enrollments
+      allow read: if loggedIn() && resource.data.userId == request.auth.uid;
+
+      allow create: if loggedIn()
+
+        && request.resource.data.userId == request.auth.uid;
+
+      allow update, delete: if isAdmin();
+
+    }
+
+    match /hostelEnrollments/{id} {
 
       // Allow staff to read all enrollments
       allow read: if isStaff();

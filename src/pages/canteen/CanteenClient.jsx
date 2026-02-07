@@ -28,7 +28,7 @@ function CanteenClient({ onBack }) {
   const [orderMessage, setOrderMessage] = useState('');
 
   useEffect(() => {
-    if (!user) return; // Wait for auth
+    if (!user) return;
 
     const today = getBusinessDate();
     const todaysMenuRef = doc(db, 'todaysMenu', today);

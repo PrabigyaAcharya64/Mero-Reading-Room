@@ -114,7 +114,7 @@ function LandingPage({ onBack }) {
   };
 
   useEffect(() => {
-    if (!user) return; // Wait for user to be logged in
+    if (!user) return;
 
     const now = Timestamp.now();
     const q = query(

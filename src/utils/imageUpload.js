@@ -23,7 +23,7 @@ export const uploadImageSecurely = async (file) => {
 
         const base64Image = await base64Promise;
 
-        // Call Cloud Function
+        
         const uploadImageFn = httpsCallable(functions, 'uploadImage');
         const result = await uploadImageFn({ base64Image });
 

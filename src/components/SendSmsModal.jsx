@@ -16,10 +16,7 @@ export default function SendSmsModal({ isOpen, onClose, onSend, userCount }) {
             console.error(e);
         } finally {
             setSending(false);
-            setMessage(''); // Clear on success only? Or keep if failed? Ideally clear on success.
-            // Assuming onSend throws if failed, we catch. If success, we clear. 
-            // But existing pattern: onClose handles everything?
-            // Let's assume parent handles alerts.
+            setMessage('');
             onClose();
         }
     };

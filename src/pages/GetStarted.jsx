@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLoading } from '../context/GlobalLoadingContext';
 import '../styles/GetStarted.css';
 import Button from '../components/Button';
-
+import { auth } from '../lib/firebase';
 const illustration = new URL('../assets/bwink_edu_08_single_02.jpg', import.meta.url).href;
 
 function GetStarted() {
