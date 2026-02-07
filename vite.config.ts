@@ -57,6 +57,11 @@ export default defineConfig({
       '@firebase/remote-config': resolveFirebase('@firebase/remote-config', ['dist/esm/index.esm2017.js', 'dist/esm/index.esm.js', 'dist/index.esm2017.js', 'dist/index.esm.js']),
       '@firebase/installations': resolveFirebase('@firebase/installations', ['dist/esm/index.esm2017.js', 'dist/esm/index.esm.js', 'dist/index.esm2017.js', 'dist/index.esm.js']),
       '@firebase/messaging': resolveFirebase('@firebase/messaging', ['dist/esm/index.esm2017.js', 'dist/esm/index.esm.js', 'dist/index.esm2017.js', 'dist/index.esm.js']),
+      '@firebase/data-connect': resolveFirebase('@firebase/data-connect', ['dist/esm/index.esm2017.js', 'dist/esm/index.esm.js', 'dist/index.esm2017.js', 'dist/index.esm.js']),
+      '@firebase/database': resolveFirebase('@firebase/database', ['dist/index.esm2017.js', 'dist/index.esm.js', 'dist/esm/index.esm2017.js', 'dist/esm/index.esm.js']),
+      '@firebase/component': resolveFirebase('@firebase/component', ['dist/esm/index.esm2017.js', 'dist/esm/index.esm.js', 'dist/index.esm2017.js', 'dist/index.esm.js']),
+      '@firebase/util': resolveFirebase('@firebase/util', ['dist/esm/index.esm2017.js', 'dist/esm/index.esm.js', 'dist/index.esm2017.js', 'dist/index.esm.js']),
+      '@firebase/logger': resolveFirebase('@firebase/logger', ['dist/esm/index.esm2017.js', 'dist/esm/index.esm.js', 'dist/index.esm2017.js', 'dist/index.esm.js']),
     }
   },
   server: {
