@@ -7,8 +7,7 @@ import { createRequire } from 'module'
 const require = createRequire(import.meta.url)
 const fs = require('fs')
 
-// Robustly resolve Firebase files by finding the package root first
-// Checks multiple candidate paths to handle version/environment differences
+
 function resolveFirebase(pkgName: string, candidates: string[]) {
   try {
     const pkgJsonPath = require.resolve(`${pkgName}/package.json`);
@@ -21,7 +20,7 @@ function resolveFirebase(pkgName: string, candidates: string[]) {
       }
     }
 
-    // If none found, log debug info for Vercel
+
     console.warn(`[Vite Config] Could not find any candidates for ${pkgName}. Checked: ${candidates.join(', ')}`);
     console.warn(`[Vite Config] ${pkgName} root: ${pkgRoot}`);
     try {
@@ -32,7 +31,6 @@ function resolveFirebase(pkgName: string, candidates: string[]) {
       }
     } catch (e) { console.warn('Could not list dist', e); }
 
-    // Fallback to first candidate to let build fail with path error
     return path.resolve(pkgRoot, candidates[0]);
 
   } catch (e) {
@@ -71,6 +69,8 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
+      // Ignore postinstall.js - it's a build script that shouldn't be bundled
+      external: [/postinstall\.m?js$/],
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
