@@ -20,8 +20,6 @@ import {
   signOut,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
-import { Capacitor } from '@capacitor/core';
-// FirebaseAuthentication is now dynamically imported only on native platforms
 import { auth, db } from '../lib/firebase';
 
 type AuthContextState = {
@@ -343,38 +341,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogleHandler = useCallback(async () => {
     try {
-      if (Capacitor.isNativePlatform()) {
-        // Dynamically import @capacitor-firebase/authentication only on native platforms
-        // This avoids bundling it in web builds where it causes resolution issues
-        const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
-
-        try {
-          await FirebaseAuthentication.signOut();
-        } catch (signOutError) {
-          console.log('Pre-signin signout (expected):', signOutError);
-        }
-
-        const googleUser = await FirebaseAuthentication.signInWithGoogle({
-          mode: 'redirect',
-          scopes: ['email', 'profile'],
-        });
-        const credential = GoogleAuthProvider.credential(googleUser.credential?.idToken);
-        const result = await signInWithCredential(auth, credential);
-        // Small delay to allow Firestore to pick up the new auth state
-        await new Promise(resolve => setTimeout(resolve, 500));
-        await processAuthResult(result);
-      } else {
-        const provider = new GoogleAuthProvider();
-        provider.addScope('email');
-        provider.addScope('profile');
-        provider.setCustomParameters({ prompt: 'select_account' });
-        const result = await signInWithPopup(auth, provider);
-        await processAuthResult(result);
-      }
+      const provider = new GoogleAuthProvider();
+      provider.addScope('email');
+      provider.addScope('profile');
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const result = await signInWithPopup(auth, provider);
+      await processAuthResult(result);
     } catch (error: any) {
-      if (Capacitor.isNativePlatform()) {
-        alert('Google Sign-in Error: ' + (error?.message || JSON.stringify(error)));
-      }
       throw new Error(
         getFriendlyError(
           error?.code ?? 'auth/unknown',
