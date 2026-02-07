@@ -1,5 +1,18 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
+
+// Helper to get the correct ESM path for each @firebase package
+const firebaseAliases = {
+  '@firebase/logger': 'node_modules/@firebase/logger/dist/esm/index.esm2017.js',
+  '@firebase/util': 'node_modules/@firebase/util/dist/index.esm2017.js',
+  '@firebase/component': 'node_modules/@firebase/component/dist/esm/index.esm2017.js',
+  '@firebase/app': 'node_modules/@firebase/app/dist/esm/index.esm2017.js',
+  '@firebase/auth': 'node_modules/@firebase/auth/dist/esm2017/index.js',
+  '@firebase/firestore': 'node_modules/@firebase/firestore/dist/index.esm2017.js',
+  '@firebase/functions': 'node_modules/@firebase/functions/dist/index.esm2017.js',
+  '@firebase/storage': 'node_modules/@firebase/storage/dist/index.esm2017.js',
+}
 
 export default defineConfig({
   plugins: [react()],
@@ -9,28 +22,30 @@ export default defineConfig({
     'global': 'globalThis'
   },
   resolve: {
-    // Dedupe ensures we don't load two copies of Firebase (one from app, one from plugin)
+    // Static aliases to ESM browser builds - this fixes Vercel build issues
+    alias: Object.fromEntries(
+      Object.entries(firebaseAliases).map(([pkg, relativePath]) => [
+        pkg,
+        path.resolve(__dirname, relativePath)
+      ])
+    ),
+    // Dedupe ensures we don't load two copies of Firebase
     dedupe: ['firebase', '@firebase/app', '@firebase/auth', '@firebase/firestore', '@firebase/functions', '@firebase/storage']
   },
   build: {
-    // Increases the warning limit so you don't get spam about chunk sizes
     chunkSizeWarningLimit: 1600,
     commonjsOptions: {
-      // This tells Vite to treat these specific packages loosely
       transformMixedEsModules: true,
-      // Include the @firebase packages in CommonJS transformation
       include: [/node_modules/],
     },
     rollupOptions: {
       output: {
         manualChunks: {
-          // Groups Firebase code into a single file to prevent resolution errors
           firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/functions', 'firebase/storage']
         }
       }
     }
   },
-  // Pre-bundle these dependencies with their internal @firebase/* imports
   optimizeDeps: {
     include: [
       '@capacitor-firebase/authentication',
@@ -41,7 +56,6 @@ export default defineConfig({
       'firebase/storage'
     ],
     esbuildOptions: {
-      // Define process.env for esbuild during dev
       define: {
         global: 'globalThis'
       }
