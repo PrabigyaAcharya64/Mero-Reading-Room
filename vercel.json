@@ -1,4 +1,7 @@
 {
+  "installCommand": "npm ci",
+  "buildCommand": "rm -rf node_modules/.vite node_modules/.cache && npm run build",
+  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/(.*)",
