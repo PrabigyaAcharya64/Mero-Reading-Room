@@ -5,23 +5,28 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills'
 export default defineConfig({
   plugins: [
     react(),
-    // Polyfill Node.js globals for browser compatibility (Firebase references process.versions.node)
+    // Polyfill Node.js globals for browser compatibility
     nodePolyfills({
-      // Only include the globals we need
       globals: {
         process: true,
         global: true,
         Buffer: false,
       },
-      // Don't polyfill full modules, just the globals
       protocolImports: false,
     }),
   ],
   resolve: {
+    // Force browser-first resolution for Firebase packages
+    conditions: ['browser', 'module', 'import', 'default'],
     // Dedupe ensures we don't load two copies of Firebase
-    dedupe: ['firebase', '@firebase/app', '@firebase/auth', '@firebase/firestore', '@firebase/functions', '@firebase/storage']
+    dedupe: ['firebase', '@firebase/app', '@firebase/auth', '@firebase/firestore', '@firebase/functions', '@firebase/storage', '@firebase/logger', '@firebase/util', '@firebase/component']
+  },
+  // SSR configuration - force all @firebase packages to be bundled, not externalized
+  ssr: {
+    noExternal: [/@firebase\//]
   },
   build: {
+    target: 'esnext',
     chunkSizeWarningLimit: 1600,
     commonjsOptions: {
       transformMixedEsModules: true,
@@ -43,6 +48,9 @@ export default defineConfig({
       'firebase/firestore',
       'firebase/functions',
       'firebase/storage'
-    ]
+    ],
+    esbuildOptions: {
+      target: 'esnext'
+    }
   }
 })
