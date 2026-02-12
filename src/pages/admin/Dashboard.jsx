@@ -30,7 +30,7 @@ import { db } from '../../lib/firebase';
 import { useLoading } from '../../context/GlobalLoadingContext';
 import '../../styles/Dashboard.css';
 
-const PIE_COLORS = ['#007AFF', '#34C759', '#FF9F0A', '#AF52DE'];
+const PIE_COLORS = ['#007AFF', '#34C759', '#FF9F0A', '#AF52DE', '#F59E0B']; // Added Amber for Hostel
 
 function Dashboard({ onNavigate, onDataLoaded }) {
     const { setIsLoading } = useLoading();
@@ -92,7 +92,11 @@ function Dashboard({ onNavigate, onDataLoaded }) {
                         if (typeof data.date === 'string') transactionDate = new Date(data.date);
                         else if (data.date.toDate) transactionDate = data.date.toDate();
                     }
-                    return { ...data, date: transactionDate, amount: data.amount || 0, type: 'reading_room' };
+                    // Respect the valid types: 'reading_room', 'reading_room_renewal', 'hostel_renewal', 'hostel', etc.
+                    // Fallback to 'reading_room' only if type is missing or generic 'payment'
+                    let type = data.type || 'reading_room';
+
+                    return { ...data, date: transactionDate, amount: data.amount || 0, type };
                 }));
 
                 setTotalUsers(usersSnap.size);
@@ -125,20 +129,32 @@ function Dashboard({ onNavigate, onDataLoaded }) {
         const filteredTxns = transactions.filter(t => t.date >= cutoff);
 
         const totalCanteen = filteredOrders.reduce((sum, o) => sum + o.amount, 0);
-        const totalReadingRoom = filteredTxns.reduce((sum, t) => sum + t.amount, 0);
+
+        // Reading Room Revenue: includes 'reading_room' and 'reading_room_renewal'
+        const totalReadingRoom = filteredTxns
+            .filter(t => t.type === 'reading_room' || t.type === 'reading_room_renewal')
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        // Hostel Revenue (from transactions): includes 'hostel' and 'hostel_renewal'
+        // Note: The previous logic used occupied beds snapshot. 
+        // For consistency with charts and time range, we SHOULD use transactions.
+        const totalHostelTxn = filteredTxns
+            .filter(t => t.type === 'hostel' || t.type === 'hostel_renewal')
+            .reduce((sum, t) => sum + t.amount, 0);
 
         const totalBeds = hostelRooms.reduce((s, r) => s + (r.capacity || 1), 0);
         const occupiedBeds = hostelAssignments.length;
-        const hostelRevenue = hostelRooms.reduce((sum, r) => {
-            const occ = hostelAssignments.filter(a => a.roomId === r.id).length;
-            return sum + (occ > 0 ? (r.price || 0) : 0);
-        }, 0);
+
+        // Use Transaction-based revenue for "Hostel Revenue" card to match time range?
+        // OR keep "Current Monthly Run Rate" which was previous logic?
+        // Stat card usually implies "Revenue over selected period".
+        // Let's use the transaction one for consistency.
 
         return {
             readingRoomSales: totalReadingRoom,
             canteenSales: totalCanteen,
-            totalEarnings: totalCanteen + totalReadingRoom + hostelRevenue,
-            hostelRevenue,
+            totalEarnings: totalCanteen + totalReadingRoom + totalHostelTxn,
+            hostelRevenue: totalHostelTxn,
             totalBeds,
             occupiedBeds,
             rrOccupied: seatAssignments.length
@@ -157,11 +173,12 @@ function Dashboard({ onNavigate, onDataLoaded }) {
             for (let i = days - 1; i >= 0; i--) {
                 const d = new Date(); d.setDate(d.getDate() - i);
                 const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                const dayData = { name: dateStr, readingRoom: 0, canteen: 0 };
+                const dayData = { name: dateStr, readingRoom: 0, canteen: 0, hostel: 0 };
                 allSales.forEach(sale => {
                     if (sale.date.toDateString() === d.toDateString()) {
                         if (sale.type === 'canteen') dayData.canteen += sale.amount;
-                        else dayData.readingRoom += sale.amount;
+                        else if (sale.type === 'hostel' || sale.type === 'hostel_renewal') dayData.hostel += sale.amount;
+                        else if (sale.type === 'reading_room' || sale.type === 'reading_room_renewal') dayData.readingRoom += sale.amount;
                     }
                 });
                 data.push(dayData);
@@ -172,11 +189,12 @@ function Dashboard({ onNavigate, onDataLoaded }) {
             for (let i = months - 1; i >= 0; i--) {
                 const d = new Date(); d.setMonth(d.getMonth() - i);
                 const mi = d.getMonth(), yr = d.getFullYear();
-                const monthData = { name: monthNames[mi], readingRoom: 0, canteen: 0 };
+                const monthData = { name: monthNames[mi], readingRoom: 0, canteen: 0, hostel: 0 };
                 allSales.forEach(sale => {
                     if (sale.date.getMonth() === mi && sale.date.getFullYear() === yr) {
                         if (sale.type === 'canteen') monthData.canteen += sale.amount;
-                        else monthData.readingRoom += sale.amount;
+                        else if (sale.type === 'hostel' || sale.type === 'hostel_renewal') monthData.hostel += sale.amount;
+                        else if (sale.type === 'reading_room' || sale.type === 'reading_room_renewal') monthData.readingRoom += sale.amount;
                     }
                 });
                 data.push(monthData);
@@ -184,11 +202,12 @@ function Dashboard({ onNavigate, onDataLoaded }) {
         } else if (timeRange === '3y') {
             for (let i = 2; i >= 0; i--) {
                 const yr = new Date().getFullYear() - i;
-                const yearData = { name: yr.toString(), readingRoom: 0, canteen: 0 };
+                const yearData = { name: yr.toString(), readingRoom: 0, canteen: 0, hostel: 0 };
                 allSales.forEach(sale => {
                     if (sale.date.getFullYear() === yr) {
                         if (sale.type === 'canteen') yearData.canteen += sale.amount;
-                        else yearData.readingRoom += sale.amount;
+                        else if (sale.type === 'hostel' || sale.type === 'hostel_renewal') yearData.hostel += sale.amount;
+                        else if (sale.type === 'reading_room' || sale.type === 'reading_room_renewal') yearData.readingRoom += sale.amount;
                     }
                 });
                 data.push(yearData);
@@ -207,15 +226,23 @@ function Dashboard({ onNavigate, onDataLoaded }) {
     // ── Members Trend (simulated from verified users) ──
     const membersTrend = useMemo(() => {
         // Build a simple cumulative chart using transaction dates as proxy for member activity
+        // Note: Counting transactions is 'Activity'.
         const data = [];
+
+        const countByDate = (d, filterFn) => {
+            const activeRR = transactions.filter(t => filterFn(t) && (t.type === 'reading_room' || t.type === 'reading_room_renewal')).length;
+            const activeHostel = transactions.filter(t => filterFn(t) && (t.type === 'hostel' || t.type === 'hostel_renewal')).length;
+            const activeCanteen = orders.filter(o => filterFn(o)).length;
+            return { 'Reading Room': activeRR, 'Canteen': activeCanteen, 'Hostel': activeHostel };
+        };
+
         if (timeRange === '7d' || timeRange === '30d') {
             const days = timeRange === '7d' ? 7 : 30;
             for (let i = days - 1; i >= 0; i--) {
                 const d = new Date(); d.setDate(d.getDate() - i);
                 const dayStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                const activeRR = transactions.filter(t => t.date.toDateString() === d.toDateString()).length;
-                const activeCanteen = orders.filter(o => o.date.toDateString() === d.toDateString()).length;
-                data.push({ name: dayStr, 'Reading Room': activeRR, 'Canteen': activeCanteen });
+                const counts = countByDate(d, (item) => item.date.toDateString() === d.toDateString());
+                data.push({ name: dayStr, ...counts });
             }
         } else {
             const months = timeRange === '6m' ? 6 : timeRange === '12m' ? 12 : 36;
@@ -223,9 +250,8 @@ function Dashboard({ onNavigate, onDataLoaded }) {
             for (let i = months - 1; i >= 0; i--) {
                 const d = new Date(); d.setMonth(d.getMonth() - i);
                 const mi = d.getMonth(), yr = d.getFullYear();
-                const activeRR = transactions.filter(t => t.date.getMonth() === mi && t.date.getFullYear() === yr).length;
-                const activeCanteen = orders.filter(o => o.date.getMonth() === mi && o.date.getFullYear() === yr).length;
-                data.push({ name: monthNames[mi], 'Reading Room': activeRR, 'Canteen': activeCanteen });
+                const counts = countByDate(d, (item) => item.date.getMonth() === mi && item.date.getFullYear() === yr);
+                data.push({ name: monthNames[mi], ...counts });
             }
         }
         return data;
@@ -359,6 +385,10 @@ function Dashboard({ onNavigate, onDataLoaded }) {
                                         <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8} />
                                         <stop offset="95%" stopColor="#82ca9d" stopOpacity={0} />
                                     </linearGradient>
+                                    <linearGradient id="colorHostel" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.8} />
+                                        <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
+                                    </linearGradient>
                                 </defs>
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} dy={10} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }}
@@ -371,6 +401,7 @@ function Dashboard({ onNavigate, onDataLoaded }) {
                                 <Legend verticalAlign="top" height={36} />
                                 <Area type="monotone" dataKey="readingRoom" name="Reading Room" stroke="#8884d8" fillOpacity={1} fill="url(#colorRr)" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} />
                                 <Area type="monotone" dataKey="canteen" name="Canteen" stroke="#82ca9d" fillOpacity={1} fill="url(#colorCanteen)" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} />
+                                <Area type="monotone" dataKey="hostel" name="Hostel" stroke="#F59E0B" fillOpacity={1} fill="url(#colorHostel)" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
@@ -426,6 +457,7 @@ function Dashboard({ onNavigate, onDataLoaded }) {
                                 <Legend verticalAlign="top" height={28} iconSize={10} />
                                 <Bar dataKey="Reading Room" fill="#8884d8" radius={[3, 3, 0, 0]} barSize={16} />
                                 <Bar dataKey="Canteen" fill="#82ca9d" radius={[3, 3, 0, 0]} barSize={16} />
+                                <Bar dataKey="Hostel" fill="#F59E0B" radius={[3, 3, 0, 0]} barSize={16} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
