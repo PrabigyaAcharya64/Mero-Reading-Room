@@ -31,6 +31,7 @@ import { useLoading } from '../../context/GlobalLoadingContext';
 import '../../styles/Dashboard.css';
 
 const PIE_COLORS = ['#007AFF', '#34C759', '#FF9F0A', '#AF52DE', '#F59E0B']; // Added Amber for Hostel
+const MEMBER_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042'];
 
 function Dashboard({ onNavigate, onDataLoaded }) {
     const { setIsLoading } = useLoading();
@@ -41,7 +42,7 @@ function Dashboard({ onNavigate, onDataLoaded }) {
 
     const [orders, setOrders] = useState([]);
     const [transactions, setTransactions] = useState([]);
-    const [totalUsers, setTotalUsers] = useState(0);
+    const [users, setUsers] = useState([]);
     const [hostelRooms, setHostelRooms] = useState([]);
     const [hostelAssignments, setHostelAssignments] = useState([]);
     const [seatAssignments, setSeatAssignments] = useState([]);
@@ -99,7 +100,11 @@ function Dashboard({ onNavigate, onDataLoaded }) {
                     return { ...data, date: transactionDate, amount: data.amount || 0, type };
                 }));
 
-                setTotalUsers(usersSnap.size);
+                setUsers(usersSnap.docs.map(doc => ({
+                    ...doc.data(),
+                    id: doc.id,
+                    createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : (doc.data().joinedAt ? new Date(doc.data().joinedAt) : new Date())
+                })));
                 setHostelRooms(hostelRoomsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
                 setHostelAssignments(hostelAssignSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(a => a.status === 'active'));
                 setSeatAssignments(seatAssignSnap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -127,6 +132,8 @@ function Dashboard({ onNavigate, onDataLoaded }) {
     const stats = useMemo(() => {
         const filteredOrders = orders.filter(o => o.date >= cutoff);
         const filteredTxns = transactions.filter(t => t.date >= cutoff);
+        // Filter users by creation date to show "New Members" in this period
+        const filteredUsers = users.filter(u => u.createdAt >= cutoff);
 
         const totalCanteen = filteredOrders.reduce((sum, o) => sum + o.amount, 0);
 
@@ -136,8 +143,6 @@ function Dashboard({ onNavigate, onDataLoaded }) {
             .reduce((sum, t) => sum + t.amount, 0);
 
         // Hostel Revenue (from transactions): includes 'hostel' and 'hostel_renewal'
-        // Note: The previous logic used occupied beds snapshot. 
-        // For consistency with charts and time range, we SHOULD use transactions.
         const totalHostelTxn = filteredTxns
             .filter(t => t.type === 'hostel' || t.type === 'hostel_renewal')
             .reduce((sum, t) => sum + t.amount, 0);
@@ -145,12 +150,8 @@ function Dashboard({ onNavigate, onDataLoaded }) {
         const totalBeds = hostelRooms.reduce((s, r) => s + (r.capacity || 1), 0);
         const occupiedBeds = hostelAssignments.length;
 
-        // Use Transaction-based revenue for "Hostel Revenue" card to match time range?
-        // OR keep "Current Monthly Run Rate" which was previous logic?
-        // Stat card usually implies "Revenue over selected period".
-        // Let's use the transaction one for consistency.
-
         return {
+            newMembers: filteredUsers.length,
             readingRoomSales: totalReadingRoom,
             canteenSales: totalCanteen,
             totalEarnings: totalCanteen + totalReadingRoom + totalHostelTxn,
@@ -159,7 +160,7 @@ function Dashboard({ onNavigate, onDataLoaded }) {
             occupiedBeds,
             rrOccupied: seatAssignments.length
         };
-    }, [orders, transactions, hostelRooms, hostelAssignments, seatAssignments, cutoff]);
+    }, [orders, transactions, users, hostelRooms, hostelAssignments, seatAssignments, cutoff]);
 
     // ── Revenue Trend Chart ──
     const chartData = useMemo(() => {
@@ -223,10 +224,36 @@ function Dashboard({ onNavigate, onDataLoaded }) {
         { name: 'Hostel', value: stats.hostelRevenue }
     ].filter(d => d.value > 0), [stats]);
 
+    // ── Member Types Breakdown (Pie) ──
+    const memberTypesData = useMemo(() => {
+        let rrCount = 0;
+        let hostelCount = 0;
+        let bothCount = 0;
+        let otherCount = 0;
+
+        const rrUsers = new Set(seatAssignments.map(a => a.userId));
+        const hostelUsers = new Set(hostelAssignments.map(a => a.userId));
+
+        users.forEach(u => {
+            const hasRr = rrUsers.has(u.id);
+            const hasHostel = hostelUsers.has(u.id);
+
+            if (hasRr && hasHostel) bothCount++;
+            else if (hasRr) rrCount++;
+            else if (hasHostel) hostelCount++;
+            else otherCount++;
+        });
+
+        return [
+            { name: 'Reading Room Only', value: rrCount },
+            { name: 'Hostel Only', value: hostelCount },
+            { name: 'Both', value: bothCount },
+            { name: 'Inactive/Other', value: otherCount }
+        ].filter(d => d.value > 0);
+    }, [users, seatAssignments, hostelAssignments]);
+
     // ── Members Trend (simulated from verified users) ──
     const membersTrend = useMemo(() => {
-        // Build a simple cumulative chart using transaction dates as proxy for member activity
-        // Note: Counting transactions is 'Activity'.
         const data = [];
 
         const countByDate = (d, filterFn) => {
@@ -257,12 +284,47 @@ function Dashboard({ onNavigate, onDataLoaded }) {
         return data;
     }, [transactions, orders, timeRange]);
 
-    const renderPieLabel = ({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`;
+
 
     return (
         <div className="dashboard-container">
             <div className="dashboard-content" style={{ padding: '24px' }}>
-                <p style={{ color: '#6b7280', marginBottom: '24px' }}>Welcome back, Admin. Here's your overall overview.</p>
+
+                {/* Header with Global Time Filter */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                    <div>
+                        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111827' }}>Dashboard Overview</h1>
+                        <p style={{ color: '#6b7280', fontSize: '14px' }}>Welcome back, Admin. Overview for {timeRangeLabels[timeRange]}</p>
+                    </div>
+
+                    {/* Global Time Selector */}
+                    <div className="db-select-wrapper" ref={selectRef}>
+                        <div
+                            className={`db-select-trigger ${isSelectOpen ? 'open' : ''}`}
+                            onClick={() => setIsSelectOpen(!isSelectOpen)}
+                            style={{ minWidth: '160px' }}
+                        >
+                            <Calendar size={16} style={{ marginRight: '8px', color: '#6b7280' }} />
+                            <span>{timeRangeLabels[timeRange]}</span>
+                            <ChevronDown size={16} style={{
+                                transform: isSelectOpen ? 'rotate(180deg)' : 'none',
+                                transition: 'transform 0.2s', marginLeft: 'auto'
+                            }} />
+                        </div>
+                        {isSelectOpen && (
+                            <div className="db-select-options">
+                                {Object.entries(timeRangeLabels).map(([key, label]) => (
+                                    <div key={key}
+                                        className={`db-select-option ${timeRange === key ? 'active' : ''}`}
+                                        onClick={() => { setTimeRange(key); setIsSelectOpen(false); }}
+                                    >
+                                        {label}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
 
                 {/* Stat Cards */}
                 <div style={{
@@ -274,14 +336,14 @@ function Dashboard({ onNavigate, onDataLoaded }) {
                     <div onClick={() => navigate('/admin/user-management')} style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'all 0.2s' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                             <div>
-                                <p style={{ color: '#6b7280', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Total Members</p>
-                                <h3 style={{ fontSize: '26px', fontWeight: 'bold', color: '#111827' }}>{totalUsers}</h3>
+                                <p style={{ color: '#6b7280', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>New Members</p>
+                                <h3 style={{ fontSize: '26px', fontWeight: 'bold', color: '#111827' }}>{stats.newMembers}</h3>
                             </div>
                             <div style={{ padding: '10px', backgroundColor: '#eff6ff', borderRadius: '12px', color: '#3b82f6' }}>
                                 <Users size={20} />
                             </div>
                         </div>
-                        <p style={{ fontSize: '12px', color: '#6b7280' }}>Verified users →</p>
+                        <p style={{ fontSize: '12px', color: '#6b7280' }}>Joined in selected period</p>
                     </div>
 
                     <div onClick={() => navigate('/admin/reading-rooms')} style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'all 0.2s' }}>
@@ -294,7 +356,7 @@ function Dashboard({ onNavigate, onDataLoaded }) {
                                 <Armchair size={20} />
                             </div>
                         </div>
-                        <p style={{ fontSize: '12px', color: '#10b981' }}>{stats.rrOccupied} seats occupied →</p>
+                        <p style={{ fontSize: '12px', color: '#10b981' }}>{stats.rrOccupied} current seats assigned</p>
                     </div>
 
                     <div onClick={() => navigate('/admin/hostel')} style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'all 0.2s' }}>
@@ -307,7 +369,7 @@ function Dashboard({ onNavigate, onDataLoaded }) {
                                 <Building size={20} />
                             </div>
                         </div>
-                        <p style={{ fontSize: '12px', color: '#6b7280' }}>{stats.occupiedBeds}/{stats.totalBeds} beds occupied →</p>
+                        <p style={{ fontSize: '12px', color: '#6b7280' }}>{stats.occupiedBeds}/{stats.totalBeds} beds occupied</p>
                     </div>
 
                     <div onClick={() => navigate('/admin/canteen')} style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'all 0.2s' }}>
@@ -320,7 +382,7 @@ function Dashboard({ onNavigate, onDataLoaded }) {
                                 <ShoppingCart size={20} />
                             </div>
                         </div>
-                        <p style={{ fontSize: '12px', color: '#6b7280' }}>{timeRangeLabels[timeRange]} →</p>
+                        <p style={{ fontSize: '12px', color: '#6b7280' }}>Revenue in period</p>
                     </div>
 
                     <div onClick={() => navigate('/admin/transaction-statement')} style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'all 0.2s' }}>
@@ -334,7 +396,7 @@ function Dashboard({ onNavigate, onDataLoaded }) {
                             </div>
                         </div>
                         <p style={{ fontSize: '12px', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Calendar size={12} /> {timeRangeLabels[timeRange]} →
+                            View Statement →
                         </p>
                     </div>
                 </div>
@@ -347,33 +409,7 @@ function Dashboard({ onNavigate, onDataLoaded }) {
                         backgroundColor: '#fff', padding: '24px', borderRadius: '16px',
                         border: '1px solid #e5e7eb', height: '400px', position: 'relative', minWidth: 0
                     }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827' }}>Revenue Trends</h3>
-                            <div className="db-select-wrapper" ref={selectRef}>
-                                <div
-                                    className={`db-select-trigger ${isSelectOpen ? 'open' : ''}`}
-                                    onClick={() => setIsSelectOpen(!isSelectOpen)}
-                                >
-                                    <span>{timeRangeLabels[timeRange]}</span>
-                                    <ChevronDown size={16} style={{
-                                        transform: isSelectOpen ? 'rotate(180deg)' : 'none',
-                                        transition: 'transform 0.2s', marginLeft: '8px'
-                                    }} />
-                                </div>
-                                {isSelectOpen && (
-                                    <div className="db-select-options">
-                                        {Object.entries(timeRangeLabels).map(([key, label]) => (
-                                            <div key={key}
-                                                className={`db-select-option ${timeRange === key ? 'active' : ''}`}
-                                                onClick={() => { setTimeRange(key); setIsSelectOpen(false); }}
-                                            >
-                                                {label}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                        <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', marginBottom: '24px' }}>Revenue Trends</h3>
                         <ResponsiveContainer width="100%" height="85%" minWidth={0} minHeight={0}>
                             <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                                 <defs>
@@ -412,56 +448,84 @@ function Dashboard({ onNavigate, onDataLoaded }) {
                         border: '1px solid #e5e7eb', height: '400px', position: 'relative', minWidth: 0
                     }}>
                         <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', marginBottom: '16px' }}>Revenue Sources</h3>
-                        <ResponsiveContainer width="100%" height="60%" minWidth={0} minHeight={0}>
+                        <ResponsiveContainer width="100%" height="85%" minWidth={0} minHeight={0}>
                             <PieChart>
-                                <Pie data={revenueBreakdown} cx="50%" cy="50%" innerRadius={45} outerRadius={75} dataKey="value" paddingAngle={4} label={renderPieLabel} labelLine={true}>
+                                <Pie
+                                    data={revenueBreakdown}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={55}
+                                    outerRadius={85}
+                                    dataKey="value"
+                                    paddingAngle={2}
+                                    label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                                    labelLine={true}
+                                >
                                     {revenueBreakdown.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                                 </Pie>
                                 <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                                     formatter={v => [`रु ${v.toLocaleString()}`, '']} />
+                                <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '11px' }} />
                             </PieChart>
                         </ResponsiveContainer>
+                    </div>
+                </div>
 
-                        <div style={{ marginTop: '12px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
-                                <span style={{ color: '#6b7280', fontSize: '13px' }}>Reading Room</span>
-                                <span style={{ fontWeight: '600', color: '#111827', fontSize: '13px' }}>रु {stats.readingRoomSales.toLocaleString()}</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
-                                <span style={{ color: '#6b7280', fontSize: '13px' }}>Hostel</span>
-                                <span style={{ fontWeight: '600', color: '#111827', fontSize: '13px' }}>रु {stats.hostelRevenue.toLocaleString()}</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
-                                <span style={{ color: '#6b7280', fontSize: '13px' }}>Canteen</span>
-                                <span style={{ fontWeight: '600', color: '#111827', fontSize: '13px' }}>रु {stats.canteenSales.toLocaleString()}</span>
-                            </div>
+                {/* Bottom Row: Member Types & Activity */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px', marginTop: '24px' }}>
+
+                    {/* Member Types Pie */}
+                    <div style={{
+                        backgroundColor: '#fff', padding: '24px', borderRadius: '16px',
+                        border: '1px solid #e5e7eb', height: '400px', position: 'relative', minWidth: 0
+                    }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', marginBottom: '16px' }}>Member Distribution</h3>
+                        <ResponsiveContainer width="100%" height="85%" minWidth={0} minHeight={0}>
+                            <PieChart>
+                                <Pie
+                                    data={memberTypesData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={55}
+                                    outerRadius={85}
+                                    dataKey="value"
+                                    paddingAngle={2}
+                                    label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                                    labelLine={true}
+                                >
+                                    {memberTypesData.map((_, i) => <Cell key={i} fill={MEMBER_COLORS[i % MEMBER_COLORS.length]} />)}
+                                </Pie>
+                                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                                <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '11px' }} />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+
+                    {/* Activity Trend */}
+                    <div style={{
+                        backgroundColor: '#fff', padding: '24px', borderRadius: '16px',
+                        border: '1px solid #e5e7eb', height: '350px', minWidth: 0
+                    }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', marginBottom: '20px' }}>Activity Trend — {timeRangeLabels[timeRange]}</h3>
+                        <div style={{ width: '100%', height: '85%' }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={membersTrend} margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#4b5563', fontSize: 11 }} />
+                                    <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} />
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                    />
+                                    <Legend verticalAlign="top" height={28} iconSize={10} />
+                                    <Bar dataKey="Reading Room" fill="#8884d8" radius={[3, 3, 0, 0]} barSize={16} />
+                                    <Bar dataKey="Canteen" fill="#82ca9d" radius={[3, 3, 0, 0]} barSize={16} />
+                                    <Bar dataKey="Hostel" fill="#F59E0B" radius={[3, 3, 0, 0]} barSize={16} />
+                                </BarChart>
+                            </ResponsiveContainer>
                         </div>
                     </div>
                 </div>
 
-                {/* Activity Trend */}
-                <div style={{
-                    backgroundColor: '#fff', padding: '24px', borderRadius: '16px',
-                    border: '1px solid #e5e7eb', marginTop: '24px', minWidth: 0
-                }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', marginBottom: '20px' }}>Activity Trend — {timeRangeLabels[timeRange]}</h3>
-                    <div style={{ width: '100%', height: 280 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={membersTrend} margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#4b5563', fontSize: 11 }} />
-                                <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} />
-                                <Tooltip
-                                    contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                                />
-                                <Legend verticalAlign="top" height={28} iconSize={10} />
-                                <Bar dataKey="Reading Room" fill="#8884d8" radius={[3, 3, 0, 0]} barSize={16} />
-                                <Bar dataKey="Canteen" fill="#82ca9d" radius={[3, 3, 0, 0]} barSize={16} />
-                                <Bar dataKey="Hostel" fill="#F59E0B" radius={[3, 3, 0, 0]} barSize={16} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
             </div>
         </div>
     );
