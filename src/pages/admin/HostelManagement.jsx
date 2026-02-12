@@ -485,7 +485,7 @@ const HostelManagement = ({ onBack, onDataLoaded }) => {
 
         // Cleanup: Reset header when leaving this page
         return () => {
-            setHeader(prev => ({ ...prev, title: '', onBack: null }));
+            setHeader({ title: '', actionBar: null, rightElement: null, onBack: null });
         };
     }, [selectedGroup, setHeader, onBack]);
 

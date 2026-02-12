@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
+import { useSearchParams } from 'react-router-dom';
 import UserDetailView from './UserDetailView';
 import { db } from '../../lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
@@ -15,6 +15,7 @@ import '../../styles/StandardLayout.css';
 import '../../styles/AllMembersView.css';
 
 function AllMembersView({ onBack, onDataLoaded }) {
+    const [searchParams] = useSearchParams();
     const [isPageLoading, setIsPageLoading] = useState(true); // Local loading state
     const [users, setUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
@@ -26,16 +27,25 @@ function AllMembersView({ onBack, onDataLoaded }) {
     const [isSmsModalOpen, setIsSmsModalOpen] = useState(false);
     const [isSelectionMode, setIsSelectionMode] = useState(false);
 
-    // Filter State
-    const [filters, setFilters] = useState({
-        search: '',
-        balance: 'all', // all, due, positive
-        loan: 'all', // all, active, none
-        readingRoom: 'all', // all, active, due_incoming, overdue, expired, old, none
-        hostel: 'all' // all, active, due_incoming, overdue, expired, old, none
+    // Filter State — initialise from URL params if present
+    const [filters, setFilters] = useState(() => {
+        const filterParam = searchParams.get('filter');
+        const rrParam = searchParams.get('rr');
+        const hostelParam = searchParams.get('hostel');
+        const balParam = searchParams.get('balance');
+        return {
+            search: '',
+            balance: filterParam === 'due' ? 'due' : (filterParam === 'positive' ? 'positive' : (balParam || 'all')),
+            loan: filterParam === 'loan' ? 'active' : 'all',
+            readingRoom: rrParam || 'all',
+            hostel: hostelParam || 'all'
+        };
     });
 
-    const [showFilters, setShowFilters] = useState(false);
+    const [showFilters, setShowFilters] = useState(() => {
+        // Auto-open filter panel if any URL filter is set
+        return !!(searchParams.get('filter') || searchParams.get('rr') || searchParams.get('hostel') || searchParams.get('balance'));
+    });
 
     useEffect(() => {
         const usersQ = query(collection(db, 'users'), where('verified', '==', true));
@@ -381,7 +391,7 @@ function AllMembersView({ onBack, onDataLoaded }) {
 
         // Cleanup: Remove action bar when leaving this page
         return () => {
-            setHeader(prev => ({ ...prev, actionBar: null }));
+            setHeader({ title: '', actionBar: null, rightElement: null, onBack: null });
         };
     }, [setHeader, filters, showFilters, isSelectionMode]);
 

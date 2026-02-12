@@ -84,9 +84,9 @@ function Sidebar({ currentView, onNavigate, isOpen, isMobile, onClose }) {
             icon: userManagementIcon,
             badge: pendingUsers > 0 ? pendingUsers : null
         },
+        { id: 'reading-rooms', label: 'Reading Rooms', icon: readingRoomIcon },
         { id: 'hostel', label: 'Hostel', icon: hostelIcon },
         { id: 'canteen', label: 'Canteen', icon: canteenIcon },
-        { id: 'reading-rooms', label: 'Reading Rooms', icon: readingRoomIcon },
         {
             id: 'messages',
             label: 'Messages',

@@ -2826,37 +2826,39 @@ exports.sendCustomSms = onCall(
 
         console.log(`Sending custom SMS to ${numbers.length} users.`);
 
-        // Send via DiCE SMS (POST)
-        // Attempting 'Bearer' instead of 'Token' as 401 occurred.
-        const results = await Promise.allSettled(numbers.map(async (num) => {
+        // Send via DiCE SMS (Batch Request)
+        // API requires 'token' in body and 'phone_number' as array of strings
+        try {
             const response = await fetch("https://dicesms.asia/api/sms/", {
                 method: "POST",
                 headers: {
-                    "Authorization": `Token ${apiKey}`, // Reverting to Token as Bearer gave 'not provided'
+                    "Authorization": `Token ${apiKey}`,
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    phone_number: num,
+                    token: apiKey,
+                    phone_number: numbers,
                     message: message
                 })
             });
 
+            const responseText = await response.text();
+
             if (!response.ok) {
-                const txt = await response.text();
-                console.error(`[sendCustomSms] API Error for ${num}: ${response.status} - ${txt}`);
-                throw new Error(`API Error ${response.status}: ${txt}`);
+                console.error(`[sendCustomSms] API Error: ${response.status} - ${responseText}`);
+                throw new HttpsError('internal', `SMS Provider Error: ${responseText}`);
             }
-            return num;
-        }));
 
-        const successCount = results.filter(r => r.status === 'fulfilled').length;
-        const failures = results.filter(r => r.status === 'rejected').map(r => ({ error: r.reason.message }));
+            console.log(`[sendCustomSms] Success: ${responseText}`);
 
-        return {
-            success: true,
-            successCount,
-            failureCount: failures.length,
-            failures: failures.slice(0, 10) // Return first 10 errors
-        };
+            return {
+                success: true,
+                successCount: numbers.length,
+                message: "SMS sent successfully."
+            };
+        } catch (error) {
+            console.error("[sendCustomSms] Execution Error:", error);
+            throw new HttpsError('internal', `Failed to send SMS: ${error.message}`);
+        }
     }
 );

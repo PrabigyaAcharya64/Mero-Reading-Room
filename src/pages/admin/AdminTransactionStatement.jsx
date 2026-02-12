@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ArrowUpRight, ArrowDownLeft, Search, X, Calendar } from 'lucide-react';
 import { db } from '../../lib/firebase';
 import { collection, query, orderBy, onSnapshot, getDocs, doc, getDoc } from 'firebase/firestore';
@@ -12,10 +13,12 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [selectedUserDetails, setSelectedUserDetails] = useState(null);
 
-    const [dateRange, setDateRange] = useState('today');
+    const [searchParams] = useSearchParams();
+    const [dateRange, setDateRange] = useState(() => searchParams.get('type') ? 'all' : 'today');
     const [customStartDate, setCustomStartDate] = useState('');
     const [customEndDate, setCustomEndDate] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [typeFilter, setTypeFilter] = useState(() => searchParams.get('type') || 'all');
 
     useEffect(() => {
         setIsLoading(true);
@@ -120,6 +123,19 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
             );
         }
 
+        // Module type filter
+        if (typeFilter !== 'all') {
+            const typeMap = {
+                reading_room: ['reading_room'],
+                hostel: ['hostel', 'hostel_renewal'],
+                canteen: ['canteen_payment', 'canteen_order'],
+                balance: ['balance_load', 'balance_topup'],
+                other: ['refund', 'withdrawal', 'cashback']
+            };
+            const allowedTypes = typeMap[typeFilter] || [];
+            filtered = filtered.filter(txn => allowedTypes.includes(txn.type));
+        }
+
         // Group by Date
         const groups = {};
         filtered.forEach(txn => {
@@ -134,7 +150,7 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
 
         // Return sorted groups
         return Object.entries(groups).sort((a, b) => new Date(b[0]) - new Date(a[0]));
-    }, [allTransactions, dateRange, customStartDate, customEndDate, searchQuery]);
+    }, [allTransactions, dateRange, customStartDate, customEndDate, searchQuery, typeFilter]);
 
     // Fetch user details for selected transaction
     useEffect(() => {
@@ -171,64 +187,78 @@ export default function AdminTransactionStatement({ onBack, onDataLoaded }) {
     useEffect(() => {
         setHeader({
             actionBar: (
-                <div className="txn-filter-controls" style={{ padding: '0' }}>
-                    <div className="txn-search-wrapper">
-                        <Search className="txn-search-icon" size={18} />
-                        <input
-                            type="text"
-                            className="txn-search-input"
-                            placeholder="Search transactions..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="txn-date-presets">
-                        {['Today', '7 Days', 'This Month', 'All Time', 'Custom'].map((label) => {
-                            const val = label.toLowerCase().replace(' ', '');
-                            return (
-                                <button
-                                    key={val}
-                                    className={`txn-date-preset-btn ${dateRange === val ? 'active' : ''}`}
-                                    onClick={() => setDateRange(val)}
-                                >
-                                    {label}
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    {dateRange === 'custom' && (
-                        <div className="txn-custom-date-container">
-                            <div className="txn-date-input-row">
-                                <label>Start Date</label>
-                                <input
-                                    type="date"
-                                    className="txn-date-input"
-                                    value={customStartDate}
-                                    onChange={(e) => setCustomStartDate(e.target.value)}
-                                />
-                            </div>
-                            <div className="txn-date-input-row">
-                                <label>End Date</label>
-                                <input
-                                    type="date"
-                                    className="txn-date-input"
-                                    value={customEndDate}
-                                    onChange={(e) => setCustomEndDate(e.target.value)}
-                                />
-                            </div>
+                <>
+                    <div className="txn-filter-controls" style={{ padding: '0' }}>
+                        <div className="txn-search-wrapper">
+                            <Search className="txn-search-icon" size={18} />
+                            <input
+                                type="text"
+                                className="txn-search-input"
+                                placeholder="Search transactions..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
                         </div>
-                    )}
-                </div>
+
+                        <div className="txn-date-presets">
+                            {['Today', '7 Days', 'This Month', 'All Time', 'Custom'].map((label) => {
+                                const val = label.toLowerCase().replace(' ', '');
+                                return (
+                                    <button
+                                        key={val}
+                                        className={`txn-date-preset-btn ${dateRange === val ? 'active' : ''}`}
+                                        onClick={() => setDateRange(val)}
+                                    >
+                                        {label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {dateRange === 'custom' && (
+                            <div className="txn-custom-date-container">
+                                <div className="txn-date-input-row">
+                                    <label>Start Date</label>
+                                    <input
+                                        type="date"
+                                        className="txn-date-input"
+                                        value={customStartDate}
+                                        onChange={(e) => setCustomStartDate(e.target.value)}
+                                    />
+                                </div>
+                                <div className="txn-date-input-row">
+                                    <label>End Date</label>
+                                    <input
+                                        type="date"
+                                        className="txn-date-input"
+                                        value={customEndDate}
+                                        onChange={(e) => setCustomEndDate(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="txn-type-filter" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+                        {[['all', 'All'], ['reading_room', 'Reading Room'], ['hostel', 'Hostel'], ['canteen', 'Canteen'], ['balance', 'Balance'], ['other', 'Other']].map(([val, label]) => (
+                            <button
+                                key={val}
+                                className={`txn-date-preset-btn ${typeFilter === val ? 'active' : ''}`}
+                                onClick={() => setTypeFilter(val)}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                </>
             )
         });
 
-        // Cleanup: Remove action bar when leaving this page
+        // Cleanup: Remove ALL header customizations when leaving this page
         return () => {
-            setHeader(prev => ({ ...prev, actionBar: null }));
+            setHeader({ title: '', actionBar: null, rightElement: null, onBack: null });
         };
-    }, [setHeader, searchQuery, setSearchQuery, dateRange, setDateRange, customStartDate, setCustomStartDate, customEndDate, setCustomEndDate]);
+    }, [setHeader, searchQuery, setSearchQuery, dateRange, setDateRange, customStartDate, setCustomStartDate, customEndDate, setCustomEndDate, typeFilter]);
 
     return (
         <div className="txn-container">

@@ -15,6 +15,10 @@ import RefundRequests from './RefundRequests';
 import ExpenseEarningManagement from './ExpenseEarningManagement';
 import Sidebar from '../../components/Sidebar';
 import Dashboard from './Dashboard';
+import ReadingRoomDashboard from './ReadingRoomDashboard';
+import HostelDashboard from './HostelDashboard';
+import CanteenDashboard from './CanteenDashboard';
+import UserManagementDashboard from './UserManagementDashboard';
 import Settings from './Settings';
 import DiscountManagement from './DiscountManagement';
 import { useLoading } from '../../context/GlobalLoadingContext';
@@ -109,11 +113,11 @@ function AdminLandingContent() {
     const path = location.pathname;
     if (path === '/admin' || path === '/admin/dashboard') return 'dashboard';
     if (path.includes('/admin/user-management')) return 'user-management';
+    if (path.includes('/admin/reading-rooms')) return 'reading-rooms';
     if (path.includes('/admin/hostel')) return 'hostel';
     if (path.includes('/admin/canteen')) return 'canteen';
     if (path.includes('/admin/messages')) return 'messages';
     if (path.includes('/admin/create-announcement')) return 'create-announcement';
-    if (path.includes('/admin/reading-rooms')) return 'reading-rooms';
     if (path.includes('/admin/balance-requests')) return 'balance-requests';
     if (path.includes('/admin/refund-requests')) return 'refund-requests';
     if (path.includes('/admin/transaction-statement')) return 'transaction-statement';
@@ -129,11 +133,11 @@ function AdminLandingContent() {
     const titles = {
       'dashboard': 'Dashboard Overview',
       'user-management': 'User Management',
-      'hostel': 'Hostel Management',
-      'canteen': 'Canteen Admin',
+      'reading-rooms': 'Reading Room',
+      'hostel': 'Hostel',
+      'canteen': 'Canteen',
       'messages': 'Admin Messages',
       'create-announcement': 'Announcements',
-      'reading-rooms': 'Reading Room',
       'balance-requests': 'Balance Requests',
       'refund-requests': 'Refund Requests',
       'transaction-statement': 'Transaction Statement',
@@ -200,12 +204,16 @@ function AdminLandingContent() {
           <Routes>
             <Route path="/" element={<Dashboard onNavigate={handleNavigate} onDataLoaded={handlePageReady} />} />
             <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
-            <Route path="/user-management/*" element={<UserManagementModule onDataLoaded={handlePageReady} />} />
-            <Route path="/hostel" element={<HostelManagement onBack={handleDashboardBack} onDataLoaded={handlePageReady} />} />
-            <Route path="/canteen/*" element={<CanteenAdminLanding onDataLoaded={handlePageReady} />} />
+            <Route path="/user-management" element={<UserManagementDashboard onDataLoaded={handlePageReady} />} />
+            <Route path="/user-management/manage/*" element={<UserManagementModule onDataLoaded={handlePageReady} />} />
+            <Route path="/hostel" element={<HostelDashboard onDataLoaded={handlePageReady} />} />
+            <Route path="/hostel/manage" element={<HostelManagement onBack={handleDashboardBack} onDataLoaded={handlePageReady} />} />
+            <Route path="/canteen" element={<CanteenDashboard onDataLoaded={handlePageReady} />} />
+            <Route path="/canteen/manage/*" element={<CanteenAdminLanding onDataLoaded={handlePageReady} />} />
             <Route path="/messages" element={<AdminMessages onDataLoaded={handlePageReady} />} />
             <Route path="/create-announcement" element={<CreateAnnouncement onDataLoaded={handlePageReady} />} />
-            <Route path="/reading-rooms" element={<ReadingRoomManagement onDataLoaded={handlePageReady} />} />
+            <Route path="/reading-rooms" element={<ReadingRoomDashboard onDataLoaded={handlePageReady} />} />
+            <Route path="/reading-rooms/manage" element={<ReadingRoomManagement onDataLoaded={handlePageReady} />} />
             <Route path="/balance-requests" element={<AdminBalanceLoad onDataLoaded={handlePageReady} />} />
             <Route path="/refund-requests" element={<RefundRequests onDataLoaded={handlePageReady} />} />
             <Route path="/transaction-statement" element={<AdminTransactionStatement onDataLoaded={handlePageReady} />} />

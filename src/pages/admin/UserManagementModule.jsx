@@ -10,32 +10,32 @@ function UserManagementModule({ onDataLoaded }) {
 
     return (
         <Routes>
-            <Route 
-                path="/" 
+            <Route
+                path="/"
                 element={
-                    <UserManagementLanding 
-                        onNavigate={(path) => navigate(path)} 
-                        onDataLoaded={onDataLoaded} 
+                    <UserManagementLanding
+                        onNavigate={(path) => navigate(path)}
+                        onDataLoaded={onDataLoaded}
                     />
-                } 
+                }
             />
-            <Route 
-                path="/new-users" 
+            <Route
+                path="/new-users"
                 element={
-                    <NewUsers 
-                        onBack={() => navigate('/admin/user-management')} 
-                        onDataLoaded={onDataLoaded} 
+                    <NewUsers
+                        onBack={() => navigate('/admin/user-management/manage')}
+                        onDataLoaded={onDataLoaded}
                     />
-                } 
+                }
             />
-            <Route 
-                path="/all-members" 
+            <Route
+                path="/all-members"
                 element={
-                    <AllMembersView 
-                        onBack={() => navigate('/admin/user-management')} 
-                        onDataLoaded={onDataLoaded} 
+                    <AllMembersView
+                        onBack={() => navigate('/admin/user-management/manage')}
+                        onDataLoaded={onDataLoaded}
                     />
-                } 
+                }
             />
         </Routes>
     );
