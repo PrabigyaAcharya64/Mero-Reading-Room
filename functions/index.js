@@ -2538,12 +2538,45 @@ exports.requestLoan = onCall(async (request) => {
  * Scheduled function to send SMS notifications for expiry warnings and grace period endings.
  * Runs hourly but sends only at the configured hour.
  */
+const diceUsername = defineSecret("DICE_USERNAME");
+const dicePassword = defineSecret("DICE_PASSWORD");
+// Keeping API key for backward compatibility if needed, though plan is to replace usage
 const diceApiKey = defineSecret("DICE_API_KEY");
+
+/**
+ * Helper to get authentication token from DiCE SMS
+ */
+async function getDiceToken(username, password) {
+    try {
+        const response = await fetch("https://dicesms.asia/api/api-token-auth/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`[getDiceToken] Failed to get token: ${response.status} - ${errorText}`);
+            return null;
+        }
+
+        const data = await response.json();
+        return data.token;
+    } catch (error) {
+        console.error("[getDiceToken] Error getting token:", error);
+        return null;
+    }
+}
 
 exports.sendExpirySms = onSchedule(
     {
         schedule: "every 60 minutes",
-        secrets: [diceApiKey]
+        secrets: [diceApiKey, diceUsername, dicePassword]
     },
     async (event) => {
         const db = admin.firestore();
@@ -2580,10 +2613,32 @@ exports.sendExpirySms = onSchedule(
                 return;
             }
 
-            const apiKey = diceApiKey.value();
-            if (!apiKey) {
-                console.error("DICE_API_KEY secret not found.");
-                return;
+            const username = diceUsername.value();
+            const password = dicePassword.value();
+
+            let token = null;
+
+            if (username && password) {
+                token = await getDiceToken(username, password);
+                if (token) {
+                    console.log(`[sendExpirySms] Retrieved dynamic token. Starts with: ${token.substring(0, 4)}***`);
+                } else {
+                    console.warn("[sendExpirySms] Failed to retrieve dynamic token. Checking for API Key fallback...");
+                }
+            } else {
+                console.warn("[sendExpirySms] DICE_USERNAME or DICE_PASSWORD not configured.");
+            }
+
+            // Fallback to API Key if token retrieval failed
+            if (!token) {
+                const apiKey = diceApiKey.value();
+                if (apiKey) {
+                    token = apiKey;
+                    console.log(`[sendExpirySms] Falling back to DICE_API_KEY.`);
+                } else {
+                    console.error("SMS Configuration Error: No credentials or API Key found.");
+                    return;
+                }
             }
 
             console.log("Starting SMS Notification Job...");
@@ -2726,7 +2781,7 @@ exports.sendExpirySms = onSchedule(
                 const response = await fetch("https://dicesms.asia/api/sms/", {
                     method: "POST",
                     headers: {
-                        "Authorization": `Token ${apiKey}`,
+                        "Authorization": `Token ${token}`,
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
@@ -2763,7 +2818,7 @@ exports.sendExpirySms = onSchedule(
  * Uses the same API pattern as sendExpirySms.
  */
 exports.sendCustomSms = onCall(
-    { secrets: [diceApiKey] },
+    { secrets: [diceApiKey, diceUsername, dicePassword] },
     async (request) => {
         if (!request.auth) {
             throw new HttpsError('unauthenticated', 'Must be authenticated.');
@@ -2816,27 +2871,54 @@ exports.sendCustomSms = onCall(
             };
         }
 
-        const apiKey = diceApiKey.value();
-        if (!apiKey) {
-            throw new HttpsError('internal', 'DICE_API_KEY not configured.');
+        const username = diceUsername.value();
+        const password = dicePassword.value();
+
+        let token = null;
+
+        if (username && password) {
+            token = await getDiceToken(username, password);
+            if (token) {
+                console.log(`[sendCustomSms] Retrieved dynamic token. Starts with: ${token.substring(0, 4)}***`);
+            } else {
+                console.warn("[sendCustomSms] Failed to retrieve dynamic token. Checking for API Key fallback...");
+            }
+        } else {
+            console.warn("[sendCustomSms] DICE_USERNAME or DICE_PASSWORD not configured.");
         }
 
-        // Debug: Check key format (masking mostly)
-        console.log(`[sendCustomSms] Using API Key. Length: ${apiKey.length}, Starts with: ${apiKey.substring(0, 4)}***`);
+        // Fallback to API Key if token retrieval failed
+        if (!token) {
+            const apiKey = diceApiKey.value();
+            if (apiKey) {
+                token = apiKey;
+                console.log(`[sendCustomSms] Falling back to DICE_API_KEY.`);
+            } else {
+                throw new HttpsError('internal', 'SMS Configuration Error: No credentials or API Key found.');
+            }
+        }
+
+        // Debug: Check token format (masking mostly)
+        console.log(`[sendCustomSms] Using Token. Length: ${token.length}, Starts with: ${token.substring(0, 4)}***`);
 
         console.log(`Sending custom SMS to ${numbers.length} users.`);
 
         // Send via DiCE SMS (Batch Request)
-        // API requires 'token' in body and 'phone_number' as array of strings
+        // API requires 'token' in body (or header? documentation usually says header for token auth)
+        // The user prompt said: "add the token in the modal pop up by writing “TOKEN <api-token-recieved-from-step-1>”"
+        // This implies Authorization header: "Token <token>"
+        // However, the existing code put `token: apiKey` in BODY.
+        // Let's support BOTH to be safe, or as per standard DRF Token Auth.
+        // Standard DRF: Authorization: Token <token>
         try {
             const response = await fetch("https://dicesms.asia/api/sms/", {
                 method: "POST",
                 headers: {
-                    "Authorization": `Token ${apiKey}`,
+                    "Authorization": `Token ${token}`,
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    token: apiKey,
+                    // token: token, // Maybe not needed in body if in header? Keeping for safety if API expects it.
                     phone_number: numbers,
                     message: message
                 })
