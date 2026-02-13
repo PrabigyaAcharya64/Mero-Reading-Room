@@ -26,9 +26,9 @@ import {
     Armchair
 } from 'lucide-react';
 import { collection, query, getDocs, orderBy, where } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
-import { useLoading } from '../../context/GlobalLoadingContext';
-import '../../styles/Dashboard.css';
+import { db } from '../../../lib/firebase';
+import { useLoading } from '../../../context/GlobalLoadingContext';
+import '../../../styles/Dashboard.css';
 
 const PIE_COLORS = ['#007AFF', '#34C759', '#FF9F0A', '#AF52DE', '#F59E0B']; // Added Amber for Hostel
 const MEMBER_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042'];

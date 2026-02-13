@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import PageHeader from '../../components/PageHeader';
-import '../../styles/StandardLayout.css';
-import { db } from '../../lib/firebase';
+import PageHeader from '../../../components/PageHeader';
+import '../../../styles/StandardLayout.css';
+import { db } from '../../../lib/firebase';
 import { collection, query, onSnapshot, orderBy, getDocs } from 'firebase/firestore';
-import LoadingSpinner from '../../components/LoadingSpinner'; // Import LoadingSpinner
+import LoadingSpinner from '../../../components/LoadingSpinner'; // Import LoadingSpinner
 
-const newUserIcon = new URL('../../assets/newuser.svg', import.meta.url).href;
-const usersIcon = new URL(/* @vite-ignore */ '../../assets/usermanagement.svg', import.meta.url).href;
+const newUserIcon = new URL('../../../assets/newuser.svg', import.meta.url).href;
+const usersIcon = new URL(/* @vite-ignore */ '../../../assets/usermanagement.svg', import.meta.url).href;
 
 function UserManagementLanding({ onBack, onNavigate, onDataLoaded }) {
     const [isPageLoading, setIsPageLoading] = useState(true); // Local loading state

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
-import { useAuth } from '../../auth/AuthProvider';
-import { useLoading } from '../../context/GlobalLoadingContext';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import '../../styles/StandardLayout.css';
+import { db } from '../../../lib/firebase';
+import { useAuth } from '../../../auth/AuthProvider';
+import { useLoading } from '../../../context/GlobalLoadingContext';
+import LoadingSpinner from '../../../components/LoadingSpinner';
+import '../../../styles/StandardLayout.css';
 
 function CreateAnnouncement({ onBack, onDataLoaded }) {
     const { user } = useAuth();

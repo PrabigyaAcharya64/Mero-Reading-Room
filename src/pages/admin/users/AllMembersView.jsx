@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import UserDetailView from './UserDetailView';
-import { db } from '../../lib/firebase';
+import { db } from '../../../lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { formatBalance } from '../../utils/formatCurrency';
-import { formatDate } from '../../utils/dateFormat';
-import LoadingSpinner from '../../components/LoadingSpinner'; // Import LoadingSpinner
-import { functions } from '../../lib/firebase';
+import { formatBalance } from '../../../utils/formatCurrency';
+import { formatDate } from '../../../utils/dateFormat';
+import LoadingSpinner from '../../../components/LoadingSpinner'; // Import LoadingSpinner
+import { functions } from '../../../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
-import SendSmsModal from '../../components/SendSmsModal';
+import SendSmsModal from '../../../components/SendSmsModal';
 import { Search, Edit2, User, CheckCircle, AlertCircle, BadgeAlert, Clock, Filter, X, MessageSquare } from 'lucide-react';
-import { useAdminHeader } from '../../context/AdminHeaderContext';
-import '../../styles/StandardLayout.css';
-import '../../styles/AllMembersView.css';
+import { useAdminHeader } from '../../../context/AdminHeaderContext';
+import '../../../styles/StandardLayout.css';
+import '../../../styles/AllMembersView.css';
 
 function AllMembersView({ onBack, onDataLoaded }) {
     const [searchParams] = useSearchParams();

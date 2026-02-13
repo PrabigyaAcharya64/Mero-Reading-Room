@@ -25,10 +25,10 @@ import {
     ChevronDown
 } from 'lucide-react';
 import { collection, query, getDocs, orderBy, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
-import { useLoading } from '../../context/GlobalLoadingContext';
+import { db } from '../../../lib/firebase';
+import { useLoading } from '../../../context/GlobalLoadingContext';
 
-import '../../styles/AccountDashboard.css';
+import '../../../styles/AccountDashboard.css';
 
 const COLORS = {
     earning: '#10b981',

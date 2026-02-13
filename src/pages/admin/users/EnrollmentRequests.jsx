@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../../lib/firebase';
+import { db } from '../../../lib/firebase';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc, getDocs } from 'firebase/firestore';
-import { useLoading } from '../../context/GlobalLoadingContext';
-import PageHeader from '../../components/PageHeader';
-import { formatDate } from '../../utils/dateFormat';
+import { useLoading } from '../../../context/GlobalLoadingContext';
+import PageHeader from '../../../components/PageHeader';
+import { formatDate } from '../../../utils/dateFormat';
 import { Check, X, Eye } from 'lucide-react';
 import StudentDetailModal from './UserDetailView';
 function EnrollmentRequests({ onBack }) {

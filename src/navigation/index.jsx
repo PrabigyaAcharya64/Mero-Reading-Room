@@ -6,7 +6,7 @@ import SignUp from '../pages/SignUp';
 import AdditionalDetails from '../pages/AdditionalDetails';
 import PendingVerification from '../pages/PendingVerification';
 import LandingPage from '../pages/LandingPage';
-import AdminLanding from '../pages/admin/AdminLanding';
+import AdminLanding from '../pages/admin/dashboard/AdminLanding';
 import CanteenAdminLanding from '../pages/Canteen_Admin/CanteenAdminLanding';
 import LoanRequest from '../pages/balance/LoanRequest';
 import { useAuth } from '../auth/AuthProvider';

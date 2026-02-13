@@ -11,7 +11,7 @@ import {
     limit
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import { db, functions } from '../../lib/firebase';
+import { db, functions } from '../../../lib/firebase';
 import {
     getDocs
 } from 'firebase/firestore';
@@ -25,10 +25,10 @@ import {
     History,
     Search
 } from 'lucide-react';
-import { useLoading } from '../../context/GlobalLoadingContext';
-import { useAdminHeader } from '../../context/AdminHeaderContext';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import '../../styles/AdminBalanceLoad.css';
+import { useLoading } from '../../../context/GlobalLoadingContext';
+import { useAdminHeader } from '../../../context/AdminHeaderContext';
+import LoadingSpinner from '../../../components/LoadingSpinner';
+import '../../../styles/AdminBalanceLoad.css';
 
 export default function AdminBalanceLoad({ onBack, onDataLoaded }) {
     const { setIsLoading } = useLoading();

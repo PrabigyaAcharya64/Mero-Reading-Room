@@ -11,8 +11,8 @@ import {
     orderBy,
     where
 } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
-import { useAuth } from '../../auth/AuthProvider';
+import { db } from '../../../lib/firebase';
+import { useAuth } from '../../../auth/AuthProvider';
 import {
     Plus,
     Trash2,
@@ -27,8 +27,8 @@ import {
     Lock,
     ChevronLeft
 } from 'lucide-react';
-import { useLoading } from '../../context/GlobalLoadingContext';
-import '../../styles/AdminBalanceLoad.css'; // Reusing existing styles for consistency
+import { useLoading } from '../../../context/GlobalLoadingContext';
+import '../../../styles/AdminBalanceLoad.css'; // Reusing existing styles for consistency
 
 const EXPENSE_CATEGORIES = [
     'Electricity',

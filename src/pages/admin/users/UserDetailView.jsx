@@ -1,19 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
-import { db } from '../../lib/firebase';
+import { db } from '../../../lib/firebase';
 import { doc, updateDoc, collection, query, where, getDocs, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { pdf } from '@react-pdf/renderer';
-import { formatBalance } from '../../utils/formatCurrency';
-import { formatDate, formatDateForInput } from '../../utils/dateFormat';
-import { uploadImageSecurely } from '../../utils/imageUpload';
-import EnrollmentPDF from '../../components/pdf/EnrollmentPDF';
-import HostelEnrollmentPDF from '../../components/pdf/HostelEnrollmentPDF';
-import logo from '../../assets/logo.png';
+import { formatBalance } from '../../../utils/formatCurrency';
+import { formatDate, formatDateForInput } from '../../../utils/dateFormat';
+import { uploadImageSecurely } from '../../../utils/imageUpload';
+import EnrollmentPDF from '../../../components/pdf/EnrollmentPDF';
+import HostelEnrollmentPDF from '../../../components/pdf/HostelEnrollmentPDF';
+import logo from '../../../assets/logo.png';
 import {
     X, AlertTriangle, Ban, UserCheck, BookOpen, Building2, Settings2,
     Shield, Wallet, RotateCcw, Trash2, CreditCard, BedDouble, Camera, User, Save,
     Download, Pencil
 } from 'lucide-react';
-import '../../styles/UserDetailView.css';
+import '../../../styles/UserDetailView.css';
 
 // Helper: safely convert any value to a renderable string.
 const safeStr = (val) => {

@@ -6,13 +6,13 @@ import {
 import { Users, UserPlus, UserCheck, AlertTriangle, Wallet, Settings, Clock, BadgeAlert } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, query, where, orderBy, onSnapshot } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
-import { useLoading } from '../../context/GlobalLoadingContext';
+import { db } from '../../../lib/firebase';
+import { useLoading } from '../../../context/GlobalLoadingContext';
 import {
     StatCard, ChartCard, EmptyState,
     TimeRangeBar, DashboardTooltip, getCutoffDate, buildTimeBuckets, getRangeLabel
-} from '../../components/DashboardWidgets';
-import '../../styles/ModuleDashboard.css';
+} from '../../../components/DashboardWidgets';
+import '../../../styles/ModuleDashboard.css';
 
 const COLORS = ['#007AFF', '#34C759', '#FF9F0A', '#FF3B30', '#AF52DE', '#5AC8FA', '#FFCC00', '#8E8E93'];
 const STATUS_COLORS = {

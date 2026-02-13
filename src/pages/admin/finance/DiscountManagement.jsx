@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { db } from '../../lib/firebase';
+import { db } from '../../../lib/firebase';
 import { doc, getDoc, setDoc, collection, addDoc, deleteDoc, onSnapshot, query, orderBy, writeBatch } from 'firebase/firestore'; // Import writeBatch
-import { useLoading } from '../../context/GlobalLoadingContext';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import { useLoading } from '../../../context/GlobalLoadingContext';
+import LoadingSpinner from '../../../components/LoadingSpinner';
 import { Trash2, Plus, Save, Search, Check } from 'lucide-react'; // Add icons
-import '../../styles/StandardLayout.css';
+import '../../../styles/StandardLayout.css';
 
 const DiscountManagement = ({ onDataLoaded }) => {
     const [isPageLoading, setIsPageLoading] = useState(true);

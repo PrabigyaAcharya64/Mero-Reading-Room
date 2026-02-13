@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../auth/AuthProvider';
-import { db } from '../../lib/firebase';
+import { useAuth } from '../../../auth/AuthProvider';
+import { db } from '../../../lib/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, orderBy, deleteField } from 'firebase/firestore';
-import LoadingSpinner from '../../components/LoadingSpinner'; // Import LoadingSpinner
-import Button from '../../components/Button';
-import EnhancedBackButton from '../../components/EnhancedBackButton';
-import '../../styles/NewUsers.css';
-import '../../styles/StandardLayout.css';
+import LoadingSpinner from '../../../components/LoadingSpinner'; // Import LoadingSpinner
+import Button from '../../../components/Button';
+import EnhancedBackButton from '../../../components/EnhancedBackButton';
+import '../../../styles/NewUsers.css';
+import '../../../styles/StandardLayout.css';
 
 
 
 
-const userManagementIcon = new URL('../../assets/usermanagement.svg', import.meta.url).href;
+const userManagementIcon = new URL('../../../assets/usermanagement.svg', import.meta.url).href;
 
 function NewUsers({ onBack, onDataLoaded }) {
 

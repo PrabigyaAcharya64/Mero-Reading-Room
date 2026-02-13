@@ -1,10 +1,10 @@
 import { collection, doc, onSnapshot, orderBy, query, updateDoc, getDocs } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { db } from '../../lib/firebase';
-import { useLoading } from '../../context/GlobalLoadingContext';
+import { db } from '../../../lib/firebase';
+import { useLoading } from '../../../context/GlobalLoadingContext';
 
-import '../../styles/AdminMessages.css';
-import '../../styles/StandardLayout.css';
+import '../../../styles/AdminMessages.css';
+import '../../../styles/StandardLayout.css';
 
 function AdminMessages({ onBack, onDataLoaded }) {
     const { setIsLoading } = useLoading();
