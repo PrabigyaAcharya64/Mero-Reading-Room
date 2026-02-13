@@ -329,22 +329,51 @@ function AllMembersView({ onBack, onDataLoaded }) {
 
     useEffect(() => {
         setHeader({
-            actionBar: (
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    {/* Header Image for Action Bar if needed, but usually header replaces title. 
-                        Let's put the button here. */}
+            title: 'All Members',
+            actionBar: null // Explicitly clear action bar to prevent stale state
+        });
 
-                    <div className="amv-search-wrapper" style={{ marginBottom: '0', width: '300px' }}>
-                        <input
-                            type="text"
-                            placeholder="Search..."
-                            className="amv-search-input"
-                            value={filters.search}
-                            onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                        />
-                        <Search className="amv-search-icon" size={20} />
-                    </div>
+        return () => {
+            setHeader({ title: '', actionBar: null, rightElement: null, onBack: null });
+        };
+    }, [setHeader]);
 
+    const clearFilters = () => {
+        setFilters({
+            search: '',
+            balance: 'all',
+            loan: 'all',
+            readingRoom: 'all',
+            hostel: 'all'
+        });
+    };
+
+    return (
+        <div className="amv-container">
+            {/* Local Header / Action Bar */}
+            <div style={{
+                padding: '16px 24px',
+                borderBottom: '1px solid #e5e5e5',
+                background: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '16px',
+                flexWrap: 'wrap'
+            }}>
+                <div className="amv-search-wrapper" style={{ marginBottom: '0', flex: '1', minWidth: '300px', maxWidth: '400px' }}>
+                    <Search className="amv-search-icon" size={20} />
+                    <input
+                        type="text"
+                        placeholder="Search users..."
+                        className="amv-search-input"
+                        value={filters.search}
+                        onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                        autoFocus
+                    />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
                     <button
                         className={`amv-action-btn ${isSelectionMode ? 'active' : ''}`}
                         onClick={toggleSelectionMode}
@@ -352,7 +381,7 @@ function AllMembersView({ onBack, onDataLoaded }) {
                             display: 'flex',
                             alignItems: 'center',
                             gap: '6px',
-                            padding: '8px 12px',
+                            padding: '8px 16px',
                             borderRadius: '8px',
                             border: isSelectionMode ? '1px solid #1a1a1a' : '1px solid #ddd',
                             background: isSelectionMode ? '#1a1a1a' : '#fff',
@@ -374,7 +403,7 @@ function AllMembersView({ onBack, onDataLoaded }) {
                             display: 'flex',
                             alignItems: 'center',
                             gap: '6px',
-                            padding: '8px 12px',
+                            padding: '8px 16px',
                             borderRadius: '8px',
                             border: '1px solid #ddd',
                             background: showFilters ? '#eee' : '#fff',
@@ -386,28 +415,7 @@ function AllMembersView({ onBack, onDataLoaded }) {
                         <Filter size={16} /> Filters
                     </button>
                 </div>
-            )
-        });
-
-        // Cleanup: Remove action bar when leaving this page
-        return () => {
-            setHeader({ title: '', actionBar: null, rightElement: null, onBack: null });
-        };
-    }, [setHeader, filters, showFilters, isSelectionMode]);
-
-
-    const clearFilters = () => {
-        setFilters({
-            search: '',
-            balance: 'all',
-            loan: 'all',
-            readingRoom: 'all',
-            hostel: 'all'
-        });
-    };
-
-    return (
-        <div className="amv-container">
+            </div>
             <main className="std-body">
                 {isPageLoading ? (
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', width: '100%', minHeight: '200px' }}>
