@@ -105,17 +105,9 @@ const RefundRequests = ({ onDataLoaded }) => {
 
     // ... (handle functions same) ...
 
-    const [isTabLoading, setIsTabLoading] = useState(false);
 
-    useEffect(() => {
-        setIsTabLoading(true);
-        const timer = setTimeout(() => {
-            setIsTabLoading(false);
-        }, 2000);
-        return () => clearTimeout(timer);
-    }, [activeTab]);
 
-   
+
     return (
         <div className="std-container">
             {/* Header Area */}
@@ -169,11 +161,7 @@ const RefundRequests = ({ onDataLoaded }) => {
 
             {/* Table or Loader */}
             <div style={{ background: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', minHeight: '200px' }}>
-                {isTabLoading ? (
-                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
-                        <LoadingSpinner size="40" />
-                    </div>
-                ) : filteredRequests.length === 0 ? (
+                {filteredRequests.length === 0 ? (
                     <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
                         No {activeTab} refund requests found.
                     </div>

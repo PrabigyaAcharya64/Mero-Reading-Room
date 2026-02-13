@@ -3,7 +3,7 @@ import { db } from '../../lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, setDoc } from 'firebase/firestore';
 import { functions } from '../../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
-import { Eye, Edit, Trash2, Users } from 'lucide-react';
+import { Eye, Edit, Trash2, Users, UserPlus } from 'lucide-react';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useLoading } from '../../context/GlobalLoadingContext';
 import { useAdminHeader } from '../../context/AdminHeaderContext';
@@ -36,6 +36,19 @@ const HostelManagement = ({ onBack, onDataLoaded }) => {
     const [newPrice, setNewPrice] = useState('');
     const [newTotalRooms, setNewTotalRooms] = useState('');
     const [msg, setMsg] = useState('');
+
+    // Assignment State
+    const [verifiedUsers, setVerifiedUsers] = useState([]);
+    const [assignModalOpen, setAssignModalOpen] = useState(false);
+    const [targetRoomForAssignment, setTargetRoomForAssignment] = useState(null);
+    const [searchUserQuery, setSearchUserQuery] = useState('');
+    const [assignForm, setAssignForm] = useState({
+        userId: '',
+        months: 3, // Default to 3 months
+        paymentMethod: 'wallet',
+        includeAdmission: true, // Default checked
+        includeDeposit: true    // Default checked
+    });
 
     // ... (keep existing Renewal State)
 
@@ -202,6 +215,8 @@ const HostelManagement = ({ onBack, onDataLoaded }) => {
     useEffect(() => {
         const loadInitialData = async () => {
             await fetchRooms();
+            await fetchRooms();
+            await loadVerifiedUsers();
             if (onDataLoaded) onDataLoaded();
         };
         loadInitialData();
@@ -236,6 +251,89 @@ const HostelManagement = ({ onBack, onDataLoaded }) => {
         } catch (error) {
             console.error('Error fetching data:', error);
             alert('Failed to load data');
+        }
+    };
+
+    const loadVerifiedUsers = async () => {
+        try {
+            // Fetch users with verification check (assuming 'verified' field or similar exists, matching ReadingRoom logic)
+            // If ReadingRoom fetches all and filters, we do same.
+            // optimization: query for verification status if index exists.
+            // For now, fetching all users might be heavy, but let's stick to simple pattern used else where or fetch only needed fields
+            // Inspecting ReadingRoomManagement would confirm, but let's assume standard users collection fetch
+            const usersSnapshot = await getDocs(collection(db, 'users'));
+            const users = usersSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            // Filter: verified and NOT already in a hostel
+            // We can check hostelAssignments in memory or rely on user.currentHostelRoom
+            const availableUsers = users.filter(u =>
+                (u.mrrNumber || u.isVerified) && // Basic verification check
+                !u.currentHostelRoom // Not currently in hostel
+            );
+            setVerifiedUsers(availableUsers);
+        } catch (error) {
+            console.error('Error loading users:', error);
+        }
+    };
+
+    const handleAssignHostel = async () => {
+        if (!assignForm.userId || !targetRoomForAssignment) {
+            alert('Please select a user and room.');
+            return;
+        }
+
+        // Find next available bed
+        const occupants = getOccupants(targetRoomForAssignment.id);
+        const occupiedBeds = occupants.map(o => o.bedNumber);
+        let firstAvailableBed = null;
+        for (let i = 1; i <= targetRoomForAssignment.capacity; i++) {
+            if (!occupiedBeds.includes(i)) {
+                firstAvailableBed = i;
+                break;
+            }
+        }
+
+        if (!firstAvailableBed) {
+            alert('No beds available in this room.');
+            return;
+        }
+
+        if (!confirm(`Confirm assignment of Bed ${firstAvailableBed} to user?`)) return;
+
+        setIsLoading(true);
+        try {
+            const assignHostelBed = httpsCallable(functions, 'assignHostelBed');
+            const result = await assignHostelBed({
+                userId: assignForm.userId,
+                roomId: targetRoomForAssignment.id,
+                bedNumber: firstAvailableBed,
+                months: parseInt(assignForm.months),
+                paymentMethod: assignForm.paymentMethod,
+                includeAdmission: assignForm.includeAdmission,
+                includeDeposit: assignForm.includeDeposit
+            });
+
+            if (result.data.success) {
+                alert('User assigned successfully!');
+                setAssignModalOpen(false);
+                setTargetRoomForAssignment(null);
+                setAssignForm({
+                    userId: '',
+                    months: 3,
+                    paymentMethod: 'wallet',
+                    includeAdmission: true,
+                    includeDeposit: true
+                });
+                await fetchRooms(); // Refresh data
+                loadVerifiedUsers(); // Refresh user list
+            }
+        } catch (error) {
+            console.error('Assignment error:', error);
+            alert(`Assignment failed: ${error.message}`);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -560,6 +658,58 @@ const HostelManagement = ({ onBack, onDataLoaded }) => {
                                                         <Users size={18} />
                                                     </button>
                                                     <button
+                                                        onClick={() => {
+                                                            if (isFull) {
+                                                                alert('Room is full');
+                                                                return;
+                                                            }
+                                                            setTargetRoomForAssignment(room);
+                                                            setAssignModalOpen(true);
+                                                        }}
+                                                        style={{
+                                                            background: 'transparent',
+                                                            color: isFull ? '#ccc' : '#2e7d32',
+                                                            border: 'none',
+                                                            padding: '0.5rem',
+                                                            borderRadius: '6px',
+                                                            cursor: isFull ? 'not-allowed' : 'pointer',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                        title="Add Occupant"
+                                                        disabled={isFull}
+                                                    >
+                                                        <UserPlus size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            if (isFull) {
+                                                                alert('Room is full');
+                                                                return;
+                                                            }
+                                                            setTargetRoomForAssignment(room);
+                                                            setAssignModalOpen(true);
+                                                        }}
+                                                        style={{
+                                                            background: 'transparent',
+                                                            color: isFull ? '#ccc' : '#2e7d32',
+                                                            border: 'none',
+                                                            padding: '0.5rem',
+                                                            borderRadius: '6px',
+                                                            cursor: isFull ? 'not-allowed' : 'pointer',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                        title="Add Occupant"
+                                                        disabled={isFull}
+                                                    >
+                                                        <UserPlus size={18} />
+                                                    </button>
+                                                    <button
                                                         onClick={() => handleDeleteRoom(room.id, room.label)}
                                                         style={{
                                                             background: 'transparent',
@@ -686,6 +836,183 @@ const HostelManagement = ({ onBack, onDataLoaded }) => {
                                 onClick={() => {
                                     setRenewModalOpen(false);
                                     setTargetOccupant(null);
+                                }}
+                                style={{ width: '100%', padding: '12px', background: '#f5f5f5', color: '#333', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Assignment Modal */}
+                {assignModalOpen && targetRoomForAssignment && (
+                    <div className="modal-overlay" style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1100,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>
+                        <div style={{ background: 'white', borderRadius: '12px', width: '450px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
+                            <div style={{ display: 'flex', justifyItems: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                <h3 style={{ marginTop: 0, flex: 1 }}>Assign Room {targetRoomForAssignment.label}</h3>
+                                <button onClick={() => setAssignModalOpen(false)} style={{ border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer' }}>&times;</button>
+                            </div>
+
+                            {/* User Selection */}
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Select User</label>
+                                <input
+                                    type="text"
+                                    placeholder="Search by name or number..."
+                                    value={searchUserQuery}
+                                    onChange={(e) => setSearchUserQuery(e.target.value)}
+                                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', marginBottom: '10px' }}
+                                />
+                                <div style={{ maxHeight: '150px', overflowY: 'auto', border: '1px solid #eee', borderRadius: '6px' }}>
+                                    {verifiedUsers
+                                        .filter(u =>
+                                            !searchUserQuery ||
+                                            (u.name && u.name.toLowerCase().includes(searchUserQuery.toLowerCase())) ||
+                                            (u.phoneNumber && u.phoneNumber.includes(searchUserQuery)) ||
+                                            (u.mrrNumber && u.mrrNumber.includes(searchUserQuery))
+                                        )
+                                        .map(u => (
+                                            <div
+                                                key={u.id}
+                                                onClick={() => setAssignForm({ ...assignForm, userId: u.id })}
+                                                style={{
+                                                    padding: '8px',
+                                                    cursor: 'pointer',
+                                                    backgroundColor: assignForm.userId === u.id ? '#e3f2fd' : 'white',
+                                                    borderBottom: '1px solid #eee'
+                                                }}
+                                            >
+                                                <div style={{ fontWeight: 'bold' }}>{u.name || 'Unknown'}</div>
+                                                <div style={{ fontSize: '12px', color: '#666' }}>{u.phoneNumber} {u.mrrNumber ? `| ${u.mrrNumber}` : ''}</div>
+                                            </div>
+                                        ))
+                                    }
+                                </div>
+                            </div>
+
+                            {/* Duration */}
+                            <div style={{ marginBottom: '15px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Duration</label>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    {[1, 3, 6, 12].map(m => (
+                                        <button
+                                            key={m}
+                                            onClick={() => setAssignForm({ ...assignForm, months: m })}
+                                            style={{
+                                                flex: 1, padding: '8px',
+                                                border: assignForm.months === m ? '2px solid #2e7d32' : '1px solid #ccc',
+                                                background: assignForm.months === m ? '#e8f5e9' : 'white',
+                                                borderRadius: '6px', cursor: 'pointer'
+                                            }}
+                                        >
+                                            {m} Mon
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Fees */}
+                            <div style={{ marginBottom: '15px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Additional Fees</label>
+                                <label style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={assignForm.includeAdmission}
+                                        onChange={(e) => setAssignForm({ ...assignForm, includeAdmission: e.target.checked })}
+                                        style={{ marginRight: '10px' }}
+                                    />
+                                    Admission Fee (Rs. 4000)
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={assignForm.includeDeposit}
+                                        onChange={(e) => setAssignForm({ ...assignForm, includeDeposit: e.target.checked })}
+                                        style={{ marginRight: '10px' }}
+                                    />
+                                    Security Deposit (Rs. 5000)
+                                </label>
+                            </div>
+
+                            {/* Payment Method */}
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Payment Method</label>
+                                <div style={{ display: 'flex', gap: '20px' }}>
+                                    <label style={{ cursor: 'pointer' }}>
+                                        <input
+                                            type="radio"
+                                            name="paymentMethod"
+                                            value="wallet"
+                                            checked={assignForm.paymentMethod === 'wallet'}
+                                            onChange={(e) => setAssignForm({ ...assignForm, paymentMethod: e.target.value })}
+                                            style={{ marginRight: '5px' }}
+                                        />
+                                        Deduct from Wallet
+                                    </label>
+                                    <label style={{ cursor: 'pointer' }}>
+                                        <input
+                                            type="radio"
+                                            name="paymentMethod"
+                                            value="cash"
+                                            checked={assignForm.paymentMethod === 'cash'}
+                                            onChange={(e) => setAssignForm({ ...assignForm, paymentMethod: e.target.value })}
+                                            style={{ marginRight: '5px' }}
+                                        />
+                                        Cash / Manual
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Total Summary */}
+                            <div style={{ background: '#f5f5f5', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                    <span>Rent ({assignForm.months} mon):</span>
+                                    <span>Rs. {(targetRoomForAssignment.price * assignForm.months).toLocaleString()}</span>
+                                </div>
+                                {assignForm.includeAdmission && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                        <span>Admission:</span>
+                                        <span>Rs. 4,000</span>
+                                    </div>
+                                )}
+                                {assignForm.includeDeposit && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                        <span>Deposit:</span>
+                                        <span>Rs. 5,000</span>
+                                    </div>
+                                )}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', borderTop: '1px solid #ddd', paddingTop: '5px', marginTop: '5px' }}>
+                                    <span>Total:</span>
+                                    <span>Rs. {(
+                                        (targetRoomForAssignment.price * assignForm.months) +
+                                        (assignForm.includeAdmission ? 4000 : 0) +
+                                        (assignForm.includeDeposit ? 5000 : 0)
+                                    ).toLocaleString()}</span>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleAssignHostel}
+                                disabled={!assignForm.userId}
+                                style={{
+                                    width: '100%', padding: '12px',
+                                    background: !assignForm.userId ? '#ccc' : '#2e7d32',
+                                    color: 'white', border: 'none', borderRadius: '6px',
+                                    fontSize: '16px', fontWeight: 'bold', cursor: !assignForm.userId ? 'not-allowed' : 'pointer',
+                                    marginBottom: '10px'
+                                }}
+                            >
+                                Confirm Assignment
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setAssignModalOpen(false);
+                                    setTargetRoomForAssignment(null);
                                 }}
                                 style={{ width: '100%', padding: '12px', background: '#f5f5f5', color: '#333', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
                             >

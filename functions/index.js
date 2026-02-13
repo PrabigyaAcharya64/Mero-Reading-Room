@@ -1708,16 +1708,63 @@ exports.topUpBalance = onCall(async (request) => {
                 throw new HttpsError('not-found', 'User not found.');
             }
 
-            const currentBalance = userDoc.data().balance || 0;
-            const newBalance = currentBalance + amount;
+            // Check for active loan and auto-deduct
+            const userData = userDoc.data();
+            let currentBalance = userData.balance || 0;
+            let finalAmountToAdd = amount;
+            let loanDeduction = 0;
+            const now = new Date().toISOString();
+
+            // Handle Loan Deduction
+            if (userData.loan && userData.loan.has_active_loan) {
+                const loanBalance = userData.loan.current_balance || 0;
+                if (loanBalance > 0) {
+                    loanDeduction = Math.min(amount, loanBalance);
+                    finalAmountToAdd = amount - loanDeduction;
+
+                    // Update loan object
+                    const newLoanBalance = loanBalance - loanDeduction;
+                    const loanStatus = newLoanBalance <= 0 ? 'repaid' : 'active';
+
+                    transaction.update(userRef, {
+                        'loan.current_balance': newLoanBalance,
+                        'loan.status': loanStatus,
+                        'loan.has_active_loan': loanStatus === 'active'
+                    });
+
+                    // Create Loan Repayment Transaction
+                    if (loanDeduction > 0) {
+                        const repaymentTxnId = generateTransactionId('LRP');
+                        const repaymentRef = db.collection('transactions').doc();
+                        transaction.set(repaymentRef, {
+                            type: 'loan_repayment',
+                            transactionId: repaymentTxnId,
+                            amount: loanDeduction,
+                            details: 'Auto-deduction from Top-up',
+                            userId: userId,
+                            userName: userData.name || 'User',
+                            date: now,
+                            createdAt: now,
+                            relatedTransactionId: topUpTxnId
+                        });
+                    }
+                }
+            }
+
+            const newBalance = currentBalance + finalAmountToAdd;
 
             transaction.update(userRef, {
                 balance: newBalance,
-                updatedAt: new Date().toISOString()
+                updatedAt: now
             });
 
-            // Create transaction record
-            const topUpTxnId = generateTransactionId('BTU');
+            // Create transaction record (Top-up)
+            // We record the FULL amount as top-up, but the balance effect is split if loan exists.
+            // Or typically: Top up full amount, then immediate deduction.
+            // But to keep balance clean without double jumps, we calculate net.
+            // However, for statement clarity, it's better to log the Top Up of X, and Repayment of Y.
+            // So we record Top Up of X.
+
             const transactionRef = db.collection('transactions').doc();
             transaction.set(transactionRef, {
                 type: 'balance_topup',
@@ -1725,16 +1772,18 @@ exports.topUpBalance = onCall(async (request) => {
                 amount: amount,
                 details: 'Admin Balance Top-up',
                 userId: userId,
-                userName: userDoc.data().name || 'User',
-                date: new Date().toISOString(),
-                createdAt: new Date().toISOString(),
-                adminId: request.auth.uid
+                userName: userData.name || 'User',
+                date: now,
+                createdAt: now,
+                adminId: request.auth.uid,
+                loanDeducted: loanDeduction
             });
 
             return {
                 success: true,
                 newBalance: newBalance,
-                transactionId: transactionRef.id
+                transactionId: transactionRef.id,
+                loanDeducted: loanDeduction
             };
         });
 
@@ -1805,20 +1854,60 @@ exports.approveBalanceLoad = onCall(async (request) => {
             }
 
             const userData = userDoc.data();
-            const currentBalance = userData.balance || 0;
-            const newBalance = currentBalance + amount;
+            let currentBalance = userData.balance || 0;
+            let finalAmountToAdd = amount;
+            let loanDeduction = 0;
+            const now = new Date().toISOString();
+
+            // Handle Loan Deduction
+            if (userData.loan && userData.loan.has_active_loan) {
+                const loanBalance = userData.loan.current_balance || 0;
+                if (loanBalance > 0) {
+                    loanDeduction = Math.min(amount, loanBalance);
+                    finalAmountToAdd = amount - loanDeduction;
+
+                    // Update loan object
+                    const newLoanBalance = loanBalance - loanDeduction;
+                    const loanStatus = newLoanBalance <= 0 ? 'repaid' : 'active';
+
+                    transaction.update(userRef, {
+                        'loan.current_balance': newLoanBalance,
+                        'loan.status': loanStatus,
+                        'loan.has_active_loan': loanStatus === 'active'
+                    });
+
+                    // Create Loan Repayment Transaction
+                    if (loanDeduction > 0) {
+                        const repaymentTxnId = generateTransactionId('LRP');
+                        const repaymentRef = db.collection('transactions').doc();
+                        transaction.set(repaymentRef, {
+                            type: 'loan_repayment',
+                            transactionId: repaymentTxnId,
+                            amount: loanDeduction,
+                            details: 'Auto-deduction from Mobile Banking Load',
+                            userId: userId,
+                            userName: userData.name || userData.displayName || 'User',
+                            date: now,
+                            createdAt: now,
+                            relatedRequestId: requestId
+                        });
+                    }
+                }
+            }
+
+            const newBalance = currentBalance + finalAmountToAdd;
 
             // 3. Update User Balance
             transaction.update(userRef, {
                 balance: newBalance,
-                updatedAt: new Date().toISOString()
+                updatedAt: now
             });
 
             // 4. Update Request Status
             transaction.update(requestRef, {
                 status: 'approved',
                 approvedBy: request.auth.uid,
-                approvedAt: new Date().toISOString()
+                approvedAt: now
             });
 
             // 5. Create Transaction Record
@@ -1831,14 +1920,15 @@ exports.approveBalanceLoad = onCall(async (request) => {
                 details: 'Wallet Top-up (Mobile Banking)',
                 userId: userId,
                 userName: userData.name || userData.displayName || 'User',
-                date: new Date().toISOString(),
-                createdAt: new Date().toISOString(),
+                date: now,
+                createdAt: now,
                 method: 'mobile_banking',
                 requestId: requestId,
-                status: 'completed'
+                status: 'completed',
+                loanDeducted: loanDeduction
             });
 
-            return { success: true, newBalance };
+            return { success: true, newBalance, loanDeducted: loanDeduction };
         });
     } catch (error) {
         console.error("Error approving balance load:", error);
@@ -2490,8 +2580,11 @@ exports.requestLoan = onCall(async (request) => {
                 throw new HttpsError('invalid-argument', `Loan amount cannot exceed रु ${maxAmount}`);
             }
 
-            // 3. Update User (Add Loan & Balance)
+            // Check if balance is low enough (< 50)
             const currentBalance = userData.balance || 0;
+            if (currentBalance >= 50) {
+                throw new HttpsError('failed-precondition', 'Loan is only available if balance is less than रु 50.');
+            }
             const newBalance = currentBalance + loanAmount;
             const now = admin.firestore.Timestamp.now();
 
@@ -2944,3 +3037,181 @@ exports.sendCustomSms = onCall(
         }
     }
 );
+
+/**
+ * Callable function to assign a hostel bed (Admin Only)
+ * Supports manual payment (Cash) or wallet deduction.
+ */
+exports.assignHostelBed = onCall(async (request) => {
+    // Check authentication
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Must be authenticated.');
+    }
+
+    // Check if caller is admin
+    const db = admin.firestore();
+    const callerRef = db.collection('users').doc(request.auth.uid);
+    const callerDoc = await callerRef.get();
+    const isAdmin = request.auth.token.role === 'admin' || (callerDoc.exists && callerDoc.data().role === 'admin');
+
+    if (!isAdmin) {
+        throw new HttpsError('permission-denied', 'Only admins can assign hostel beds.');
+    }
+
+    const {
+        userId,
+        roomId,
+        bedNumber,
+        months = 1,
+        paymentMethod = 'wallet', // 'wallet' or 'cash'
+        includeAdmission = false,
+        includeDeposit = false
+    } = request.data;
+
+    if (!userId || !roomId || !bedNumber || months < 1) {
+        throw new HttpsError('invalid-argument', 'Missing required fields.');
+    }
+
+    try {
+        return await db.runTransaction(async (transaction) => {
+            // 1. Get Room and User Data
+            const roomRef = db.collection('hostelRooms').doc(roomId);
+            const userRef = db.collection('users').doc(userId);
+
+            const [roomDoc, userDoc] = await Promise.all([
+                transaction.get(roomRef),
+                transaction.get(userRef)
+            ]);
+
+            if (!roomDoc.exists) throw new HttpsError('not-found', 'Room not found.');
+            if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
+
+            const roomData = roomDoc.data();
+            const userData = userDoc.data();
+
+            // 2. Check Availability
+            // Check if bed is already taken
+            const assignmentsRef = db.collection('hostelAssignments');
+            const q = assignmentsRef
+                .where('roomId', '==', roomId)
+                .where('bedNumber', '==', parseInt(bedNumber))
+                .where('status', '==', 'active');
+
+            const existingBedAssignment = await transaction.get(q);
+            if (!existingBedAssignment.empty) {
+                throw new HttpsError('failed-precondition', `Bed ${bedNumber} in ${roomData.label} is already occupied.`);
+            }
+
+            // Check if user already has a hostel assignment
+            const userAssignmentQ = assignmentsRef
+                .where('userId', '==', userId)
+                .where('status', '==', 'active');
+
+            const userExistingAssignment = await transaction.get(userAssignmentQ);
+            if (!userExistingAssignment.empty) {
+                throw new HttpsError('failed-precondition', 'User already has an active hostel assignment.');
+            }
+
+            // 3. Calculate Costs
+            const monthlyRate = roomData.price;
+            const rentTotal = monthlyRate * months;
+            const admissionFee = includeAdmission ? 4000 : 0;
+            const deposit = includeDeposit ? 5000 : 0;
+            const totalCost = rentTotal + admissionFee + deposit;
+
+            // 4. Handle Payment (Wallet vs Cash)
+            let newBalance = userData.balance || 0;
+
+            if (paymentMethod === 'wallet') {
+                if (newBalance < totalCost) {
+                    throw new HttpsError('failed-precondition',
+                        `Insufficient wallet balance. User has रु ${newBalance}, needs रु ${totalCost}. Select 'Cash/Manual' to bypass.`);
+                }
+                newBalance -= totalCost;
+            }
+            // If 'cash', we don't deduct, but we record the transaction as paid.
+
+            // 5. Create Assignment
+            const nextPaymentDue = new Date();
+            nextPaymentDue.setDate(nextPaymentDue.getDate() + (months * 30));
+            const assignmentRef = assignmentsRef.doc();
+
+            transaction.set(assignmentRef, {
+                userId: userId,
+                userName: userData.name || userData.displayName || 'User',
+                userMrrNumber: userData.mrrNumber || 'N/A',
+                buildingId: roomData.buildingId,
+                buildingName: roomData.buildingName,
+                roomId: roomId,
+                roomLabel: roomData.label,
+                roomType: roomData.type,
+                bedNumber: parseInt(bedNumber),
+                monthlyRate: monthlyRate,
+                assignedAt: new Date().toISOString(),
+                nextPaymentDue: nextPaymentDue.toISOString(),
+                status: 'active',
+                assignedBy: request.auth.uid,
+                paymentMethod: paymentMethod
+            });
+
+            // 6. Update User Profile
+            transaction.update(userRef, {
+                balance: newBalance,
+                currentHostelRoom: {
+                    buildingId: roomData.buildingId,
+                    buildingName: roomData.buildingName,
+                    roomId: roomId,
+                    roomLabel: roomData.label,
+                    roomType: roomData.type,
+                    bedNumber: parseInt(bedNumber)
+                },
+                hostelNextPaymentDue: nextPaymentDue.toISOString(),
+                hostelRegistrationPaid: includeAdmission ? true : (userData.hostelRegistrationPaid || false),
+                hostelDepositPaid: includeDeposit ? 5000 : (userData.hostelDepositPaid || 0),
+                hostelMonthlyRate: monthlyRate,
+                updatedAt: new Date().toISOString()
+            });
+
+            // 7. Create Transaction Record
+            const transactionRef = db.collection('transactions').doc();
+            const hostelTxnId = generateTransactionId('HST'); // Ensure this helper exists or duplicate logic
+
+            const detailsParts = [`Hostel ${roomData.label} (${months} mon)`];
+            if (includeAdmission) detailsParts.push('Adm. Fee');
+            if (includeDeposit) detailsParts.push('Deposit');
+
+            transaction.set(transactionRef, {
+                type: 'hostel', // Standard type for consistency
+                transactionId: hostelTxnId,
+                amount: totalCost,
+                details: detailsParts.join(' + ') + (paymentMethod === 'cash' ? ' (Cash/Manual)' : ''),
+                userId: userId,
+                userName: userData.name || userData.displayName || 'User',
+                date: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+                buildingId: roomData.buildingId,
+                roomType: roomData.type,
+                months: months,
+                paymentMethod: paymentMethod, // Track method
+                breakdown: {
+                    monthlyRate: monthlyRate,
+                    rentTotal: rentTotal,
+                    admissionFee: admissionFee,
+                    deposit: deposit
+                },
+                adminId: request.auth.uid
+            });
+
+            return {
+                success: true,
+                message: 'Bed assigned successfully',
+                transactionId: hostelTxnId,
+                newBalance: newBalance
+            };
+        });
+
+    } catch (error) {
+        console.error('Error assigning hostel bed:', error);
+        throw error instanceof HttpsError ? error : new HttpsError('internal', error.message || 'Failed to assign bed.');
+    }
+});

@@ -109,40 +109,54 @@ export default function LoanRequest() {
                         <div className="bg-blue-50 text-blue-800 p-3 rounded-md text-xs mt-2">
                             Interest applies only after {deadline} days.
                         </div>
+                        <div className="bg-yellow-50 text-yellow-800 p-3 rounded-md text-xs mt-2 border border-yellow-100">
+                            <strong>Note:</strong> Loan is only available if your balance is below रु 50.
+                            Any future top-up will automatically deduct active loan.
+                        </div>
                     </div>
                 </div>
 
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Loan Amount</label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-3 text-gray-500 font-bold">रु</span>
-                            <input
-                                type="number"
-                                value={amount}
-                                onChange={e => setAmount(e.target.value)}
-                                placeholder={`Max ${maxAmount}`}
-                                className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
-                                max={maxAmount}
-                            />
+                {userBalance >= 50 ? (
+                    <div className="bg-red-50 text-red-700 p-4 rounded-lg flex items-start">
+                        <AlertCircle className="flex-shrink-0 mt-0.5 mr-2" size={18} />
+                        <div>
+                            <span className="font-semibold block">Not Eligible</span>
+                            Your balance (रु {userBalance}) is too high. You can only request a loan when your balance is below रु 50.
                         </div>
                     </div>
-
-                    {error && (
-                        <div className="text-red-500 text-sm flex items-center bg-red-50 p-3 rounded-lg border border-red-100">
-                            <AlertCircle size={16} className="mr-2 flex-shrink-0" />
-                            {error}
+                ) : (
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Loan Amount</label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-3 text-gray-500 font-bold">रु</span>
+                                <input
+                                    type="number"
+                                    value={amount}
+                                    onChange={e => setAmount(e.target.value)}
+                                    placeholder={`Max ${maxAmount}`}
+                                    className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                                    max={maxAmount}
+                                />
+                            </div>
                         </div>
-                    )}
 
-                    <button
-                        onClick={handleApply}
-                        disabled={submitting}
-                        className="w-full bg-black text-white py-3 rounded-xl font-semibold active:scale-95 transition-transform disabled:opacity-70 disabled:active:scale-100 shadow-lg"
-                    >
-                        {submitting ? 'Processing...' : 'Confirm Loan'}
-                    </button>
-                </div>
+                        {error && (
+                            <div className="text-red-500 text-sm flex items-center bg-red-50 p-3 rounded-lg border border-red-100">
+                                <AlertCircle size={16} className="mr-2 flex-shrink-0" />
+                                {error}
+                            </div>
+                        )}
+
+                        <button
+                            onClick={handleApply}
+                            disabled={submitting}
+                            className="w-full bg-black text-white py-3 rounded-xl font-semibold active:scale-95 transition-transform disabled:opacity-70 disabled:active:scale-100 shadow-lg"
+                        >
+                            {submitting ? 'Processing...' : 'Confirm Loan'}
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

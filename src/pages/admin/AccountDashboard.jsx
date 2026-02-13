@@ -177,11 +177,11 @@ export default function AccountDashboard({ onDataLoaded }) {
 
         // Calculate earnings by source
         const hostelEarnings = filteredTxns
-            .filter(t => t.type === 'hostel_payment')
+            .filter(t => t.type === 'hostel' || t.type === 'hostel_renewal')
             .reduce((sum, t) => sum + (t.amount || 0), 0);
 
         const readingRoomEarnings = filteredTxns
-            .filter(t => t.type === 'reading_room')
+            .filter(t => t.type === 'reading_room' || t.type === 'reading_room_renewal')
             .reduce((sum, t) => sum + (t.amount || 0), 0);
 
         const canteenEarnings = filteredOrders
@@ -235,7 +235,7 @@ export default function AccountDashboard({ onDataLoaded }) {
                 nextD.setDate(nextD.getDate() + 1);
 
                 const earnings = rawData.transactions
-                    .filter(t => ['hostel_payment', 'reading_room'].includes(t.type) && t.date >= d && t.date < nextD)
+                    .filter(t => ['hostel', 'hostel_renewal', 'reading_room', 'reading_room_renewal'].includes(t.type) && t.date >= d && t.date < nextD)
                     .reduce((s, t) => s + (t.amount || 0), 0) +
                     rawData.orders
                         .filter(o => o.date >= d && o.date < nextD && (o.status === 'completed' || o.status === 'success'))
@@ -269,7 +269,7 @@ export default function AccountDashboard({ onDataLoaded }) {
                 const year = d.getFullYear();
 
                 const earnings = rawData.transactions
-                    .filter(t => ['hostel_payment', 'reading_room'].includes(t.type) && t.date.getMonth() === monthIdx && t.date.getFullYear() === year)
+                    .filter(t => ['hostel', 'hostel_renewal', 'reading_room', 'reading_room_renewal'].includes(t.type) && t.date.getMonth() === monthIdx && t.date.getFullYear() === year)
                     .reduce((s, t) => s + (t.amount || 0), 0) +
                     rawData.orders
                         .filter(o => o.date.getMonth() === monthIdx && o.date.getFullYear() === year && (o.status === 'completed' || o.status === 'success'))

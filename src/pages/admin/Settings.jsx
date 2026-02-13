@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useConfig } from '../../context/ConfigContext';
 import { Save, RefreshCw } from 'lucide-react';
 import Button from '../../components/Button';
@@ -18,11 +18,6 @@ const DEFAULT_FORM_STATE = {
     HOSTEL: {
         REGISTRATION_FEE: 4000,
         REFUNDABLE_DEPOSIT: 5000
-    },
-    DISCOUNTS: {
-        REFERRAL_DISCOUNT_PERCENT: 5,
-        BULK_BOOKING_DISCOUNT: 10,
-        BUNDLE_DISCOUNT: 500
     },
     SMS: {
         SEND_HOUR: 10,
@@ -56,6 +51,12 @@ function Settings({ onBack, onDataLoaded }) {
 
     // 1. Initialize State with a deep copy of defaults
     const [formData, setFormData] = useState(() => JSON.parse(JSON.stringify(DEFAULT_FORM_STATE)));
+    const formDataRef = useRef(formData);
+
+    // Keep ref in sync with state
+    useEffect(() => {
+        formDataRef.current = formData;
+    }, [formData]);
 
     // Notify parent layout that page is ready (turns off global loader)
     useEffect(() => {
@@ -79,17 +80,17 @@ function Settings({ onBack, onDataLoaded }) {
     }, [config, hasSynced]);
 
     // Handle Save (Moved to global header)
-    const handleSave = async (e) => {
+    const handleSave = useCallback(async (e) => {
         if (e) e.preventDefault();
         setSaving(true);
-        const result = await updateConfig(formData);
+        const result = await updateConfig(formDataRef.current);
         setSaving(false);
         if (result.success) {
             window.alert("Settings saved successfully!");
         } else {
             window.alert("Failed to save settings: " + result.error?.message);
         }
-    };
+    }, [updateConfig]);
 
     // Set Header Buttons
     useEffect(() => {
@@ -127,7 +128,7 @@ function Settings({ onBack, onDataLoaded }) {
         return () => {
             setHeader({ title: '', actionBar: null, rightElement: null, onBack: null });
         };
-    }, [setHeader, saving, formData, handleSave]); // Depend on formData/handleSave so closure is fresh
+    }, [setHeader, saving]); // handleSave uses ref — no need to depend on it
 
 
     const handleChange = (section, key, value, subSection = null) => {
@@ -238,47 +239,6 @@ function Settings({ onBack, onDataLoaded }) {
                             </div>
                         </div>
 
-                        {/* Discounts Section */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-                            <h2 className="text-lg font-bold mb-6 text-gray-800 border-b pb-2">
-                                Discounts & Loyalty
-                            </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block mb-2 text-sm font-medium text-gray-700">
-                                        Referral Discount (%)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                                        value={formData.DISCOUNTS?.REFERRAL_DISCOUNT_PERCENT ?? DEFAULT_FORM_STATE.DISCOUNTS.REFERRAL_DISCOUNT_PERCENT}
-                                        onChange={(e) => handleChange('DISCOUNTS', 'REFERRAL_DISCOUNT_PERCENT', Number(e.target.value))}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block mb-2 text-sm font-medium text-gray-700">
-                                        Bulk Booking Discount (%)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                                        value={formData.DISCOUNTS?.BULK_BOOKING_DISCOUNT ?? DEFAULT_FORM_STATE.DISCOUNTS.BULK_BOOKING_DISCOUNT}
-                                        onChange={(e) => handleChange('DISCOUNTS', 'BULK_BOOKING_DISCOUNT', Number(e.target.value))}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block mb-2 text-sm font-medium text-gray-700">
-                                        Bundle Discount (Flat Amount)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                                        value={formData.DISCOUNTS?.BUNDLE_DISCOUNT ?? DEFAULT_FORM_STATE.DISCOUNTS.BUNDLE_DISCOUNT}
-                                        onChange={(e) => handleChange('DISCOUNTS', 'BUNDLE_DISCOUNT', Number(e.target.value))}
-                                    />
-                                </div>
-                            </div>
-                        </div>
 
                         {/* SMS Section */}
                         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">

@@ -152,11 +152,11 @@ export default function ExpenseEarningManagement({ onDataLoaded }) {
                 const combined = [
                     ...manuals.map(m => ({ ...m, type: 'manual', isSystem: false })),
                     ...txns
-                        .filter(t => ['hostel_payment', 'reading_room'].includes(t.type))
+                        .filter(t => ['hostel', 'hostel_renewal', 'reading_room', 'reading_room_renewal'].includes(t.type))
                         .map(t => ({
                             id: t.id,
-                            category: t.type === 'hostel_payment' ? 'Hostel' : 'Reading Room',
-                            description: t.type === 'hostel_payment' ? 'App Hostel Payment' : 'App Reading Room Payment',
+                            category: (t.type === 'hostel' || t.type === 'hostel_renewal') ? 'Hostel' : 'Reading Room',
+                            description: (t.type === 'hostel' || t.type === 'hostel_renewal') ? 'App Hostel Payment' : 'App Reading Room Payment',
                             amount: t.amount || 0,
                             date: t.createdAt?.toDate?.() || new Date(t.createdAt || t.date),
                             type: 'system',
