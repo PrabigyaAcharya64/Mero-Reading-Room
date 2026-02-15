@@ -13,11 +13,13 @@ const DEFAULT_FORM_STATE = {
         MONTHLY_FEE: {
             NON_AC: 3500,
             AC: 3750
-        }
+        },
+        DAILY_FINE: 5
     },
     HOSTEL: {
         REGISTRATION_FEE: 4000,
-        REFUNDABLE_DEPOSIT: 5000
+        REFUNDABLE_DEPOSIT: 5000,
+        DAILY_FINE: 5
     },
     SMS: {
         SEND_HOUR: 10,
@@ -205,6 +207,20 @@ function Settings({ onBack, onDataLoaded }) {
                                         onChange={(e) => handleChange('READING_ROOM', 'AC', Number(e.target.value), 'MONTHLY_FEE')}
                                     />
                                 </div>
+                                <div>
+                                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                                        Daily Fine (Overdue, per day)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        value={formData.READING_ROOM?.DAILY_FINE ?? DEFAULT_FORM_STATE.READING_ROOM.DAILY_FINE}
+                                        onChange={(e) => handleChange('READING_ROOM', 'DAILY_FINE', Number(e.target.value))}
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Amount charged per day when subscription is overdue
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
@@ -235,6 +251,20 @@ function Settings({ onBack, onDataLoaded }) {
                                         value={formData.HOSTEL?.REFUNDABLE_DEPOSIT ?? DEFAULT_FORM_STATE.HOSTEL.REFUNDABLE_DEPOSIT}
                                         onChange={(e) => handleChange('HOSTEL', 'REFUNDABLE_DEPOSIT', Number(e.target.value))}
                                     />
+                                </div>
+                                <div>
+                                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                                        Daily Fine (Overdue, per day)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        value={formData.HOSTEL?.DAILY_FINE ?? DEFAULT_FORM_STATE.HOSTEL.DAILY_FINE}
+                                        onChange={(e) => handleChange('HOSTEL', 'DAILY_FINE', Number(e.target.value))}
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Amount charged per day when hostel subscription is overdue
+                                    </p>
                                 </div>
                             </div>
                         </div>
