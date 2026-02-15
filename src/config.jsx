@@ -5,14 +5,16 @@ export const CONFIG = {
         MONTHLY_FEE: {
             AC: 3750,
             NON_AC: 3500
-        }
+        },
+        DAILY_FINE: 5
     },
     WALLET: {
         MIN_LOAD_AMOUNT: 100
     },
     HOSTEL: {
         REGISTRATION_FEE: 4000,
-        REFUNDABLE_DEPOSIT: 5000
+        REFUNDABLE_DEPOSIT: 5000,
+        DAILY_FINE: 5
     },
     DISCOUNTS: {
         REFERRAL_DISCOUNT_PERCENT: 5,

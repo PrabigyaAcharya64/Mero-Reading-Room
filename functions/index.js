@@ -41,10 +41,6 @@ exports.dailyInterestTask = onSchedule("every 24 hours", async (event) => {
         const dailyRate = settings.DAILY_INTEREST_RATE;
         const deadlineDays = settings.DEADLINE_DAYS;
 
-        // 2. Query Overdue Users
-        // Note: Firestore doesn't support complex querying on sub-fields easily with inequality on different fields efficiently without composite indexes.
-        // We will fetch all users with active loans and filter in memory for simplicity, assuming user base isn't massive yet.
-        // Or better, query users where loan.has_active_loan == true.
 
         const usersRef = db.collection('users');
         const activeLoanUsers = await usersRef.where('loan.has_active_loan', '==', true).get();
@@ -67,22 +63,13 @@ exports.dailyInterestTask = onSchedule("every 24 hours", async (event) => {
 
             // Check if overdue
             if (daysSinceTaken > deadlineDays) {
-                // Apply Interest
-                // current_balance = current_balance * (1 + rate)
-                // dailyRate is stored as percentage? No, user enters % in UI (e.g. 2).
-                // So rate = dailyRate / 100.
-                // Settings.jsx: newValue = parseFloat(value).
-                // LoanRequest.jsx just shows it as %.
-                // Calculation: balance * (1 + rate/100).
 
                 const rateDecimal = dailyRate / 100;
 
-                // IMPORTANT: Check if we already applied interest today to prevent double charging if function retries?
-                // We track `last_interest_applied`.
 
                 const lastApplied = loan.last_interest_applied ? loan.last_interest_applied.toDate() : null;
 
-                // Check if last applied was today (or less than 20 hours ago)
+
                 if (lastApplied) {
                     const hoursSinceLast = (nowDate - lastApplied) / (1000 * 60 * 60);
                     if (hoursSinceLast < 20) {
@@ -567,6 +554,12 @@ exports.checkStatusExpiration = onSchedule("0 0 * * *", async (event) => {
     const today = now.toISOString();
 
     try {
+        // Fetch fine rates from config
+        const configDoc = await db.collection('settings').doc('config').get();
+        const sysConfig = configDoc.exists ? configDoc.data() : {};
+        const rrDailyFine = sysConfig.READING_ROOM?.DAILY_FINE || 5;
+        const hostelDailyFine = sysConfig.HOSTEL?.DAILY_FINE || 5;
+
         const batch = db.batch();
         let operationsCount = 0;
 
@@ -622,7 +615,7 @@ exports.checkStatusExpiration = onSchedule("0 0 * * *", async (event) => {
 
                 batch.update(doc.ref, {
                     inGracePeriod: true,
-                    fineAmount: admin.firestore.FieldValue.increment(5),
+                    fineAmount: admin.firestore.FieldValue.increment(rrDailyFine),
                     updatedAt: today
                 });
             }
@@ -649,7 +642,7 @@ exports.checkStatusExpiration = onSchedule("0 0 * * *", async (event) => {
             // Apply Fine (Rs 5)
             batch.update(doc.ref, {
                 hostelInGracePeriod: true,
-                hostelFineAmount: admin.firestore.FieldValue.increment(5),
+                hostelFineAmount: admin.firestore.FieldValue.increment(hostelDailyFine),
                 updatedAt: today
             });
             operationsCount++;

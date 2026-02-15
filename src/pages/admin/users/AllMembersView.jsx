@@ -5,7 +5,8 @@ import { db } from '../../../lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { formatBalance } from '../../../utils/formatCurrency';
 import { formatDate } from '../../../utils/dateFormat';
-import LoadingSpinner from '../../../components/LoadingSpinner'; // Import LoadingSpinner
+import LoadingSpinner from '../../../components/LoadingSpinner';
+import { useConfig } from '../../../context/ConfigContext';
 import { functions } from '../../../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
 import SendSmsModal from '../../../components/SendSmsModal';
@@ -15,6 +16,7 @@ import '../../../styles/StandardLayout.css';
 import '../../../styles/AllMembersView.css';
 
 function AllMembersView({ onBack, onDataLoaded }) {
+    const { config } = useConfig();
     const [searchParams] = useSearchParams();
     const [isPageLoading, setIsPageLoading] = useState(true); // Local loading state
     const [users, setUsers] = useState([]);
@@ -565,6 +567,14 @@ function AllMembersView({ onBack, onDataLoaded }) {
                                                 const hostelStatus = getServiceStatus(hostelAssignment, false, user);
 
                                                 const isDue = (user.balance || 0) < 0;
+                                                const rrFine = user.fineAmount || 0;
+                                                const hostelFine = user.hostelFineAmount || 0;
+                                                const totalFine = rrFine + hostelFine;
+
+                                                // Calculate renewal price based on room type
+                                                const rrRenewal = user.selectedRoomType === 'ac'
+                                                    ? (config?.READING_ROOM?.MONTHLY_FEE?.AC || 0)
+                                                    : (config?.READING_ROOM?.MONTHLY_FEE?.NON_AC || 0);
 
                                                 return (
                                                     <tr key={user.id} className={selectedUserIds.has(user.id) ? 'amv-row-selected' : ''}>
@@ -620,6 +630,26 @@ function AllMembersView({ onBack, onDataLoaded }) {
                                                                 </div>
                                                             ) : (
                                                                 <span className="amv-balance">{formatBalance(user.balance || 0)}</span>
+                                                            )}
+                                                            {totalFine > 0 && (
+                                                                <div style={{ marginTop: '4px' }}>
+                                                                    <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '600' }}>
+                                                                        Fine: रु {totalFine.toLocaleString()}
+                                                                    </span>
+                                                                    {rrFine > 0 && hostelFine > 0 && (
+                                                                        <span style={{ fontSize: '10px', color: '#888', display: 'block' }}>
+                                                                            (RR: {rrFine} + Hostel: {hostelFine})
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                            {(rrStatus.label === 'Grace Period' || rrStatus.label === 'Overdue') && user.enrollmentCompleted && (
+                                                                <div style={{ marginTop: '4px' }}>
+                                                                    <span style={{ fontSize: '10px', color: '#64748b' }}>Renewal:</span>
+                                                                    <span style={{ fontSize: '11px', color: '#0f172a', fontWeight: '600', marginLeft: '4px' }}>
+                                                                        रु {rrRenewal.toLocaleString()}/mo
+                                                                    </span>
+                                                                </div>
                                                             )}
                                                         </td>
                                                         <td>
