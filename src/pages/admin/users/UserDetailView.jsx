@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { db, functions } from '../../../lib/firebase';
-import { doc, updateDoc, collection, query, where, getDocs, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, addDoc, query, where, getDocs, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { pdf } from '@react-pdf/renderer';
 import { formatBalance } from '../../../utils/formatCurrency';
@@ -308,16 +308,28 @@ function UserDetailView({ user, isOpen, onClose, onUpdate }) {
     };
 
     const saveHostelEnrollment = async () => {
-        if (!hostelEnrollment?.id) return;
         try {
-            await updateDoc(doc(db, 'hostelEnrollments', hostelEnrollment.id), {
-                ...hostelEditFields,
-                updatedAt: new Date().toISOString()
-            });
-            setHostelEnrollment(prev => ({ ...prev, ...hostelEditFields }));
+            if (hostelEnrollment?.id) {
+                await updateDoc(doc(db, 'hostelEnrollments', hostelEnrollment.id), {
+                    ...hostelEditFields,
+                    updatedAt: new Date().toISOString()
+                });
+                setHostelEnrollment(prev => ({ ...prev, ...hostelEditFields }));
+            } else {
+                // Create new enrollment
+                const newEnrollment = {
+                    ...hostelEditFields,
+                    userId: user.id,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                const docRef = await addDoc(collection(db, 'hostelEnrollments'), newEnrollment);
+                setHostelEnrollment({ id: docRef.id, ...newEnrollment });
+            }
             setHostelEditing(false);
             showSync('Hostel enrollment saved', 'success');
         } catch (err) {
+            console.error('Save error:', err);
             showSync('Save failed', 'error');
         }
     };
@@ -774,11 +786,21 @@ function UserDetailView({ user, isOpen, onClose, onUpdate }) {
             <div style={{ maxWidth: '900px', margin: '0 auto', backgroundColor: 'white', padding: '40px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
                 {/* Action bar */}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginBottom: '16px' }}>
-                    {hostelEnrollment && (
+                    {(hostelEnrollment || hostelAssignment) && (
                         <>
-                            <button className="udv-btn-sm" onClick={() => { if (isEditing) { saveHostelEnrollment(); } else { setHostelEditing(true); } }}
+                            <button className="udv-btn-sm" onClick={() => {
+                                if (isEditing) {
+                                    saveHostelEnrollment();
+                                } else {
+                                    // Initialize edit fields if missing (empty form for creation)
+                                    if (!hostelEditFields && !hostelEnrollment) {
+                                        setHostelEditFields({});
+                                    }
+                                    setHostelEditing(true);
+                                }
+                            }}
                                 style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                                {isEditing ? <><Save size={14} /> Save</> : <><Pencil size={14} /> Edit</>}
+                                {isEditing ? <><Save size={14} /> Save</> : <><Pencil size={14} /> {hostelEnrollment ? 'Edit' : 'Create Form'}</>}
                             </button>
                             {isEditing && (
                                 <button className="udv-btn-sm danger" onClick={() => {

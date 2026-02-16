@@ -1708,6 +1708,9 @@ exports.topUpBalance = onCall(async (request) => {
             let loanDeduction = 0;
             const now = new Date().toISOString();
 
+            // Define ID early for use in related transactions
+            const topUpTxnId = generateTransactionId('BTU');
+
             // Handle Loan Deduction
             if (userData.loan && userData.loan.has_active_loan) {
                 const loanBalance = userData.loan.current_balance || 0;
@@ -1753,11 +1756,6 @@ exports.topUpBalance = onCall(async (request) => {
 
             // Create transaction record (Top-up)
             // We record the FULL amount as top-up, but the balance effect is split if loan exists.
-            // Or typically: Top up full amount, then immediate deduction.
-            // But to keep balance clean without double jumps, we calculate net.
-            // However, for statement clarity, it's better to log the Top Up of X, and Repayment of Y.
-            // So we record Top Up of X.
-
             const transactionRef = db.collection('transactions').doc();
             transaction.set(transactionRef, {
                 type: 'balance_topup',
