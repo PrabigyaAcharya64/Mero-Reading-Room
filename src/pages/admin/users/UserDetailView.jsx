@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { db } from '../../../lib/firebase';
+import { db, functions } from '../../../lib/firebase';
 import { doc, updateDoc, collection, query, where, getDocs, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import { pdf } from '@react-pdf/renderer';
 import { formatBalance } from '../../../utils/formatCurrency';
 import { formatDate, formatDateForInput } from '../../../utils/dateFormat';
@@ -58,6 +59,7 @@ function UserDetailView({ user, isOpen, onClose, onUpdate }) {
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [syncStatus, setSyncStatus] = useState(null);
+    const [isProcessingBalance, setIsProcessingBalance] = useState(false);
 
     // Reading Room state
     const [seatAssignment, setSeatAssignment] = useState(null);
@@ -204,6 +206,60 @@ function UserDetailView({ user, isOpen, onClose, onUpdate }) {
 
     const handleEditChange = (field, value) => {
         setEditFields(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleAddBalance = async () => {
+        const amount = parseFloat(balanceInput);
+        if (!amount || amount <= 0) {
+            showSync('Invalid amount', 'error');
+            return;
+        }
+
+        setIsProcessingBalance(true);
+        try {
+            const topUpFn = httpsCallable(functions, 'topUpBalance');
+            const result = await topUpFn({
+                userId: user.id,
+                amount: amount
+            });
+
+            if (result.data.success) {
+                showSync('Balance added successfully', 'success');
+                setBalanceInput('');
+                // If a loan was deducted, maybe show a specific message?
+                if (result.data.loanDeducted > 0) {
+                    alert(`Balance added. NOTE: ${formatBalance(result.data.loanDeducted)} was automatically deducted for active loan.`);
+                }
+            } else {
+                showSync('Failed to add balance', 'error');
+            }
+        } catch (error) {
+            console.error('Balance add error:', error);
+            showSync(`Error: ${error.message}`, 'error');
+        } finally {
+            setIsProcessingBalance(false);
+        }
+    };
+
+    const handleSubtractBalance = async () => {
+        const amount = parseFloat(balanceInput);
+        if (!amount || amount <= 0) {
+            showSync('Invalid amount', 'error');
+            return;
+        }
+
+        const currentBal = userData.balance || 0;
+        const newBal = currentBal - amount;
+
+        setConfirmAction({
+            title: 'Subtract Balance',
+            description: `Are you sure you want to subtract ${formatBalance(amount)}? New balance will be ${formatBalance(newBal)}.`,
+            action: async () => {
+                await updateUser({ balance: newBal });
+                setBalanceInput('');
+            },
+            successMsg: 'Balance updated'
+        });
     };
 
     const savePersonalInfo = async () => {
@@ -405,10 +461,34 @@ function UserDetailView({ user, isOpen, onClose, onUpdate }) {
                         <span>Current Balance</span>
                         <strong className={(u.balance || 0) < 0 ? 'negative' : ''}>{formatBalance(u.balance || 0)}</strong>
                     </div>
-                    <div className="udv-inline-action">
-                        <input type="number" placeholder="Set new balance" value={balanceInput} onChange={(e) => setBalanceInput(e.target.value)} style={inputStyle} />
-                        <button className="udv-btn-sm" disabled={!balanceInput} onClick={() => { updateUser({ balance: parseFloat(balanceInput) }); setBalanceInput(''); }}>Update</button>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '12px' }}>
+                        <input
+                            type="number"
+                            placeholder="Amount"
+                            value={balanceInput}
+                            onChange={(e) => setBalanceInput(e.target.value)}
+                            style={{ ...inputStyle, flex: 1 }}
+                        />
+                        <button
+                            className="udv-btn-sm success"
+                            disabled={!balanceInput || isProcessingBalance}
+                            onClick={handleAddBalance}
+                            style={{ backgroundColor: '#10b981', color: 'white', border: 'none' }}
+                        >
+                            {isProcessingBalance ? 'Processing...' : 'Add (+)'}
+                        </button>
+                        <button
+                            className="udv-btn-sm danger"
+                            disabled={!balanceInput || isProcessingBalance}
+                            onClick={handleSubtractBalance}
+                            style={{ backgroundColor: '#ef4444', color: 'white', border: 'none' }}
+                        >
+                            Subtract (-)
+                        </button>
                     </div>
+                    <p style={{ fontSize: '11px', color: '#666', marginTop: '8px', fontStyle: 'italic' }}>
+                        Note: "Add" will typically top-up the wallet. If the user has an active loan, it will be automatically deducted from this amount.
+                    </p>
                 </div>
             </div>
 
