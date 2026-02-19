@@ -1,21 +1,20 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthProvider';
-import { LogOut, Settings } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
-import { useLoading } from '../../context/GlobalLoadingContext';
-import MenuManagement from './MenuManagement';
-import OrderDashboard from './OrderDashboard';
-import SalesDashboard from './SalesDashboard';
-import CanteenSettings from './CanteenSettings';
-import NewOrders from './NewOrders';
-import ProxyOrder from './ProxyOrder';
-import PageHeader from '../../components/PageHeader';
-import InventoryLanding from '../inventory/InventoryLanding';
-import RawInventory from '../inventory/RawInventory';
-import DryInventory from '../inventory/DryInventory';
-import '../../styles/StandardLayout.css';
+import { db } from '../../../lib/firebase';
+import { useLoading } from '../../../context/GlobalLoadingContext';
+import MenuManagement from '../../Canteen_Admin/MenuManagement';
+import OrderDashboard from '../../Canteen_Admin/OrderDashboard';
+import SalesDashboard from '../../Canteen_Admin/SalesDashboard';
+import NewOrders from '../../Canteen_Admin/NewOrders';
+import ProxyOrder from '../../Canteen_Admin/ProxyOrder';
+import PageHeader from '../../../components/PageHeader';
+import InventoryLanding from '../../inventory/InventoryLanding';
+import RawInventory from '../../inventory/RawInventory';
+import DryInventory from '../../inventory/DryInventory';
+import '../../../styles/StandardLayout.css';
 
 const foodIcon = new URL('../../assets/food.svg', import.meta.url).href;
 const reportIcon = new URL('../../assets/reports.svg', import.meta.url).href;
@@ -169,18 +168,6 @@ function CanteenAdminLanding() {
                 <span className="landing-service-card__label">Sales</span>
               </button>
             )}
-            {(userRole === 'admin' || userRole === 'canteen') && (
-              <button
-                type="button"
-                className="landing-service-card"
-                onClick={() => handleNavigation('settings')}
-              >
-                <span className="landing-service-card__icon">
-                  <Settings size={32} color="#4b5563" />
-                </span>
-                <span className="landing-service-card__label">Settings</span>
-              </button>
-            )}
             <button
               type="button"
               className="landing-service-card"
@@ -208,7 +195,6 @@ function CanteenAdminLanding() {
       <Route path="/inventory" element={<InventoryLanding onBack={() => navigate(baseUrl)} onNavigate={(view) => handleNavigation(`${baseUrl}/${view}`)} onDataLoaded={handlePageReady} />} />
       <Route path="/raw-inventory" element={<RawInventory onBack={() => navigate(`${baseUrl}/inventory`)} onDataLoaded={handlePageReady} />} />
       <Route path="/dry-inventory" element={<DryInventory onBack={() => navigate(`${baseUrl}/inventory`)} onDataLoaded={handlePageReady} />} />
-      <Route path="/settings" element={<CanteenSettings onBack={() => navigate(baseUrl)} />} />
     </Routes>
   );
 }
