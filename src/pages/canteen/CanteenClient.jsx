@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { db, functions } from '../../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
-import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, getDoc } from 'firebase/firestore';
 import { validateOrderNote } from '../../utils/validation';
 import { getBusinessDate } from '../../utils/dateUtils';
 import EnhancedBackButton from '../../components/EnhancedBackButton';
@@ -26,6 +26,55 @@ function CanteenClient({ onBack }) {
   const [fixedMenu, setFixedMenu] = useState([]);
   const [cart, setCart] = useState([]);
   const [orderMessage, setOrderMessage] = useState('');
+
+  const [userCanteenType, setUserCanteenType] = useState('mrr');
+  const [staffDiscount, setStaffDiscount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+
+    // 1. Get User Canteen Type
+    const fetchUserType = async () => {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setUserCanteenType(data.canteen_type || 'mrr');
+        }
+      } catch (error) {
+        console.error('Error fetching user type:', error);
+      }
+    };
+
+    // 2. Get Staff Discount Setting
+    const fetchSettings = async () => {
+      try {
+        const configDoc = await getDoc(doc(db, 'settings', 'config'));
+        if (configDoc.exists()) {
+          const data = configDoc.data();
+          setStaffDiscount(data.CANTEEN_DISCOUNTS?.staff || 0);
+        }
+      } catch (error) {
+        console.error("Error fetching settings:", error);
+      }
+    }
+
+    fetchUserType();
+    fetchSettings();
+  }, [user]);
+
+  // Filter items based on user type
+  const filterItems = (items) => {
+    return items.filter(item => {
+      // If no target types defined, everyone sees it
+      if (!item.targetTypes || item.targetTypes.length === 0) return true;
+      // If target types defined, user must have one of them
+      return item.targetTypes.includes(userCanteenType);
+    });
+  };
+
+  const visibleTodaysMenu = filterItems(todaysMenu);
+  const visibleFixedMenu = filterItems(fixedMenu);
 
   useEffect(() => {
     if (!user) return;
@@ -186,11 +235,13 @@ function CanteenClient({ onBack }) {
       <CanteenMenu
         onBack={() => setCurrentView('landing')}
         onNavigate={setCurrentView}
-        todaysMenu={todaysMenu}
-        fixedMenu={fixedMenu}
+        todaysMenu={visibleTodaysMenu}
+        fixedMenu={visibleFixedMenu}
         cart={cart}
         addToCart={addToCart}
         userBalance={userBalance}
+        userCanteenType={userCanteenType}
+        staffDiscount={staffDiscount}
       />
     );
   }

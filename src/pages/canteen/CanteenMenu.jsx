@@ -14,7 +14,11 @@ const CanteenMenu = ({
   cart,
   addToCart,
   userBalance,
-  userName
+  addToCart,
+  userBalance,
+  userName,
+  userCanteenType = 'mrr',
+  staffDiscount = 0
 }) => {
   const categoryOrder = ['Breakfast', 'Meal', 'Dinner', 'Snacks', 'Drinks'];
 
@@ -117,12 +121,38 @@ const CanteenMenu = ({
                     onError={(e) => { e.target.src = "https://placehold.co/400x300?text=Food"; }}
                   />
                 </div>
+                {item.isHostelSpecial && (['hostel', 'mrr_hostel'].includes(userCanteenType)) && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '8px',
+                    left: '8px',
+                    backgroundColor: '#7c3aed',
+                    color: 'white',
+                    fontSize: '0.7rem',
+                    fontWeight: 'bold',
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    zIndex: 10,
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                  }}>
+                    Hostel Special
+                  </div>
+                )}
                 <div className="card-content">
                   <h3 className="card-food-name">{item.name}</h3>
                   <p className="card-food-desc">{item.description || 'Delicious meal'}</p>
 
                   <div className="card-footer">
-                    <span className="card-price">Rs. {Number(item.price).toFixed(2)}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      {userCanteenType === 'staff' && staffDiscount > 0 ? (
+                        <>
+                          <span className="card-price" style={{ textDecoration: 'line-through', fontSize: '0.8rem', color: '#9ca3af' }}>Rs. {Number(item.price).toFixed(2)}</span>
+                          <span className="card-price" style={{ color: '#10b981' }}>Rs. {(item.price * (1 - staffDiscount / 100)).toFixed(2)}</span>
+                        </>
+                      ) : (
+                        <span className="card-price">Rs. {Number(item.price).toFixed(2)}</span>
+                      )}
+                    </div>
                     <Button
                       size="sm"
                       variant="primary"
@@ -136,6 +166,12 @@ const CanteenMenu = ({
                       Add to Cart
                     </Button>
                   </div>
+                  {/* Staff Discount Display */}
+                  {userCanteenType === 'staff' && staffDiscount > 0 && (
+                    <div style={{ fontSize: '0.7rem', color: '#10b981', marginTop: '4px' }}>
+                      Staff: {staffDiscount}% Off
+                    </div>
+                  )}
                 </div>
               </div>
             )

@@ -27,6 +27,9 @@ const DEFAULT_FORM_STATE = {
         RR_GRACE_END_TEMPLATE: "Hello {{name}}, your Reading Room grace period ends on {{date}}.",
         HOSTEL_WARNING_TEMPLATE: "Hello {{name}}, your Hostel subscription expires on {{date}}. Please pay to avoid penalties.",
         HOSTEL_GRACE_END_TEMPLATE: "Hello {{name}}, your Hostel grace period ends on {{date}}."
+    },
+    CANTEEN_DISCOUNTS: {
+        staff: 0
     }
 };
 
@@ -269,6 +272,29 @@ function Settings({ onBack, onDataLoaded }) {
                             </div>
                         </div>
 
+                        {/* Canteen Section */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+                            <h2 className="text-lg font-bold mb-6 text-gray-800 border-b pb-2">
+                                Canteen Configuration
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                                        Staff Discount (%)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0" max="100"
+                                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        value={formData.CANTEEN_DISCOUNTS?.staff ?? DEFAULT_FORM_STATE.CANTEEN_DISCOUNTS.staff}
+                                        onChange={(e) => handleChange('CANTEEN_DISCOUNTS', 'staff', Number(e.target.value))}
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Percentage discount applied to orders for Staff users
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
 
                         {/* SMS Section */}
                         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
@@ -365,9 +391,9 @@ function Settings({ onBack, onDataLoaded }) {
 
                         {/* Buttons removed from bottom */}
                     </form>
-                </main>
-            </div>
-        </PageTransition>
+                </main >
+            </div >
+        </PageTransition >
     );
 }
 

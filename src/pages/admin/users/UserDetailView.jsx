@@ -544,6 +544,37 @@ function UserDetailView({ user, isOpen, onClose, onUpdate }) {
                 </div>
             </div>
 
+            {/* ── Canteen Access Type ── */}
+            <div className="udv-card">
+                <div className="udv-card-header"><Wallet size={16} /> Canteen Access Type</div>
+                <div className="udv-card-body">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px' }}>
+                        {[
+                            { value: 'mrr', label: 'MRR Only', desc: 'Standard Access' },
+                            { value: 'mrr_hostel', label: 'MRR + Hostel', desc: 'Full Access' },
+                            { value: 'hostel', label: 'Hostel Only', desc: 'Hostel Access' },
+                            { value: 'staff', label: 'Staff', desc: 'Discounted Pricing' }
+                        ].map(type => (
+                            <button
+                                key={type.value}
+                                className={`udv-role-chip ${(u.canteen_type || 'mrr') === type.value ? 'active' : ''}`}
+                                onClick={() => updateUser({ canteen_type: type.value })}
+                                style={{
+                                    display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+                                    padding: '10px',
+                                    backgroundColor: (u.canteen_type || 'mrr') === type.value ? '#e0f2fe' : '#f9fafb',
+                                    border: (u.canteen_type || 'mrr') === type.value ? '1px solid #0ea5e9' : '1px solid #e5e7eb',
+                                    borderRadius: '8px', cursor: 'pointer', textAlign: 'left'
+                                }}
+                            >
+                                <strong style={{ fontSize: '13px', color: (u.canteen_type || 'mrr') === type.value ? '#0284c7' : '#374151' }}>{type.label}</strong>
+                                <span style={{ fontSize: '11px', color: '#6b7280' }}>{type.desc}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
             {/* ── Loan Overview ── */}
             <div className="udv-card">
                 <div className="udv-card-header"><Wallet size={16} /> Loan Overview</div>

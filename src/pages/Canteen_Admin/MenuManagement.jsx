@@ -23,6 +23,8 @@ function MenuManagement({ onBack, onDataLoaded }) {
     price: '',
     description: '',
     category: 'Breakfast',
+    targetTypes: [], // ['mrr', 'mrr_hostel', 'hostel', 'staff'] (empty = all)
+    isHostelSpecial: false,
   });
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -90,8 +92,21 @@ function MenuManagement({ onBack, onDataLoaded }) {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    if (type === 'checkbox') {
+      if (name === 'isHostelSpecial') {
+        setFormData(prev => ({ ...prev, [name]: checked }));
+      } else if (name === 'targetTypes') {
+        // Handle multi-select for target types via checkboxes
+        setFormData(prev => {
+          const current = prev.targetTypes || [];
+          if (checked) return { ...prev, targetTypes: [...current, value] };
+          return { ...prev, targetTypes: current.filter(t => t !== value) };
+        });
+      }
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handlePhotoChange = (e) => {
@@ -135,11 +150,13 @@ function MenuManagement({ onBack, onDataLoaded }) {
         price: priceVal.sanitized,
         description: descVal.sanitized,
         category: catVal.sanitized,
+        targetTypes: formData.targetTypes || [],
+        isHostelSpecial: formData.isHostelSpecial || false,
         photoURL: photoURL,
         createdAt: new Date().toISOString(),
       });
 
-      setFormData({ name: '', price: '', description: '', category: 'Breakfast' });
+      setFormData({ name: '', price: '', description: '', category: 'Breakfast', targetTypes: [], isHostelSpecial: false });
       setPhotoFile(null);
       setPhotoPreview(null);
       setMessage('Menu item added successfully!');
@@ -183,8 +200,11 @@ function MenuManagement({ onBack, onDataLoaded }) {
         id: item.id,
         name: item.name,
         price: item.price,
+        price: item.price,
         description: item.description,
         category: item.category || 'Breakfast',
+        targetTypes: item.targetTypes || [],
+        isHostelSpecial: item.isHostelSpecial || false,
         photoURL: item.photoURL || null,
       }));
 
@@ -238,6 +258,37 @@ function MenuManagement({ onBack, onDataLoaded }) {
             <div className="mm-input-group">
               <label className="mm-label">Description</label>
               <textarea name="description" className="mm-textarea" value={formData.description} onChange={handleInputChange} placeholder="Write a short description..." rows="3" required />
+            </div>
+
+            <div className="mm-input-group">
+              <label className="mm-label">Target Users (Empty = All)</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                {['mrr', 'mrr_hostel', 'hostel', 'staff'].map(type => (
+                  <label key={type} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      name="targetTypes"
+                      value={type}
+                      checked={(formData.targetTypes || []).includes(type)}
+                      onChange={handleInputChange}
+                    />
+                    {type === 'mrr_hostel' ? 'MRR+Hostel' : type.charAt(0).toUpperCase() + type.slice(1)}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="mm-input-group">
+              <label className="mm-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  name="isHostelSpecial"
+                  checked={formData.isHostelSpecial || false}
+                  onChange={handleInputChange}
+                />
+                Is Hostel Special?
+              </label>
+              <span style={{ fontSize: '11px', color: '#666' }}>Will appear in Today's Special for hostel users</span>
             </div>
 
             <div className="mm-input-group">
@@ -321,6 +372,20 @@ function MenuManagement({ onBack, onDataLoaded }) {
                   <div className="mm-card-content">
                     <h3 className="mm-card-title">{item.name}</h3>
                     <p className="mm-card-desc">{item.description}</p>
+                    {item.targetTypes && item.targetTypes.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
+                        {item.targetTypes.map(t => (
+                          <span key={t} style={{ fontSize: '9px', padding: '2px 4px', background: '#e0f2fe', color: '#0284c7', borderRadius: '4px' }}>
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {item.isHostelSpecial && (
+                      <span style={{ fontSize: '10px', color: '#7c3aed', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>
+                        ★ Hostel Special
+                      </span>
+                    )}
                     <div className="mm-card-footer">
                       <div className="mm-card-price">रु {Number(item.price).toFixed(0)}</div>
                       {isInSpecial && <span className="mm-card-badge">Today's Special</span>}

@@ -1,5 +1,5 @@
-const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onDocumentUpdated, onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { onCall, HttpsError, onRequest } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const functions = require("firebase-functions/v1");
 const { defineSecret } = require("firebase-functions/params");
@@ -16,8 +16,7 @@ exports.dailyInterestTask = onSchedule("every 24 hours", async (event) => {
     const now = admin.firestore.Timestamp.now();
 
     try {
-        // 1. Fetch Loan Settings
-        // Use the centralized config document (settings/config)
+        // 1. Fetch Loan Settings from centralized config
         const settingsDoc = await db.collection('settings').doc('config').get();
         if (!settingsDoc.exists) {
             console.log("No system config found. Skipping interest calculation.");
@@ -32,7 +31,6 @@ exports.dailyInterestTask = onSchedule("every 24 hours", async (event) => {
             return;
         }
 
-        // Validate settings
         if (!settings.DAILY_INTEREST_RATE || !settings.DEADLINE_DAYS) {
             console.error("Invalid loan settings. Missing rate or deadline.");
             return;
@@ -41,7 +39,7 @@ exports.dailyInterestTask = onSchedule("every 24 hours", async (event) => {
         const dailyRate = settings.DAILY_INTEREST_RATE;
         const deadlineDays = settings.DEADLINE_DAYS;
 
-
+        // 2. Query users with active loans
         const usersRef = db.collection('users');
         const activeLoanUsers = await usersRef.where('loan.has_active_loan', '==', true).get();
 
@@ -54,22 +52,19 @@ exports.dailyInterestTask = onSchedule("every 24 hours", async (event) => {
 
             if (!loan || !loan.taken_at) return;
 
-            const takenAtDate = loan.taken_at.toDate(); // Convert Firestore Timestamp to Date
+            const takenAtDate = loan.taken_at.toDate();
             const nowDate = now.toDate();
 
             // Calculate days elapsed
             const diffTime = Math.abs(nowDate - takenAtDate);
             const daysSinceTaken = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-            // Check if overdue
+            // Only apply interest if overdue (past deadline)
             if (daysSinceTaken > deadlineDays) {
-
                 const rateDecimal = dailyRate / 100;
 
-
+                // Prevent double-charging if function retries
                 const lastApplied = loan.last_interest_applied ? loan.last_interest_applied.toDate() : null;
-
-
                 if (lastApplied) {
                     const hoursSinceLast = (nowDate - lastApplied) / (1000 * 60 * 60);
                     if (hoursSinceLast < 20) {
@@ -454,8 +449,9 @@ exports.sendInvoiceEmail = onCall(
                 throw new HttpsError('internal', 'Email service not configured.');
             }
 
+            const isHostel = invoiceData.invoiceNumber?.includes('-HST-') || invoiceData.invoiceNumber?.includes('-HSR-');
             const packageName = invoiceData.details ||
-                `${invoiceData.roomType === 'ac' ? 'AC' : 'Non-AC'} Reading Room Package`;
+                (isHostel ? 'Hostel Accommodation Plan' : `${invoiceData.roomType === 'ac' ? 'AC' : 'Non-AC'} Reading Room Package`);
 
             const emailBody = `
       <div style="font-family: system-ui, -apple-system, sans-serif; background-color: #f9f9f9; padding: 50px 20px;">
@@ -544,6 +540,371 @@ exports.sendInvoiceEmail = onCall(
     }
 );
 
+
+async function sendPushNotification(userId, title, body, data = {}) {
+    const logPrefix = `[Push-${userId}]`;
+    console.log(`${logPrefix} START`);
+
+    if (!userId || !title || !body) {
+        console.error(`${logPrefix} FAILED: Missing fields`);
+        return { success: false, error: 'missing_fields' };
+    }
+
+    try {
+        const userDoc = await admin.firestore().collection('users').doc(userId).get();
+
+        if (!userDoc.exists) {
+            console.error(`${logPrefix} FAILED: User not found`);
+            return { success: false, error: 'user_not_found' };
+        }
+
+        const userData = userDoc.data();
+        const tokens = userData.pushTokens || [];
+
+        if (tokens.length === 0) {
+            console.log(`${logPrefix} ABORT: No tokens`);
+            return { success: false, error: 'no_tokens' };
+        }
+
+        // Sanitize data payload
+        const safeData = {};
+        if (data) {
+            Object.entries(data).forEach(([key, value]) => {
+                if (value === null || value === undefined) return;
+                safeData[key] = String(value);
+            });
+        }
+
+        const message = {
+            tokens: tokens,
+            notification: {
+                title: title,
+                body: body
+            },
+            data: safeData,
+            android: {
+                priority: 'high',
+                notification: {
+                    channelId: 'mrr_high_importance',
+                    priority: 'max',
+                    defaultSound: true,
+                    visibility: 'public'
+                }
+            }
+        };
+
+        console.log(`${logPrefix} Payload:`, JSON.stringify(message, null, 2));
+
+        const response = await admin.messaging().sendEachForMulticast(message);
+
+        console.log(`${logPrefix} Result: ${response.successCount} OK, ${response.failureCount} Fail`);
+
+        // Handle invalid tokens
+        if (response.failureCount > 0) {
+            const invalidTokens = [];
+            response.responses.forEach((resp, idx) => {
+                if (!resp.success) {
+                    const error = resp.error;
+                    if (error.code === 'messaging/invalid-registration-token' ||
+                        error.code === 'messaging/registration-token-not-registered') {
+                        invalidTokens.push(tokens[idx]);
+                    }
+                }
+            });
+
+            if (invalidTokens.length > 0) {
+                await admin.firestore().collection('users').doc(userId).update({
+                    pushTokens: admin.firestore.FieldValue.arrayRemove(...invalidTokens)
+                });
+            }
+        }
+
+        return {
+            success: response.successCount > 0,
+            successCount: response.successCount,
+            failureCount: response.failureCount,
+            response: response
+        };
+
+    } catch (error) {
+        console.error(`${logPrefix} CRITICAL ERROR:`, error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Trigger: On Notification Created
+ * Automatically sends a push notification to the user when an in-app notification is created.
+ */
+// HTTP Function for debugging Push Notifications
+const cors = require('cors')({ origin: true });
+
+exports.testPush = onRequest(async (request, response) => {
+    return cors(request, response, async () => {
+        const userId = request.query.uid;
+        if (!userId) {
+            response.status(400).send("Missing 'uid' query parameter.");
+            return;
+        }
+
+        try {
+            const userDoc = await admin.firestore().collection('users').doc(userId).get();
+            if (!userDoc.exists) {
+                response.status(404).json({ success: false, error: `User ${userId} not found.` });
+                return;
+            }
+
+            const userData = userDoc.data();
+            const tokens = userData.pushTokens || [];
+
+            if (tokens.length === 0) {
+                response.json({ success: false, error: `User ${userId} has 0 tokens. Cannot send.` });
+                return;
+            }
+
+            const message = {
+                tokens: tokens,
+                notification: {
+                    title: "Test Debug",
+                    body: "Direct HTTP Test"
+                },
+                android: {
+                    priority: 'high',
+                    notification: {
+                        channelId: 'mrr_high_importance',
+                        priority: 'max',
+                        defaultSound: true,
+                        visibility: 'public'
+                    }
+                }
+            };
+
+            const fcmResponse = await admin.messaging().sendEachForMulticast(message);
+
+            response.json({
+                success: true,
+                user: userId,
+                tokenCount: tokens.length,
+                fcmResponse: fcmResponse
+            });
+        } catch (error) {
+            console.error("Test Push Error:", error);
+            response.status(500).json({ error: error.message, stack: error.stack });
+        }
+    });
+});
+
+/**
+ * Trigger: On Notification Created
+ * Automatically sends a push notification to the user when an in-app notification is created.
+ */
+exports.onNotificationCreated = onDocumentCreated("notifications/{notifId}", async (event) => {
+    const data = event.data.data();
+    const userId = data.userId;
+    const title = data.title || "New Notification";
+    const body = data.message || "You have a new update.";
+
+    // Only include essential, serializable fields in data payload
+    // DO NOT spread entire document - it contains Firestore Timestamps that break Android notifications
+    const dataPayload = {
+        type: data.type || 'general',
+        notifId: event.params.notifId,
+        // Only include simple string/number fields, NO Timestamps or complex objects
+        ...(data.relatedId && { relatedId: String(data.relatedId) }),
+        ...(data.orderId && { orderId: String(data.orderId) }),
+        ...(data.refundId && { refundId: String(data.refundId) })
+    };
+
+    console.log(`New notification document detected (${event.params.notifId}). Routing to push service...`);
+
+    const result = await sendPushNotification(userId, title, body, dataPayload);
+
+    // DEBUG: Update the notification document with the push result
+    // This allows us to verify if the trigger ran and if it succeeded
+    try {
+        await event.data.ref.update({
+            pushStatus: result.success ? 'sent' : 'failed',
+            pushDebug: {
+                attemptedAt: admin.firestore.FieldValue.serverTimestamp(),
+                successCount: result.successCount || 0,
+                failureCount: result.failureCount || 0,
+                error: result.error || null
+            }
+        });
+        console.log(`Updated notification ${event.params.notifId} with push status.`);
+    } catch (dbError) {
+        console.error("Failed to update notification with debug status:", dbError);
+    }
+
+    return null;
+});
+
+/**
+ * Trigger: On Order Updated
+ * Sends notification when order status changes to 'completed'.
+ */
+exports.onOrderUpdated = onDocumentUpdated("orders/{orderId}", async (event) => {
+    const newData = event.data.after.data();
+    const oldData = event.data.before.data();
+    const orderId = event.params.orderId;
+
+    if (newData.status === 'completed' && oldData.status !== 'completed') {
+        const userId = newData.userId;
+        const userName = newData.userName || 'Reader';
+
+        console.log(`Order ${orderId} completed. Creating notification for ${userId}`);
+
+        // Create notification in Firestore
+        // This will trigger 'onNotificationCreated' which sends the push
+        await admin.firestore().collection('notifications').add({
+            userId: userId,
+            title: "Order Ready!",
+            message: `Hello ${userName}, your canteen order is ready for pickup.`,
+            type: 'order',
+            orderId: orderId,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            read: false
+        });
+    }
+
+    // Add logic for 'preparing' if needed, or other status changes
+    if (newData.status === 'preparing' && oldData.status !== 'preparing') {
+        const userId = newData.userId;
+        console.log(`Order ${orderId} preparing. Creating notification for ${userId}`);
+
+        await admin.firestore().collection('notifications').add({
+            userId: userId,
+            title: "Order Preparing 🍳",
+            message: `Your order is now being prepared.`,
+            type: 'order',
+            orderId: orderId,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            read: false
+        });
+    }
+
+    return null;
+});
+
+/**
+ * Trigger: On Announcement Created
+ * Broadcasts the announcement to ALL users.
+ */
+exports.onAnnouncementCreated = onDocumentCreated("announcements/{id}", async (event) => {
+    const data = event.data.data();
+    if (!data) return;
+
+    const text = data.text;
+    const title = data.title || "New Announcement";
+
+    if (!text) return;
+
+    console.log(`[Announcement] New announcement: ${text}. Preparing broadcast...`);
+
+    try {
+        // Fetch all users who have push tokens
+        const snapshot = await admin.firestore().collection('users').get();
+
+        let allTokens = [];
+        snapshot.forEach(doc => {
+            const userData = doc.data();
+            if (userData.pushTokens && Array.isArray(userData.pushTokens)) {
+                allTokens.push(...userData.pushTokens);
+            }
+        });
+
+        if (allTokens.length === 0) {
+            console.log("[Announcement] No tokens found in database.");
+            return;
+        }
+
+        // Deduplicate tokens
+        allTokens = [...new Set(allTokens)];
+        console.log(`[Announcement] Broadcasting to ${allTokens.length} tokens.`);
+
+        // Send in batches of 500 (FCM limit)
+        const batchSize = 500;
+        const promises = [];
+
+        for (let i = 0; i < allTokens.length; i += batchSize) {
+            const batchTokens = allTokens.slice(i, i + batchSize);
+
+            const message = {
+                tokens: batchTokens,
+                notification: {
+                    title: title,
+                    body: text
+                },
+                android: {
+                    priority: 'high',
+                    notification: {
+                        channelId: 'mrr_high_importance',
+                        priority: 'max',
+                        defaultSound: true,
+                        visibility: 'public'
+                    }
+                }
+            };
+
+            // DEBUG: Log the exact FCM message being sent for announcements
+            console.log(`[Announcement] Sending FCM message to ${batchTokens.length} tokens:`, JSON.stringify(message, null, 2));
+
+            promises.push(admin.messaging().sendEachForMulticast(message));
+        }
+
+        const results = await Promise.all(promises);
+        results.forEach((res, idx) => {
+            console.log(`[Announcement] Batch ${idx + 1}: ${res.successCount} sent, ${res.failureCount} failed.`);
+        });
+
+    } catch (error) {
+        console.error("[Announcement] Error broadcasting:", error);
+    }
+});
+
+/**
+ * Trigger: On Refund Updated
+ * Notifies user when their refund request is approved or rejected.
+ */
+exports.onRefundUpdated = onDocumentUpdated("refunds/{refundId}", async (event) => {
+    const newData = event.data.after.data();
+    const oldData = event.data.before.data();
+    const refundId = event.params.refundId;
+
+    // Check if status changed
+    if (newData.status !== oldData.status) {
+        const userId = newData.userId;
+        const status = newData.status; // 'approved', 'rejected', 'completed'
+
+        let title = "Refund Update";
+        let body = `Your refund request has been updated to: ${status}`;
+
+        if (status === 'completed' || status === 'approved') {
+            title = "Refund Approved";
+            body = `Your refund of Rs. ${newData.finalRefundAmount || newData.amount} has been approved/completed.`;
+        } else if (status === 'rejected') {
+            title = "Refund Rejected";
+            body = `Your refund request was rejected. Reason: ${newData.rejectionReason || 'Contact admin'}`;
+        }
+
+        console.log(`Refund ${refundId} status ${status}. creating notification for user ${userId}`);
+
+        // Create notification in Firestore
+        // This will trigger 'onNotificationCreated' which sends the push
+        await admin.firestore().collection('notifications').add({
+            userId: userId,
+            title: title,
+            message: body,
+            type: 'refund',
+            refundId: refundId,
+            status: status,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            read: false
+        });
+    }
+    return null;
+});
+
 /**
  * Scheduled function to check for expired memberships daily at midnight.
  * Applies fines for standard policy, removes seat for 'daily' policy.
@@ -563,7 +924,62 @@ exports.checkStatusExpiration = onSchedule("0 0 * * *", async (event) => {
         const batch = db.batch();
         let operationsCount = 0;
 
-        // --- 1. Process Reading Room Expirations ---
+        // --- 0. Send 3-Day Expiration Warnings ---
+        // Calculate target date: Today + 3 days
+        const targetDate = new Date(now);
+        targetDate.setDate(targetDate.getDate() + 3);
+        const targetDateISO = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD
+
+        // Construct query range for that specific day
+        // We look for nextPaymentDue strings that start with targetDateISO
+        // Or strictly >= startOfDay AND <= endOfDay
+        const startOfDay = new Date(targetDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(targetDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        // Warning for Reading Room
+        const warningQuery = db.collection('users')
+            .where('nextPaymentDue', '>=', startOfDay.toISOString())
+            .where('nextPaymentDue', '<=', endOfDay.toISOString())
+            .where('enrollmentCompleted', '==', true);
+
+        const warningSnapshot = await warningQuery.get();
+
+        for (const userDoc of warningSnapshot.docs) {
+            const userData = userDoc.data();
+            await db.collection('notifications').add({
+                userId: userDoc.id,
+                title: "Membership Expiring Soon",
+                message: `Hi ${userData.name}, your Reading Room package expires in 3 days. Please renew to avoid interruption.`,
+                type: 'enrollment',
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                read: false
+            });
+        }
+
+        // Warning for Hostel
+        const hostelWarningQuery = db.collection('users')
+            .where('hostelNextPaymentDue', '>=', startOfDay.toISOString())
+            .where('hostelNextPaymentDue', '<=', endOfDay.toISOString())
+            .where('hostelRegistrationPaid', '==', true);
+
+        const hostelWarningSnapshot = await hostelWarningQuery.get();
+
+        for (const userDoc of hostelWarningSnapshot.docs) {
+            const userData = userDoc.data();
+            await db.collection('notifications').add({
+                userId: userDoc.id,
+                title: "Hostel Rent Due Soon",
+                message: `Hi ${userData.name}, your Hostel rent is due in 3 days. Please pay on time to avoid fines.`,
+                type: 'hostel',
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                read: false
+            });
+        }
+
+
+
         const usersRef = db.collection('users');
         // Get users who are enrolled and have a payment due date in the past
         const expiredUsersQuery = usersRef
@@ -703,7 +1119,7 @@ exports.renewReadingRoomSubscription = onCall(async (request) => {
     }
 
     try {
-        return await db.runTransaction(async (transaction) => {
+        const result = await db.runTransaction(async (transaction) => {
             const userRef = db.collection('users').doc(userId);
             const userDoc = await transaction.get(userRef);
 
@@ -809,6 +1225,23 @@ exports.renewReadingRoomSubscription = onCall(async (request) => {
                 message: "Renewal successful"
             };
         });
+
+        // Send Notification asynchronously
+        try {
+            await db.collection('notifications').add({
+                userId: userId,
+                title: 'Reading Room Subscription Renewed',
+                message: `You have successfully renewed your subscription for ${duration} ${durationType === 'month' ? 'Month(s)' : 'Day(s)'}.`,
+                type: 'enrollment',
+                relatedId: result.transactionId,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                read: false
+            });
+        } catch (notifError) {
+            console.error('Error creating notification for reading room renewal:', notifError);
+        }
+
+        return result;
     } catch (error) {
         console.error('Error renewing subscription:', error);
         throw new HttpsError('internal', error.message || 'Renewal failed');
@@ -1145,61 +1578,6 @@ exports.bookDiscussionRoom = onCall(async (request) => {
     const ROOMS = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7'];
     const db = admin.firestore();
 
-    // Validate that slot is not in the past
-    // Nepal Time is UTC+05:45
-    // Slot ID is the start hour (e.g., '15' -> 15:00)
-    // Slot ends at startHour + 3
-    // We allow booking if NOW < Slot End Time
-
-    // Construct slot end time in UTC
-    // date is "YYYY-MM-DD"
-    const startHour = parseInt(slotId);
-    const endHour = startHour + 3;
-
-    // Create date string for Nepal Time: "YYYY-MM-DDTHH:00:00+05:45"
-    // Note: hours must be padded
-    const paddedEndHour = endHour.toString().padStart(2, '0');
-    // If endHour is 24 (midnight), typical ISO handling might be tricky, but slots go up to 21 (end 24/00).
-    // Let's use simple logic:
-    // Slot End in Nepal Time = YYYY-MM-DD T HH:00:00 +05:45
-
-    // Handle edge case if endHour >= 24 (e.g. 21+3=24). 
-    // This implies next day 00:00.
-    // Simplifying: compare start time. If NOW > Start Time + buffer?
-    // User asked "if its 3 pm why show old time slots".
-    // Implies we can't book slots that have *ended*.
-    // Strictly: can't book slots that have *started*?
-    // "Discussion room" usually booked in advance or for *upcoming* sessions.
-    // If it's 3:30 PM, can I book the 3-6 PM slot?
-    // If I book it, I get 2.5 hours. It's valid.
-    // But if I try to book 12-3 PM, it's invalid.
-
-    let targetDateStr = date;
-    let targetHour = endHour;
-
-    // If endHour is 24, technically it is tomorrow 00:00
-    // But ISO string "24:00" is invalid.
-    // We can use the start time for validation to be safe.
-    // Allow booking if Current Time < End Time.
-
-    let slotEndTimeDate;
-
-    if (endHour === 24) {
-        // Handle midnight transition if needed, or just set to 23:59:59 roughly
-        // Or construct tomorrow 00:00
-        // Simpler: Use timestamp calculation
-        const startIso = `${date}T${slotId.toString().padStart(2, '0')}:00:00+05:45`;
-        const startDate = new Date(startIso);
-        slotEndTimeDate = new Date(startDate.getTime() + 3 * 60 * 60 * 1000);
-    } else {
-        const endIso = `${date}T${targetHour.toString().padStart(2, '0')}:00:00+05:45`;
-        slotEndTimeDate = new Date(endIso);
-    }
-
-    if (Date.now() > slotEndTimeDate.getTime()) {
-        throw new HttpsError('failed-precondition', 'Cannot book a past time slot.');
-    }
-
     try {
         const result = await db.runTransaction(async (transaction) => {
             // 1. Get all bookings for this date
@@ -1488,6 +1866,21 @@ exports.processReadingRoomPurchase = onCall(async (request) => {
             // Don't fail the whole operation if claim setting fails
         }
 
+        // Send Notification asynchronously
+        try {
+            await db.collection('notifications').add({
+                userId,
+                title: 'Reading Room Subscription Active',
+                message: `You have successfully subscribed to ${roomType === 'ac' ? 'AC' : 'Non-AC'} Reading Room.`,
+                type: 'enrollment',
+                relatedId: result.transactionId,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                read: false
+            });
+        } catch (notifError) {
+            console.error('Error creating notification for reading room purchase:', notifError);
+        }
+
         return result;
 
     } catch (error) {
@@ -1557,9 +1950,52 @@ exports.processCanteenOrder = onCall(async (request) => {
             // Calculate total
             const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
-            if (currentBalance < total) {
-                throw new HttpsError('failed-precondition', isProxyOrder ? 'Client has insufficient balance.' : 'Insufficient balance.');
+            const itemIds = [...new Set(cart.map(i => i.id))];
+            const menuRefs = itemIds.map(id => db.collection('menuItems').doc(id));
+            const menuSnaps = await transaction.getAll(...menuRefs);
+            const menuMap = new Map();
+            menuSnaps.forEach(snap => {
+                if (snap.exists) menuMap.set(snap.id, snap.data());
+            });
+
+            // Validate Access
+            for (const item of cart) {
+                const menuData = menuMap.get(item.id);
+                if (menuData) {
+                    const targetTypes = menuData.targetTypes || [];
+                    const userCanteenType = userData.canteen_type || 'mrr';
+
+                    if (targetTypes.length > 0 && !targetTypes.includes(userCanteenType)) {
+                        throw new HttpsError('permission-denied', `You are not authorized to order "${item.name}".`);
+                    }
+                }
             }
+
+            // Apply Staff Discount
+            let adjustedTotal = total;
+            const staffDiscounts = [];
+
+            if ((userData.canteen_type || 'mrr') === 'staff') {
+                const configRef = db.collection('settings').doc('config');
+                const configDoc = await transaction.get(configRef);
+
+                if (configDoc.exists) {
+                    const configData = configDoc.data();
+                    const discountPercent = configData.CANTEEN_DISCOUNTS?.staff || 0;
+
+                    if (discountPercent > 0) {
+                        const discountAmount = Math.round(total * (discountPercent / 100));
+                        adjustedTotal = Math.max(0, total - discountAmount);
+                        staffDiscounts.push({
+                            id: 'staff_discount',
+                            name: `Staff Discount (${discountPercent}%)`,
+                            amount: discountAmount,
+                            type: 'automated'
+                        });
+                    }
+                }
+            }
+
 
             // 2. Validate and reserve stock
             const stockUpdates = [];
@@ -1587,13 +2023,13 @@ exports.processCanteenOrder = onCall(async (request) => {
                 }
             }
 
-            // 3. Calculate Final Price with Coupon
+            // 3. Calculate Final Price with Coupon (on top of staff discount)
             const calcResult = await calculatePriceInternal({
                 userId: userIdToCharge,
                 serviceType: 'canteen',
                 couponCode: request.data.couponCode || null,
                 months: 1,
-                basePrice: total,
+                basePrice: adjustedTotal, // Use discounted total as base
                 db
             });
             const finalTotal = calcResult.finalPrice;
@@ -1615,6 +2051,9 @@ exports.processCanteenOrder = onCall(async (request) => {
                 }
             }
 
+            // Combine discounts for record
+            const allDiscounts = [...staffDiscounts, ...(calcResult.discounts || [])];
+
             // Update balance
             transaction.update(userRef, {
                 balance: newBalance,
@@ -1634,7 +2073,7 @@ exports.processCanteenOrder = onCall(async (request) => {
                 userEmail: userData.email || null,
                 userName: userData.name || userData.displayName || 'Reader',
                 items: cart,
-                total: finalTotal, // Final price after discount
+                total: finalTotal, // Final price after all discounts
                 originalTotal: total, // Original price
                 status: 'pending',
                 note: note || null,
@@ -1645,7 +2084,7 @@ exports.processCanteenOrder = onCall(async (request) => {
                 processedBy: isProxyOrder ? callerId : null,
                 couponCode: request.data.couponCode || null,
                 breakdown: {
-                    discounts: calcResult.discounts
+                    discounts: allDiscounts
                 }
             });
 
@@ -1655,6 +2094,21 @@ exports.processCanteenOrder = onCall(async (request) => {
                 newBalance: newBalance
             };
         });
+
+        // Send Notification asynchronously
+        try {
+            await db.collection('notifications').add({
+                userId: userIdToCharge, // Use the user who paid/ordered
+                title: 'Order Placed Successfully',
+                message: `Your canteen order has been received and is pending approval.`,
+                type: 'order',
+                orderId: result.orderId,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                read: false
+            });
+        } catch (notifError) {
+            console.error('Error creating notification for canteen order:', notifError);
+        }
 
         return result;
 
@@ -1701,24 +2155,20 @@ exports.topUpBalance = onCall(async (request) => {
                 throw new HttpsError('not-found', 'User not found.');
             }
 
-            // Check for active loan and auto-deduct
             const userData = userDoc.data();
-            let currentBalance = userData.balance || 0;
+            const currentBalance = userData.balance || 0;
             let finalAmountToAdd = amount;
             let loanDeduction = 0;
             const now = new Date().toISOString();
-
-            // Define ID early for use in related transactions
             const topUpTxnId = generateTransactionId('BTU');
 
-            // Handle Loan Deduction
+            // --- Loan Auto-Deduction ---
             if (userData.loan && userData.loan.has_active_loan) {
                 const loanBalance = userData.loan.current_balance || 0;
                 if (loanBalance > 0) {
                     loanDeduction = Math.min(amount, loanBalance);
                     finalAmountToAdd = amount - loanDeduction;
 
-                    // Update loan object
                     const newLoanBalance = loanBalance - loanDeduction;
                     const loanStatus = newLoanBalance <= 0 ? 'repaid' : 'active';
 
@@ -1754,8 +2204,7 @@ exports.topUpBalance = onCall(async (request) => {
                 updatedAt: now
             });
 
-            // Create transaction record (Top-up)
-            // We record the FULL amount as top-up, but the balance effect is split if loan exists.
+            // Create Top-up transaction record
             const transactionRef = db.collection('transactions').doc();
             transaction.set(transactionRef, {
                 type: 'balance_topup',
@@ -1777,6 +2226,21 @@ exports.topUpBalance = onCall(async (request) => {
                 loanDeducted: loanDeduction
             };
         });
+
+        // Send Notification asynchronously
+        try {
+            await db.collection('notifications').add({
+                userId: userId,
+                title: 'Balance Top-up Successful',
+                message: `Your balance has been topped up by रु ${amount}.${result.loanDeducted > 0 ? ' (Loan deducted: रु ' + result.loanDeducted + ')' : ''}`,
+                type: 'balance',
+                transactionId: result.transactionId,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                read: false
+            });
+        } catch (notifError) {
+            console.error('Error creating notification for balance top-up:', notifError);
+        }
 
         return result;
 
@@ -1845,19 +2309,19 @@ exports.approveBalanceLoad = onCall(async (request) => {
             }
 
             const userData = userDoc.data();
-            let currentBalance = userData.balance || 0;
+            const currentBalance = userData.balance || 0;
             let finalAmountToAdd = amount;
             let loanDeduction = 0;
             const now = new Date().toISOString();
+            const balanceLoadTxnId = generateTransactionId('BLD');
 
-            // Handle Loan Deduction
+            // --- Loan Auto-Deduction ---
             if (userData.loan && userData.loan.has_active_loan) {
                 const loanBalance = userData.loan.current_balance || 0;
                 if (loanBalance > 0) {
                     loanDeduction = Math.min(amount, loanBalance);
                     finalAmountToAdd = amount - loanDeduction;
 
-                    // Update loan object
                     const newLoanBalance = loanBalance - loanDeduction;
                     const loanStatus = newLoanBalance <= 0 ? 'repaid' : 'active';
 
@@ -1902,7 +2366,6 @@ exports.approveBalanceLoad = onCall(async (request) => {
             });
 
             // 5. Create Transaction Record
-            const balanceLoadTxnId = generateTransactionId('BLD');
             const transactionRef = db.collection('transactions').doc();
             transaction.set(transactionRef, {
                 type: 'balance_load',
@@ -1918,6 +2381,19 @@ exports.approveBalanceLoad = onCall(async (request) => {
                 status: 'completed',
                 loanDeducted: loanDeduction
             });
+
+            // 6. Create Notification Record
+            const notificationRef = db.collection('notifications').doc();
+            transaction.set(notificationRef, {
+                userId: userId,
+                title: 'Balance Loaded Successfully',
+                message: `रु ${amount} has been added to your wallet. ${loanDeduction > 0 ? '(रु ' + loanDeduction + ' deducted for loan)' : ''}`,
+                type: 'balance',
+                relatedId: requestId,
+                read: false,
+                createdAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+
 
             return { success: true, newBalance, loanDeducted: loanDeduction };
         });
@@ -1961,19 +2437,7 @@ exports.processHostelPurchase = onCall(async (request) => {
             const currentBalance = userData.balance || 0;
             const isFirstTime = !userData.hostelRegistrationPaid;
 
-            // 2. Get room configuration from hostelRooms collection
-            // Note: In transaction, all reads must come before writes.
-            // But calculatePriceInternal does reads (settings, coupons, user).
-            // Cloud Firestore transactions require reads to be done via the transaction object if we want consistency.
-            // However, settings/discounts and coupons don't change often. 
-            // Limitation: calculatePriceInternal uses db.collection().get() not transaction.get().
-            // Ideally we pass transaction object to calculatePriceInternal, but strictly it must be used for ALL reads.
-            // For now, calculating price *outside* first? No, we need user data.
-            // Let's stick to calculating inside, but accept that reads in calculatePriceInternal are non-transactional (snapshot consistency vs transaction consistency).
-            // This is acceptable for simple coupons. 
-            // OR we update calculatePriceInternal to accept a transaction object?
 
-            // 2. Get room config
             const roomsSnapshot = await transaction.get(
                 db.collection('hostelRooms')
                     .where('buildingId', '==', buildingId)
@@ -2146,6 +2610,21 @@ exports.processHostelPurchase = onCall(async (request) => {
             };
         });
 
+        // Send Notification asynchronously
+        try {
+            await db.collection('notifications').add({
+                userId: userId,
+                title: 'Hostel Room Booked',
+                message: `You have successfully booked ${result.roomInfo.roomLabel} (${result.roomInfo.roomType}).`,
+                type: 'hostel',
+                transactionId: result.transactionId,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                read: false
+            });
+        } catch (notifError) {
+            console.error('Error creating notification for hostel purchase:', notifError);
+        }
+
         return result;
 
     } catch (error) {
@@ -2302,6 +2781,21 @@ exports.renewHostelSubscription = onCall(async (request) => {
                 transactionId: transactionRef.id
             };
         });
+
+        // Send Notification asynchronously
+        try {
+            await db.collection('notifications').add({
+                userId: userId,
+                title: 'Hostel Subscription Renewed',
+                message: `You have successfully renewed your hostel subscription for ${months} Month(s).`,
+                type: 'hostel',
+                transactionId: result.transactionId,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                read: false
+            });
+        } catch (notifError) {
+            console.error('Error creating notification for hostel renewal:', notifError);
+        }
 
         return result;
 
@@ -2576,6 +3070,8 @@ exports.requestLoan = onCall(async (request) => {
             if (currentBalance >= 50) {
                 throw new HttpsError('failed-precondition', 'Loan is only available if balance is less than रु 50.');
             }
+
+            // 3. Disburse Loan
             const newBalance = currentBalance + loanAmount;
             const now = admin.firestore.Timestamp.now();
 
@@ -2584,7 +3080,7 @@ exports.requestLoan = onCall(async (request) => {
                 loan: {
                     has_active_loan: true,
                     loan_amount: loanAmount,
-                    current_balance: loanAmount, // Initial debt equals principal
+                    current_balance: loanAmount,
                     taken_at: now,
                     last_interest_applied: now,
                     status: 'active'
@@ -2597,10 +3093,12 @@ exports.requestLoan = onCall(async (request) => {
 
             transaction.set(txnRef, {
                 userId: userId,
+                userName: userData.name || userData.displayName || 'User',
                 type: 'loan_disbursement',
                 amount: loanAmount,
                 details: 'Loan Taken',
                 status: 'completed',
+                date: now,
                 createdAt: now,
                 transactionId: txnId
             });
@@ -2610,11 +3108,108 @@ exports.requestLoan = onCall(async (request) => {
 
     } catch (error) {
         console.error("Loan Request Error:", error);
-        // Pass through specific HttpsErrors, wrap others
         if (error.code && error.code.startsWith('functions/')) {
             throw error;
         }
         throw new HttpsError('internal', error.message || 'Loan request failed.');
+    }
+});
+/**
+ * Callable function to request a balance refund/withdrawal.
+ * Deducts balance immediately and creates a pending refund request.
+ */
+exports.requestBalanceRefund = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Must be authenticated to request refund.');
+    }
+
+    const { amount, reason, refundMode } = request.data;
+    const refundAmount = parseFloat(amount);
+    const userId = request.auth.uid;
+
+    if (!refundAmount || isNaN(refundAmount) || refundAmount <= 0) {
+        throw new HttpsError('invalid-argument', 'Invalid refund amount.');
+    }
+
+    const db = admin.firestore();
+
+    try {
+        return await db.runTransaction(async (transaction) => {
+            // 1. Get User Data
+            const userRef = db.collection('users').doc(userId);
+            const userDoc = await transaction.get(userRef);
+
+            if (!userDoc.exists) {
+                throw new HttpsError('not-found', 'User not found.');
+            }
+
+            const userData = userDoc.data();
+            const currentBalance = userData.balance || 0;
+
+            // 2. Check Sufficient Balance
+            if (currentBalance < refundAmount) {
+                throw new HttpsError('failed-precondition', 'Insufficient balance for refund.');
+            }
+
+            // 3. Deduct Balance
+            const newBalance = currentBalance - refundAmount;
+            const now = new Date().toISOString();
+
+            transaction.update(userRef, {
+                balance: newBalance,
+                updatedAt: now
+            });
+
+            // 4. Create Refund Request
+            const refundRef = db.collection('refunds').doc();
+            const refundToken = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+            transaction.set(refundRef, {
+                userId: userId,
+                userName: userData.name || userData.displayName || 'User',
+                userMrrNumber: userData.mrrNumber || 'N/A',
+                amount: refundAmount,
+                reason: reason || 'Balance Withdrawal',
+                refundMode: refundMode || 'cash',
+                status: 'pending',
+                refundToken: refundToken,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                serviceType: 'balance_refund'
+            });
+
+            // 5. Create Transaction Record (Debit)
+            const webTxnId = generateTransactionId('REF');
+            const txnRef = db.collection('transactions').doc();
+
+            transaction.set(txnRef, {
+                type: 'refund_request',
+                transactionId: webTxnId,
+                amount: refundAmount,
+                details: 'Balance Refund Request',
+                status: 'pending', // Pending until admin approves/pays out? Or completed deduction?
+                // Usually for accounting, money is "gone" from wallet, so might show as separate or just deduction.
+                // Let's mark as 'pending' status but it effectively reduced balance.
+                userId: userId,
+                userName: userData.name || 'User',
+                date: now,
+                createdAt: now,
+                relatedRefundId: refundRef.id
+            });
+
+            return {
+                success: true,
+                message: "Refund request submitted.",
+                refundToken: refundToken,
+                newBalance: newBalance
+            };
+        });
+
+    } catch (error) {
+        console.error("Refund Request Error:", error);
+        if (error instanceof HttpsError) {
+            throw error;
+        }
+        throw new HttpsError('internal', error.message || 'Refund request failed.');
     }
 });
 
@@ -2728,40 +3323,9 @@ exports.sendExpirySms = onSchedule(
             console.log("Starting SMS Notification Job...");
 
             // 3. Calculate Date Ranges
-            // Strategy: Convert target days to ISO range for that full day.
-
             const getDayRange = (offsetDays) => {
                 const d = new Date();
                 d.setDate(d.getDate() + offsetDays); // Add/Sub days
-
-                // Set time to 00:00:00.000 local (assuming users entered locally?)
-                // Actually, nextPaymentDue is usually UTC ISO. 
-                // Note: The prompt asks for "Today + 3 Days" logic.
-                // If today is Feb 3, +3 is Feb 6.
-                // We want any timestamp falling on Feb 6.
-                // But specifically Feb 6 in WHICH timezone? 
-                // Implicitly Kathmandu as it's a Nepali app.
-
-                // Create a date object for the target day in Kathmandu
-                // We'll use string manipulation on the Kathmandu date string to get YYYY-MM-DD
-                const targetIsoString = d.toLocaleDateString("en-CA", { timeZone: KATHMANDU_TZ }); // YYYY-MM-DD
-
-                // Construct ISO range for that YYYY-MM-DD
-                // But we must compare against user.nextPaymentDue (ISO UTC).
-                // So we need: Start of Feb 6 KATHMANDU converted to UTC.
-                // End of Feb 6 KATHMANDU converted to UTC.
-
-                // Start: YYYY-MM-DD 00:00:00 Kathmandu -> UTC
-                // End:   YYYY-MM-DD 23:59:59 Kathmandu -> UTC
-
-                // Helper to create date from string in specific TZ?
-                // It's tricky without a library in pure Node.
-                // Simpler fallback: Treat 'nextPaymentDue' as UTC and ignore TZ offset for simplicity 
-                // UNLESS user strictly needs Kathmandu alignment. 
-                // Given "Today + 3", usually implies "3 x 24h from now" OR "Calendar Day".
-                // Let's stick to UTC Calendar Day to match standard ISO strings.
-                // YYYY-MM-DD (UTC).
-
                 const utcYear = d.getUTCFullYear();
                 const utcMonth = d.getUTCMonth();
                 const utcDay = d.getUTCDate();
@@ -2821,9 +3385,6 @@ exports.sendExpirySms = onSchedule(
                     let message = template
                         .replace('{{name}}', userData.displayName || userData.name || 'Member')
                         .replace('{{date}}', dateStr);
-
-                    // Optional: If we want to differentiate in future, we could append type, 
-                    // but sticking to user template for now.
 
                     notifications.push({
                         phone_number: userData.phone_number,
@@ -2988,12 +3549,6 @@ exports.sendCustomSms = onCall(
         console.log(`Sending custom SMS to ${numbers.length} users.`);
 
         // Send via DiCE SMS (Batch Request)
-        // API requires 'token' in body (or header? documentation usually says header for token auth)
-        // The user prompt said: "add the token in the modal pop up by writing “TOKEN <api-token-recieved-from-step-1>”"
-        // This implies Authorization header: "Token <token>"
-        // However, the existing code put `token: apiKey` in BODY.
-        // Let's support BOTH to be safe, or as per standard DRF Token Auth.
-        // Standard DRF: Authorization: Token <token>
         try {
             const response = await fetch("https://dicesms.asia/api/sms/", {
                 method: "POST",
@@ -3002,7 +3557,6 @@ exports.sendCustomSms = onCall(
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    // token: token, // Maybe not needed in body if in header? Keeping for safety if API expects it.
                     phone_number: numbers,
                     message: message
                 })
@@ -3028,181 +3582,3 @@ exports.sendCustomSms = onCall(
         }
     }
 );
-
-/**
- * Callable function to assign a hostel bed (Admin Only)
- * Supports manual payment (Cash) or wallet deduction.
- */
-exports.assignHostelBed = onCall(async (request) => {
-    // Check authentication
-    if (!request.auth) {
-        throw new HttpsError('unauthenticated', 'Must be authenticated.');
-    }
-
-    // Check if caller is admin
-    const db = admin.firestore();
-    const callerRef = db.collection('users').doc(request.auth.uid);
-    const callerDoc = await callerRef.get();
-    const isAdmin = request.auth.token.role === 'admin' || (callerDoc.exists && callerDoc.data().role === 'admin');
-
-    if (!isAdmin) {
-        throw new HttpsError('permission-denied', 'Only admins can assign hostel beds.');
-    }
-
-    const {
-        userId,
-        roomId,
-        bedNumber,
-        months = 1,
-        paymentMethod = 'wallet', // 'wallet' or 'cash'
-        includeAdmission = false,
-        includeDeposit = false
-    } = request.data;
-
-    if (!userId || !roomId || !bedNumber || months < 1) {
-        throw new HttpsError('invalid-argument', 'Missing required fields.');
-    }
-
-    try {
-        return await db.runTransaction(async (transaction) => {
-            // 1. Get Room and User Data
-            const roomRef = db.collection('hostelRooms').doc(roomId);
-            const userRef = db.collection('users').doc(userId);
-
-            const [roomDoc, userDoc] = await Promise.all([
-                transaction.get(roomRef),
-                transaction.get(userRef)
-            ]);
-
-            if (!roomDoc.exists) throw new HttpsError('not-found', 'Room not found.');
-            if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
-
-            const roomData = roomDoc.data();
-            const userData = userDoc.data();
-
-            // 2. Check Availability
-            // Check if bed is already taken
-            const assignmentsRef = db.collection('hostelAssignments');
-            const q = assignmentsRef
-                .where('roomId', '==', roomId)
-                .where('bedNumber', '==', parseInt(bedNumber))
-                .where('status', '==', 'active');
-
-            const existingBedAssignment = await transaction.get(q);
-            if (!existingBedAssignment.empty) {
-                throw new HttpsError('failed-precondition', `Bed ${bedNumber} in ${roomData.label} is already occupied.`);
-            }
-
-            // Check if user already has a hostel assignment
-            const userAssignmentQ = assignmentsRef
-                .where('userId', '==', userId)
-                .where('status', '==', 'active');
-
-            const userExistingAssignment = await transaction.get(userAssignmentQ);
-            if (!userExistingAssignment.empty) {
-                throw new HttpsError('failed-precondition', 'User already has an active hostel assignment.');
-            }
-
-            // 3. Calculate Costs
-            const monthlyRate = roomData.price;
-            const rentTotal = monthlyRate * months;
-            const admissionFee = includeAdmission ? 4000 : 0;
-            const deposit = includeDeposit ? 5000 : 0;
-            const totalCost = rentTotal + admissionFee + deposit;
-
-            // 4. Handle Payment (Wallet vs Cash)
-            let newBalance = userData.balance || 0;
-
-            if (paymentMethod === 'wallet') {
-                if (newBalance < totalCost) {
-                    throw new HttpsError('failed-precondition',
-                        `Insufficient wallet balance. User has रु ${newBalance}, needs रु ${totalCost}. Select 'Cash/Manual' to bypass.`);
-                }
-                newBalance -= totalCost;
-            }
-            // If 'cash', we don't deduct, but we record the transaction as paid.
-
-            // 5. Create Assignment
-            const nextPaymentDue = new Date();
-            nextPaymentDue.setDate(nextPaymentDue.getDate() + (months * 30));
-            const assignmentRef = assignmentsRef.doc();
-
-            transaction.set(assignmentRef, {
-                userId: userId,
-                userName: userData.name || userData.displayName || 'User',
-                userMrrNumber: userData.mrrNumber || 'N/A',
-                buildingId: roomData.buildingId,
-                buildingName: roomData.buildingName,
-                roomId: roomId,
-                roomLabel: roomData.label,
-                roomType: roomData.type,
-                bedNumber: parseInt(bedNumber),
-                monthlyRate: monthlyRate,
-                assignedAt: new Date().toISOString(),
-                nextPaymentDue: nextPaymentDue.toISOString(),
-                status: 'active',
-                assignedBy: request.auth.uid,
-                paymentMethod: paymentMethod
-            });
-
-            // 6. Update User Profile
-            transaction.update(userRef, {
-                balance: newBalance,
-                currentHostelRoom: {
-                    buildingId: roomData.buildingId,
-                    buildingName: roomData.buildingName,
-                    roomId: roomId,
-                    roomLabel: roomData.label,
-                    roomType: roomData.type,
-                    bedNumber: parseInt(bedNumber)
-                },
-                hostelNextPaymentDue: nextPaymentDue.toISOString(),
-                hostelRegistrationPaid: includeAdmission ? true : (userData.hostelRegistrationPaid || false),
-                hostelDepositPaid: includeDeposit ? 5000 : (userData.hostelDepositPaid || 0),
-                hostelMonthlyRate: monthlyRate,
-                updatedAt: new Date().toISOString()
-            });
-
-            // 7. Create Transaction Record
-            const transactionRef = db.collection('transactions').doc();
-            const hostelTxnId = generateTransactionId('HST'); // Ensure this helper exists or duplicate logic
-
-            const detailsParts = [`Hostel ${roomData.label} (${months} mon)`];
-            if (includeAdmission) detailsParts.push('Adm. Fee');
-            if (includeDeposit) detailsParts.push('Deposit');
-
-            transaction.set(transactionRef, {
-                type: 'hostel', // Standard type for consistency
-                transactionId: hostelTxnId,
-                amount: totalCost,
-                details: detailsParts.join(' + ') + (paymentMethod === 'cash' ? ' (Cash/Manual)' : ''),
-                userId: userId,
-                userName: userData.name || userData.displayName || 'User',
-                date: new Date().toISOString(),
-                createdAt: new Date().toISOString(),
-                buildingId: roomData.buildingId,
-                roomType: roomData.type,
-                months: months,
-                paymentMethod: paymentMethod, // Track method
-                breakdown: {
-                    monthlyRate: monthlyRate,
-                    rentTotal: rentTotal,
-                    admissionFee: admissionFee,
-                    deposit: deposit
-                },
-                adminId: request.auth.uid
-            });
-
-            return {
-                success: true,
-                message: 'Bed assigned successfully',
-                transactionId: hostelTxnId,
-                newBalance: newBalance
-            };
-        });
-
-    } catch (error) {
-        console.error('Error assigning hostel bed:', error);
-        throw error instanceof HttpsError ? error : new HttpsError('internal', error.message || 'Failed to assign bed.');
-    }
-});
