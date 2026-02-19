@@ -219,6 +219,11 @@ function MenuManagement({ onBack, onDataLoaded }) {
   };
 
   const handleToggleSpecialFlag = (itemId, flagName) => {
+    // If not selected, select it first
+    if (!selectedItems.includes(itemId)) {
+      setSelectedItems(prev => [...prev, itemId]);
+    }
+
     setDailySpecialsConfig(prev => ({
       ...prev,
       [itemId]: {
@@ -259,8 +264,7 @@ function MenuManagement({ onBack, onDataLoaded }) {
 
       setTodaysMenu(itemsToSet);
       setMessage(`Today's Special published with ${itemsToSet.length} items!`);
-      setIsSelectMode(false);
-      setShowSpecialsConfig(false);
+      // setIsSelectMode(false); // Keep select mode active for continued editing
     } catch (error) {
       setMessage("Error publishing menu");
       console.error(error);
@@ -268,6 +272,7 @@ function MenuManagement({ onBack, onDataLoaded }) {
       setLoading(false);
     }
   };
+
   if (showPreview) {
     return <CanteenPreviewAdmin onBack={() => setShowPreview(false)} />;
   }
@@ -277,6 +282,7 @@ function MenuManagement({ onBack, onDataLoaded }) {
       <main className="std-body mm-grid-layout">
         {/* Sidebar: Add Form */}
         <aside className="mm-form-section">
+          {/* ... sidebar content same as before ... */}
           <h2 className="mm-section-title">Add New Dish</h2>
           <form onSubmit={handleAddMenuItem} className="mm-form">
             <div className="mm-input-group">
@@ -323,8 +329,6 @@ function MenuManagement({ onBack, onDataLoaded }) {
               </div>
             </div>
 
-            {/* Note: isHostelSpecial removed from here as it is now daily-configurable */}
-
             <div className="mm-input-group">
               <label className="mm-label">Photo</label>
               <div className="mm-file-input-wrapper">
@@ -358,40 +362,39 @@ function MenuManagement({ onBack, onDataLoaded }) {
           <div className="mm-toolbar">
             <div className="mm-toolbar-left">
               <h2>Master Catalog</h2>
-              <p>{menuItems.length} items available • {todaysMenu.length} currently in Today's Special</p>
+              <p>{menuItems.length} items available • {selectedItems.length} selected for Today</p>
             </div>
             <div className="mm-toolbar-actions">
-              {isSelectMode ? (
-                <>
-                  <Button variant="ghost" onClick={() => { setIsSelectMode(false); setSelectedItems(todaysMenu.map(i => i.id)); }}>Cancel</Button>
-                  <Button variant="primary" onClick={handleOpenSpecialsConfig} loading={loading} disabled={selectedItems.length === 0}>
-                    Next: Configure Specials ({selectedItems.length})
-                  </Button>
-                </>
-              ) : (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <Button variant="outline" onClick={() => setShowPreview(true)}>
-                    <Eye size={18} /> Preview
-                  </Button>
-                  <Button variant="secondary" onClick={() => setIsSelectMode(true)}>
-                    <ListChecks size={18} /> Edit Today's Special
-                  </Button>
-                </div>
-              )}
+              <Button variant="outline" onClick={() => setShowPreview(true)}>
+                <Eye size={18} /> Preview
+              </Button>
+              {/* Publish Button Always Visible/Active if items changed */}
+              <Button variant="primary" onClick={handlePublishTodaysMenu} loading={loading}>
+                <Check size={18} /> Publish Updates
+              </Button>
             </div>
           </div>
 
           <div className="mm-grid">
             {menuItems.map((item) => {
               const isSelected = selectedItems.includes(item.id);
-              // Check existing daily config or fallback to todaysMenu data
+              // Check existing daily config or fallback to todaysMenu data (if not yet edited locally)
               const todayItem = todaysMenu.find(m => m.id === item.id);
-              const isActiveHostel = todayItem?.isHostelSpecial;
-              const isActiveStaff = todayItem?.isStaffSpecial;
+
+              const config = dailySpecialsConfig[item.id] || {
+                isHostelSpecial: todayItem?.isHostelSpecial || false,
+                isStaffSpecial: todayItem?.isStaffSpecial || false
+              };
+
+              // Sync local config initial state if needed
+              if (!dailySpecialsConfig[item.id] && todayItem) {
+                // Side-effect in render is bad, but for simplicty we rely on init in useEffect. 
+                // Here we just use the derived value.
+              }
 
               return (
-                <div key={item.id} className={`mm-card ${isSelected && isSelectMode ? 'isSelected' : ''}`} onClick={() => isSelectMode && handleToggleSelection(item.id)}>
-                  {isSelectMode && (
+                <div key={item.id} className={`mm-card ${isSelected ? 'isSelected' : ''}`}>
+                  {isSelected && (
                     <div className="mm-select-indicator">
                       <Check className="mm-indicator-icon" />
                     </div>
@@ -421,31 +424,60 @@ function MenuManagement({ onBack, onDataLoaded }) {
 
                     <div className="mm-card-footer">
                       <div className="mm-card-price">रु {Number(item.price).toFixed(0)}</div>
-                      {todayItem && <span className="mm-card-badge">Today's Special</span>}
-                      {item.isFixed && <Star size={14} fill="currentColor" className="text-yellow-500" title="Fixed Item" />}
+                      {isSelected && <span className="mm-card-badge">Today's</span>}
                     </div>
 
-                    {/* Show daily special badges if active in today's menu */}
-                    <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
-                      {isActiveHostel && (
-                        <span style={{ fontSize: '10px', color: '#7c3aed', fontWeight: 'bold' }}>★ Hostel</span>
+                    <div style={{ display: 'flex', gap: '4px', marginTop: '8px', flexWrap: 'wrap' }}>
+                      {config.isHostelSpecial && (
+                        <span style={{ fontSize: '10px', background: '#7c3aed', color: 'white', padding: '2px 6px', borderRadius: '4px' }}>Hostel Special</span>
                       )}
-                      {isActiveStaff && (
-                        <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 'bold' }}>★ Staff</span>
+                      {config.isStaffSpecial && (
+                        <span style={{ fontSize: '10px', background: '#10b981', color: 'white', padding: '2px 6px', borderRadius: '4px' }}>Staff Special</span>
                       )}
                     </div>
                   </div>
 
-                  {!isSelectMode && (
-                    <div className="mm-card-overlay">
-                      <Button variant="outline" onClick={(e) => { e.stopPropagation(); handleToggleFixed(item.id, item.isFixed); }} fullWidth>
-                        <Star size={16} /> {item.isFixed ? 'Remove from Menu' : 'Add to Menu'}
+                  <div className="mm-card-overlay" style={{ opacity: 1, background: 'rgba(255,255,255,0.95)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                      {/* 1. Toggle General Selection */}
+                      <Button
+                        variant={isSelected ? "primary" : "outline"}
+                        onClick={(e) => { e.stopPropagation(); handleToggleSelection(item.id); }}
+                        fullWidth
+                        size="sm"
+                      >
+                        {isSelected ? "In Today's Menu" : "Add to Today's Menu"}
                       </Button>
-                      <Button variant="danger" onClick={(e) => { e.stopPropagation(); handleDeleteMenuItem(item.id); }} fullWidth>
-                        <Trash2 size={16} /> Delete Forever
+
+                      {/* 2. Toggle Hostel Special */}
+                      <Button
+                        variant={config.isHostelSpecial ? "secondary" : "ghost"}
+                        onClick={(e) => { e.stopPropagation(); handleToggleSpecialFlag(item.id, 'isHostelSpecial'); }}
+                        fullWidth
+                        size="sm"
+                        style={config.isHostelSpecial ? { backgroundColor: '#dbc7fd', color: '#5b21b6', borderColor: '#7c3aed' } : { border: '1px solid #ddd' }}
+                      >
+                        {config.isHostelSpecial ? "★ Hostel Special Active" : "Set as Hostel Special"}
+                      </Button>
+
+                      {/* 3. Toggle Staff Special */}
+                      <Button
+                        variant={config.isStaffSpecial ? "secondary" : "ghost"}
+                        onClick={(e) => { e.stopPropagation(); handleToggleSpecialFlag(item.id, 'isStaffSpecial'); }}
+                        fullWidth
+                        size="sm"
+                        style={config.isStaffSpecial ? { backgroundColor: '#d1fae5', color: '#065f46', borderColor: '#10b981' } : { border: '1px solid #ddd' }}
+                      >
+                        {config.isStaffSpecial ? "★ Staff Special Active" : "Set as Staff Special"}
+                      </Button>
+
+                      <div style={{ borderTop: '1px solid #eee', margin: '4px 0' }}></div>
+
+                      <Button variant="danger" size="sm" onClick={(e) => { e.stopPropagation(); handleDeleteMenuItem(item.id); }} fullWidth>
+                        <Trash2 size={14} /> Delete
                       </Button>
                     </div>
-                  )}
+                  </div>
                 </div>
               );
             })}
@@ -459,54 +491,6 @@ function MenuManagement({ onBack, onDataLoaded }) {
             </div>
           )}
         </section>
-
-        {/* Specials Configuration Modal */}
-        {showSpecialsConfig && (
-          <div className="mm-modal-overlay">
-            <div className="mm-modal">
-              <div className="mm-modal-header">
-                <h3>Configure Daily Specials</h3>
-                <Button variant="ghost" size="sm" onClick={() => setShowSpecialsConfig(false)}><X size={20} /></Button>
-              </div>
-              <div className="mm-modal-body">
-                <p style={{ marginBottom: '16px', color: '#666', fontSize: '14px' }}>
-                  Select which items should be highlighted as specials for specific groups for <strong>today only</strong>.
-                </p>
-                <div className="mm-specials-list">
-                  {menuItems.filter(item => selectedItems.includes(item.id)).map(item => (
-                    <div key={item.id} className="mm-special-item-row">
-                      <span style={{ fontWeight: 500 }}>{item.name}</span>
-                      <div className="mm-special-toggles">
-                        <label className="mm-checkbox-label">
-                          <input
-                            type="checkbox"
-                            checked={dailySpecialsConfig[item.id]?.isHostelSpecial || false}
-                            onChange={() => handleToggleSpecialFlag(item.id, 'isHostelSpecial')}
-                          />
-                          Hostel
-                        </label>
-                        <label className="mm-checkbox-label">
-                          <input
-                            type="checkbox"
-                            checked={dailySpecialsConfig[item.id]?.isStaffSpecial || false}
-                            onChange={() => handleToggleSpecialFlag(item.id, 'isStaffSpecial')}
-                          />
-                          Staff
-                        </label>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="mm-modal-footer">
-                <Button variant="ghost" onClick={() => setShowSpecialsConfig(false)}>Back</Button>
-                <Button variant="primary" onClick={handlePublishTodaysMenu} loading={loading}>
-                  Publish Today's Menu
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );
