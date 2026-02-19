@@ -355,3 +355,119 @@
     background-color: rgba(255, 59, 48, 0.1);
     color: #FF3B30;
 }
+
+/* Modal Styles - Missing from previous update */
+.mm-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.2s ease-out;
+}
+
+.mm-modal {
+    background: white;
+    border-radius: var(--radius-xl);
+    width: 90%;
+    max-width: 500px;
+    box-shadow: var(--shadow-xl);
+    overflow: hidden;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mm-modal-header {
+    padding: var(--spacing-16) var(--spacing-24);
+    border-bottom: 1px solid var(--color-border-subtle);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--color-surface-elevated);
+}
+
+.mm-modal-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.mm-modal-body {
+    padding: var(--spacing-24);
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.mm-specials-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-12);
+}
+
+.mm-special-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-12);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
+}
+
+.mm-special-toggles {
+    display: flex;
+    gap: var(--spacing-16);
+}
+
+.mm-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    user-select: none;
+}
+
+.mm-checkbox-label input {
+    accent-color: var(--color-accent);
+    width: 16px;
+    height: 16px;
+}
+
+.mm-modal-footer {
+    padding: var(--spacing-16) var(--spacing-24);
+    border-top: 1px solid var(--color-border-subtle);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-12);
+    background: var(--color-surface-elevated);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
