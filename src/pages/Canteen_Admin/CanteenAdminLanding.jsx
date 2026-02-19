@@ -12,8 +12,8 @@ import NewOrders from './NewOrders';
 import ProxyOrder from './ProxyOrder';
 import PageHeader from '../../components/PageHeader';
 import InventoryLanding from '../inventory/InventoryLanding';
-import RawInventory from '../../inventory/RawInventory';
-import DryInventory from '../../inventory/DryInventory';
+import RawInventory from '../inventory/RawInventory';
+import DryInventory from '../inventory/DryInventory';
 import '../../../styles/StandardLayout.css';
 
 const foodIcon = new URL('../../assets/food.svg', import.meta.url).href;
