@@ -546,7 +546,14 @@ function UserDetailView({ user, isOpen, onClose, onUpdate }) {
 
             {/* ── Canteen Access Type ── */}
             <div className="udv-card">
-                <div className="udv-card-header"><Wallet size={16} /> Canteen Access Type</div>
+                <div className="udv-card-header">
+                    <Wallet size={16} /> Canteen Access Type
+                    {(u.canteen_type_manual) && (
+                        <span style={{ marginLeft: 'auto', fontSize: '11px', backgroundColor: '#fbbf24', color: '#78350f', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase', fontWeight: 'bold' }}>
+                            Manual Override Active
+                        </span>
+                    )}
+                </div>
                 <div className="udv-card-body">
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px' }}>
                         {[
@@ -558,20 +565,34 @@ function UserDetailView({ user, isOpen, onClose, onUpdate }) {
                             <button
                                 key={type.value}
                                 className={`udv-role-chip ${(u.canteen_type || 'mrr') === type.value ? 'active' : ''}`}
-                                onClick={() => updateUser({ canteen_type: type.value })}
+                                onClick={() => updateUser({ canteen_type: type.value, canteen_type_manual: true })}
                                 style={{
                                     display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
                                     padding: '10px',
                                     backgroundColor: (u.canteen_type || 'mrr') === type.value ? '#e0f2fe' : '#f9fafb',
                                     border: (u.canteen_type || 'mrr') === type.value ? '1px solid #0ea5e9' : '1px solid #e5e7eb',
-                                    borderRadius: '8px', cursor: 'pointer', textAlign: 'left'
+                                    borderRadius: '8px', cursor: 'pointer', textAlign: 'left',
+                                    position: 'relative', overflow: 'hidden'
                                 }}
                             >
                                 <strong style={{ fontSize: '13px', color: (u.canteen_type || 'mrr') === type.value ? '#0284c7' : '#374151' }}>{type.label}</strong>
                                 <span style={{ fontSize: '11px', color: '#6b7280' }}>{type.desc}</span>
+                                {(u.canteen_type_manual && (u.canteen_type || 'mrr') === type.value) && (
+                                    <div style={{ position: 'absolute', top: 0, right: 0, width: '0', height: '0', borderStyle: 'solid', borderWidth: '0 20px 20px 0', borderColor: 'transparent #fbbf24 transparent transparent' }} />
+                                )}
                             </button>
                         ))}
                     </div>
+                    {u.canteen_type_manual && (
+                        <div style={{ marginTop: '12px', textAlign: 'right' }}>
+                            <button
+                                style={{ fontSize: '12px', color: '#6b7280', background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer' }}
+                                onClick={() => updateUser({ canteen_type_manual: false })} // Just clear the flag, let Cloud Function fix type on next update? Or just leave type as is until next update?
+                            >
+                                Reset to Auto-Assignment
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 

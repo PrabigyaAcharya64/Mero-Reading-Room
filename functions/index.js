@@ -112,18 +112,30 @@ function generateTransactionId(prefix) {
     return `${prefix}-${dateStr}-${random}`;
 }
 
-exports.onUserVerified = onDocumentUpdated(
+
+
+/**
+ * Trigger: On User Updated (2nd Gen)
+ * Handles automatic role sync and Canteen Type assignment based on subscriptions.
+ */
+exports.onUserUpdated = onDocumentUpdated(
     {
         document: "users/{userId}",
-        secrets: [brevoApiKey],
+        secrets: [brevoApiKey], // Keep secrets if needed for potential email logic, though main logic is simpler
     },
     async (event) => {
         const newData = event.data.after.data();
         const oldData = event.data.before.data();
         const userId = event.params.userId;
 
-        // OPTIMIZATION: Sync Role & Access Status to Custom Claims
-        // This allows firestore.rules to be FREE and FAST (no extra get() calls)
+        if (!newData) return null;
+
+        const db = admin.firestore();
+        const batch = db.batch();
+        let needsUpdate = false;
+        const updates = {};
+
+        // --- 1. Sync Role & Access Status to Custom Claims ---
         const roleChanged = newData.role !== oldData.role;
         const paymentChanged = newData.nextPaymentDue !== oldData.nextPaymentDue;
 
@@ -134,7 +146,6 @@ exports.onUserVerified = onDocumentUpdated(
                 };
 
                 if (newData.nextPaymentDue) {
-                    // Convert ISO string to Unix timestamp (seconds) for Firestore Rules
                     const nextDueMillis = new Date(newData.nextPaymentDue).getTime();
                     if (!isNaN(nextDueMillis)) {
                         claims.nextPaymentDue = Math.floor(nextDueMillis / 1000);
@@ -148,52 +159,97 @@ exports.onUserVerified = onDocumentUpdated(
             }
         }
 
+        // --- 2. Automated Canteen Type Assignment ---
+        // Logic:
+        // - If Admin/Canteen/Staff role -> Preserve existing type (or default to 'staff'/'mrr' if missing)
+        // - If MANUAL override (canteen_type_manual === true) -> Preserve existing type.
+        // - If Client:
+        //   - Has Active Hostel (currentHostelRoom) -> 'mrr_hostel' (Covers both & hostel-only)
+        //   - Has Active MRR (currentSeat) -> 'mrr'
+        //   - Else -> 'mrr' (Default for verified)
+
+        const currentType = newData.canteen_type;
+        const isManual = newData.canteen_type_manual === true;
+        let newType = 'mrr'; // Default
+
+        // Check explicit roles or MANUAL flag that might override logic
+        const userRole = newData.role || 'client';
+
+        if (isManual) {
+            // Respect manual override
+            newType = currentType;
+        } else if (userRole === 'admin' || userRole === 'canteen') {
+            // Admins usually see everything, but let's keep what's set or default to 'mrr'
+            // If they manually set 'staff', keep it?
+            // Let's rely on manual setting for special roles.
+            // But if undefined, default to 'mrr'.
+            if (!currentType) newType = 'mrr';
+            else newType = currentType;
+        } else if (currentType === 'staff') {
+            // Keep existing 'staff' check as a fallback if manual flag isn't used yet for staff
+            newType = 'staff';
+        } else {
+            // Standard Automation for Clients
+            const hasHostel = !!newData.currentHostelRoom;
+            const hasMRR = !!newData.currentSeat;
+
+            if (hasHostel) {
+                newType = 'mrr_hostel';
+            } else if (hasMRR) {
+                newType = 'mrr';
+            } else {
+                newType = 'mrr';
+            }
+        }
+
+        // Apply Update if changed
+        if (newType !== currentType) {
+            console.log(`Auto-assigning canteen_type for ${userId}: ${currentType} -> ${newType} (Manual: ${isManual})`);
+            // If manual, we shouldn't be here unless currentType was undefined, but logic above handles it.
+            // If isManual is true, strictly newType === currentType, so this block won't run.
+            updates.canteen_type = newType;
+            needsUpdate = true;
+        }
+
+        // --- 3. Handle Verification Email (Legacy Logic moved here) ---
         if (newData.verified === true && oldData.verified !== true) {
             const userEmail = newData.email;
             const userName = newData.name;
 
-            if (!userEmail) {
-                console.log("No email found for user", event.params.userId);
-                return null;
-            }
-
-            try {
-
-                const brevoKey = brevoApiKey.value();
-
-                if (!brevoKey) {
-                    console.error("BREVO_API_KEY secret not found.");
-                    return null;
+            if (userEmail) {
+                try {
+                    const brevoKey = brevoApiKey.value();
+                    if (brevoKey) {
+                        await fetch("https://api.brevo.com/v3/smtp/email", {
+                            method: "POST",
+                            headers: {
+                                "accept": "application/json",
+                                "api-key": brevoKey,
+                                "content-type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                templateId: 2,
+                                to: [{ email: userEmail, name: userName }],
+                                params: { FULLNAME: userName }
+                            })
+                        });
+                        console.log(`Verification email sent to ${userEmail}`);
+                    }
+                } catch (error) {
+                    console.error("Error sending email:", error);
                 }
-
-                // Using standard fetch (Node 20+)
-                const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-                    method: "POST",
-                    headers: {
-                        "accept": "application/json",
-                        "api-key": brevoKey,
-                        "content-type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        templateId: 2,
-                        to: [{ email: userEmail, name: userName }],
-                        params: {
-                            FULLNAME: userName,
-                        }
-                    })
-                });
-
-                if (response.ok) {
-                    console.log(`Verification email sent to ${userEmail}`);
-                } else {
-                    const errorData = await response.json();
-                    console.error("Brevo API Error:", errorData);
-                }
-
-            } catch (error) {
-                console.error("Error sending email:", error);
             }
         }
+
+        if (needsUpdate) {
+            // Use event.data.after.ref to update to avoid stale writes?
+            // Actually, we should just return the update promise.
+            // CAUTION: Writing back to the same document triggers the function again.
+            // We guarded with `if (newType !== currentType)`.
+            // So the next run will see them equal and stop.
+            return event.data.after.ref.update(updates);
+        }
+
         return null;
     }
 );
