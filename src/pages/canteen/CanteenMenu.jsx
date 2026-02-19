@@ -138,6 +138,23 @@ const CanteenMenu = ({
                     Hostel Special
                   </div>
                 )}
+                {item.isStaffSpecial && userCanteenType === 'staff' && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '8px',
+                    right: '8px',
+                    backgroundColor: '#10b981',
+                    color: 'white',
+                    fontSize: '0.7rem',
+                    fontWeight: 'bold',
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    zIndex: 10,
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                  }}>
+                    Staff Special
+                  </div>
+                )}
                 <div className="card-content">
                   <h3 className="card-food-name">{item.name}</h3>
                   <p className="card-food-desc">{item.description || 'Delicious meal'}</p>

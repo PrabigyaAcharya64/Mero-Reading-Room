@@ -6,7 +6,7 @@ import { validateMenuItemName, validatePrice, validateDescription, validateCateg
 import { getBusinessDate } from '../../utils/dateUtils';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Button from '../../components/Button';
-import { Plus, Trash2, Star, Check, X, Camera, LayoutGrid, ListChecks, Eye, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Star, Check, X, Camera, LayoutGrid, ListChecks, Eye, ArrowLeft, Settings2 } from 'lucide-react';
 import CanteenPreviewAdmin from './CanteenPreviewAdmin';
 import { useAdminHeader } from '../../context/AdminHeaderContext';
 import '../../styles/MenuManagement.css';
@@ -24,13 +24,16 @@ function MenuManagement({ onBack, onDataLoaded }) {
     description: '',
     category: 'Breakfast',
     targetTypes: [], // ['mrr', 'mrr_hostel', 'hostel', 'staff'] (empty = all)
-    isHostelSpecial: false,
   });
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+
+  // Daily Specials Config State
+  const [showSpecialsConfig, setShowSpecialsConfig] = useState(false);
+  const [dailySpecialsConfig, setDailySpecialsConfig] = useState({}); // { itemId: { isHostelSpecial: bool, isStaffSpecial: bool } }
 
   useEffect(() => {
     setHeader({ title: 'Menu Management' });
@@ -83,8 +86,19 @@ function MenuManagement({ onBack, onDataLoaded }) {
       if (todaysMenuDoc.exists()) {
         const data = todaysMenuDoc.data();
         setTodaysMenu(data.items || []);
+
+        // Initialize config from existing today's menu to preserve flags if re-editing
+        const initialConfig = {};
+        (data.items || []).forEach(item => {
+          initialConfig[item.id] = {
+            isHostelSpecial: item.isHostelSpecial || false,
+            isStaffSpecial: item.isStaffSpecial || false
+          };
+        });
+        setDailySpecialsConfig(initialConfig);
       } else {
         setTodaysMenu([]);
+        setDailySpecialsConfig({});
       }
     } catch (error) {
       console.error('Error loading today\'s menu:', error);
@@ -94,9 +108,7 @@ function MenuManagement({ onBack, onDataLoaded }) {
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (type === 'checkbox') {
-      if (name === 'isHostelSpecial') {
-        setFormData(prev => ({ ...prev, [name]: checked }));
-      } else if (name === 'targetTypes') {
+      if (name === 'targetTypes') {
         // Handle multi-select for target types via checkboxes
         setFormData(prev => {
           const current = prev.targetTypes || [];
@@ -151,12 +163,12 @@ function MenuManagement({ onBack, onDataLoaded }) {
         description: descVal.sanitized,
         category: catVal.sanitized,
         targetTypes: formData.targetTypes || [],
-        isHostelSpecial: formData.isHostelSpecial || false,
+        // isHostelSpecial/isStaffSpecial are now transient daily flags, not persistent on item
         photoURL: photoURL,
         createdAt: new Date().toISOString(),
       });
 
-      setFormData({ name: '', price: '', description: '', category: 'Breakfast', targetTypes: [], isHostelSpecial: false });
+      setFormData({ name: '', price: '', description: '', category: 'Breakfast', targetTypes: [] });
       setPhotoFile(null);
       setPhotoPreview(null);
       setMessage('Menu item added successfully!');
@@ -192,21 +204,50 @@ function MenuManagement({ onBack, onDataLoaded }) {
     }
   };
 
-  const handleSetTodaysMenu = async () => {
+  const handleOpenSpecialsConfig = () => {
+    // Initialize config for any newly selected items that don't have config yet
+    setDailySpecialsConfig(prev => {
+      const newConfig = { ...prev };
+      selectedItems.forEach(id => {
+        if (!newConfig[id]) {
+          newConfig[id] = { isHostelSpecial: false, isStaffSpecial: false };
+        }
+      });
+      return newConfig;
+    });
+    setShowSpecialsConfig(true);
+  };
+
+  const handleToggleSpecialFlag = (itemId, flagName) => {
+    setDailySpecialsConfig(prev => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        [flagName]: !prev[itemId]?.[flagName]
+      }
+    }));
+  };
+
+  const handlePublishTodaysMenu = async () => {
     setLoading(true);
     try {
       const today = getBusinessDate();
-      const itemsToSet = menuItems.filter(item => selectedItems.includes(item.id)).map(item => ({
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        price: item.price,
-        description: item.description,
-        category: item.category || 'Breakfast',
-        targetTypes: item.targetTypes || [],
-        isHostelSpecial: item.isHostelSpecial || false,
-        photoURL: item.photoURL || null,
-      }));
+      const itemsToSet = menuItems
+        .filter(item => selectedItems.includes(item.id))
+        .map(item => {
+          const config = dailySpecialsConfig[item.id] || { isHostelSpecial: false, isStaffSpecial: false };
+          return {
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            description: item.description,
+            category: item.category || 'Breakfast',
+            targetTypes: item.targetTypes || [],
+            photoURL: item.photoURL || null,
+            isHostelSpecial: config.isHostelSpecial, // Daily transient flag
+            isStaffSpecial: config.isStaffSpecial   // Daily transient flag
+          };
+        });
 
       await setDoc(doc(db, 'todaysMenu', today), {
         date: today,
@@ -215,10 +256,12 @@ function MenuManagement({ onBack, onDataLoaded }) {
       });
 
       setTodaysMenu(itemsToSet);
-      setMessage(`Today's Special updated!`);
+      setMessage(`Today's Special published with ${itemsToSet.length} items!`);
       setIsSelectMode(false);
+      setShowSpecialsConfig(false);
     } catch (error) {
       setMessage("Error publishing menu");
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -278,18 +321,7 @@ function MenuManagement({ onBack, onDataLoaded }) {
               </div>
             </div>
 
-            <div className="mm-input-group">
-              <label className="mm-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  name="isHostelSpecial"
-                  checked={formData.isHostelSpecial || false}
-                  onChange={handleInputChange}
-                />
-                Is Hostel Special?
-              </label>
-              <span style={{ fontSize: '11px', color: '#666' }}>Will appear in Today's Special for hostel users</span>
-            </div>
+            {/* Note: isHostelSpecial removed from here as it is now daily-configurable */}
 
             <div className="mm-input-group">
               <label className="mm-label">Photo</label>
@@ -330,8 +362,8 @@ function MenuManagement({ onBack, onDataLoaded }) {
               {isSelectMode ? (
                 <>
                   <Button variant="ghost" onClick={() => { setIsSelectMode(false); setSelectedItems(todaysMenu.map(i => i.id)); }}>Cancel</Button>
-                  <Button variant="primary" onClick={handleSetTodaysMenu} loading={loading} disabled={selectedItems.length === 0}>
-                    Set Today's Special ({selectedItems.length})
+                  <Button variant="primary" onClick={handleOpenSpecialsConfig} loading={loading} disabled={selectedItems.length === 0}>
+                    Next: Configure Specials ({selectedItems.length})
                   </Button>
                 </>
               ) : (
@@ -350,7 +382,10 @@ function MenuManagement({ onBack, onDataLoaded }) {
           <div className="mm-grid">
             {menuItems.map((item) => {
               const isSelected = selectedItems.includes(item.id);
-              const isInSpecial = todaysMenu.some(m => m.id === item.id);
+              // Check existing daily config or fallback to todaysMenu data
+              const todayItem = todaysMenu.find(m => m.id === item.id);
+              const isActiveHostel = todayItem?.isHostelSpecial;
+              const isActiveStaff = todayItem?.isStaffSpecial;
 
               return (
                 <div key={item.id} className={`mm-card ${isSelected && isSelectMode ? 'isSelected' : ''}`} onClick={() => isSelectMode && handleToggleSelection(item.id)}>
@@ -381,15 +416,21 @@ function MenuManagement({ onBack, onDataLoaded }) {
                         ))}
                       </div>
                     )}
-                    {item.isHostelSpecial && (
-                      <span style={{ fontSize: '10px', color: '#7c3aed', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>
-                        ★ Hostel Special
-                      </span>
-                    )}
+
                     <div className="mm-card-footer">
                       <div className="mm-card-price">रु {Number(item.price).toFixed(0)}</div>
-                      {isInSpecial && <span className="mm-card-badge">Today's Special</span>}
+                      {todayItem && <span className="mm-card-badge">Today's Special</span>}
                       {item.isFixed && <Star size={14} fill="currentColor" className="text-yellow-500" title="Fixed Item" />}
+                    </div>
+
+                    {/* Show daily special badges if active in today's menu */}
+                    <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+                      {isActiveHostel && (
+                        <span style={{ fontSize: '10px', color: '#7c3aed', fontWeight: 'bold' }}>★ Hostel</span>
+                      )}
+                      {isActiveStaff && (
+                        <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 'bold' }}>★ Staff</span>
+                      )}
                     </div>
                   </div>
 
@@ -416,6 +457,54 @@ function MenuManagement({ onBack, onDataLoaded }) {
             </div>
           )}
         </section>
+
+        {/* Specials Configuration Modal */}
+        {showSpecialsConfig && (
+          <div className="mm-modal-overlay">
+            <div className="mm-modal">
+              <div className="mm-modal-header">
+                <h3>Configure Daily Specials</h3>
+                <Button variant="ghost" size="sm" onClick={() => setShowSpecialsConfig(false)}><X size={20} /></Button>
+              </div>
+              <div className="mm-modal-body">
+                <p style={{ marginBottom: '16px', color: '#666', fontSize: '14px' }}>
+                  Select which items should be highlighted as specials for specific groups for <strong>today only</strong>.
+                </p>
+                <div className="mm-specials-list">
+                  {menuItems.filter(item => selectedItems.includes(item.id)).map(item => (
+                    <div key={item.id} className="mm-special-item-row">
+                      <span style={{ fontWeight: 500 }}>{item.name}</span>
+                      <div className="mm-special-toggles">
+                        <label className="mm-checkbox-label">
+                          <input
+                            type="checkbox"
+                            checked={dailySpecialsConfig[item.id]?.isHostelSpecial || false}
+                            onChange={() => handleToggleSpecialFlag(item.id, 'isHostelSpecial')}
+                          />
+                          Hostel
+                        </label>
+                        <label className="mm-checkbox-label">
+                          <input
+                            type="checkbox"
+                            checked={dailySpecialsConfig[item.id]?.isStaffSpecial || false}
+                            onChange={() => handleToggleSpecialFlag(item.id, 'isStaffSpecial')}
+                          />
+                          Staff
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="mm-modal-footer">
+                <Button variant="ghost" onClick={() => setShowSpecialsConfig(false)}>Back</Button>
+                <Button variant="primary" onClick={handlePublishTodaysMenu} loading={loading}>
+                  Publish Today's Menu
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
