@@ -235,6 +235,7 @@ function MenuManagement({ onBack, onDataLoaded }) {
       const itemsToSet = menuItems
         .filter(item => selectedItems.includes(item.id))
         .map(item => {
+          // Defaults if not configured
           const config = dailySpecialsConfig[item.id] || { isHostelSpecial: false, isStaffSpecial: false };
           return {
             id: item.id,
@@ -244,8 +245,9 @@ function MenuManagement({ onBack, onDataLoaded }) {
             category: item.category || 'Breakfast',
             targetTypes: item.targetTypes || [],
             photoURL: item.photoURL || null,
-            isHostelSpecial: config.isHostelSpecial, // Daily transient flag
-            isStaffSpecial: config.isStaffSpecial   // Daily transient flag
+            // Daily transient flags from local state
+            isHostelSpecial: config.isHostelSpecial,
+            isStaffSpecial: config.isStaffSpecial
           };
         });
 
