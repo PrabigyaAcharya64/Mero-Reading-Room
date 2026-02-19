@@ -14,8 +14,6 @@ const CanteenMenu = ({
   cart,
   addToCart,
   userBalance,
-  addToCart,
-  userBalance,
   userName,
   userCanteenType = 'mrr',
   staffDiscount = 0
