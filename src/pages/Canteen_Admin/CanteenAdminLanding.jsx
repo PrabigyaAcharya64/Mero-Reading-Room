@@ -14,7 +14,7 @@ import PageHeader from '../../components/PageHeader';
 import InventoryLanding from '../inventory/InventoryLanding';
 import RawInventory from '../inventory/RawInventory';
 import DryInventory from '../inventory/DryInventory';
-import '../../../styles/StandardLayout.css';
+import '../../styles/StandardLayout.css';
 
 const foodIcon = new URL('../../assets/food.svg', import.meta.url).href;
 const reportIcon = new URL('../../assets/reports.svg', import.meta.url).href;
