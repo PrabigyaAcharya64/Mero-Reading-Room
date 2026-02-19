@@ -96,9 +96,11 @@ const RefundRequests = ({ onDataLoaded }) => {
 
         if (searchQuery.trim()) {
             const q = searchQuery.toLowerCase();
-            return (
-                (req.refundToken && req.refundToken.toLowerCase().includes(q))
-            );
+            // Auto-add REF- if missing in the data for consistent search
+            const rawToken = req.refundToken || '';
+            const displayToken = rawToken.toUpperCase().startsWith('REF-') ? rawToken : `REF-${rawToken}`;
+
+            return displayToken.toLowerCase().includes(q);
         }
         return true;
     });
@@ -190,7 +192,7 @@ const RefundRequests = ({ onDataLoaded }) => {
                                         <div style={{ fontSize: '12px', color: '#666' }}>{req.userMrr || 'N/A'}</div>
                                         {req.refundToken && (
                                             <div style={{ fontSize: '11px', color: '#1976d2', fontWeight: 'bold', marginTop: '2px' }}>
-                                                {req.refundToken}
+                                                {req.refundToken.toUpperCase().startsWith('REF-') ? req.refundToken : `REF-${req.refundToken}`}
                                             </div>
                                         )}
                                     </td>
