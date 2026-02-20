@@ -28,6 +28,22 @@ const DEFAULT_FORM_STATE = {
         HOSTEL_WARNING_TEMPLATE: "Hello {{name}}, your Hostel subscription expires on {{date}}. Please pay to avoid penalties.",
         HOSTEL_GRACE_END_TEMPLATE: "Hello {{name}}, your Hostel grace period ends on {{date}}."
     },
+    NOTIFICATIONS: {
+        ORDER_READY_TITLE: "Order Ready!",
+        ORDER_READY_BODY: "Hello {{name}}, your canteen order is ready for pickup.",
+        ORDER_PREPARING_TITLE: "Order Preparing 🍳",
+        ORDER_PREPARING_BODY: "Your order is now being prepared.",
+        REFUND_APPROVED_TITLE: "Refund Approved",
+        REFUND_APPROVED_BODY: "Your refund of Rs. {{amount}} has been approved/completed.",
+        REFUND_REJECTED_TITLE: "Refund Rejected",
+        REFUND_REJECTED_BODY: "Your refund request was rejected. Reason: {{reason}}",
+        BALANCE_LOADED_TITLE: "Balance Loaded Successfully",
+        BALANCE_LOADED_BODY: "रु {{amount}} has been added to your wallet. {{loanInfo}}",
+        EXPIRY_WARNING_TITLE: "Membership Expiring Soon",
+        EXPIRY_WARNING_BODY: "Hi {{name}}, your Reading Room package expires in 3 days. Please renew to avoid interruption.",
+        HOSTEL_EXPIRY_WARNING_TITLE: "Hostel Rent Due Soon",
+        HOSTEL_EXPIRY_WARNING_BODY: "Hi {{name}}, your Hostel rent is due in 3 days. Please pay on time to avoid fines."
+    },
     CANTEEN_DISCOUNTS: {
         staff: 0
     }
@@ -386,6 +402,115 @@ function Settings({ onBack, onDataLoaded }) {
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* Push Notifications Section */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+                            <h2 className="text-lg font-bold mb-6 text-gray-800 border-b pb-2">
+                                App Push Notifications
+                            </h2>
+                            <div className="space-y-8">
+
+                                {/* Orders */}
+                                <div>
+                                    <h3 className="font-semibold text-gray-800 mb-4">Canteen Orders</h3>
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block mb-2 text-sm font-medium text-gray-700">Order Preparing Title</label>
+                                                <input className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" value={formData.NOTIFICATIONS?.ORDER_PREPARING_TITLE ?? DEFAULT_FORM_STATE.NOTIFICATIONS.ORDER_PREPARING_TITLE} onChange={(e) => handleChange('NOTIFICATIONS', 'ORDER_PREPARING_TITLE', e.target.value)} />
+                                            </div>
+                                            <div>
+                                                <label className="block mb-2 text-sm font-medium text-gray-700">Order Preparing Body</label>
+                                                <textarea className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" value={formData.NOTIFICATIONS?.ORDER_PREPARING_BODY ?? DEFAULT_FORM_STATE.NOTIFICATIONS.ORDER_PREPARING_BODY} onChange={(e) => handleChange('NOTIFICATIONS', 'ORDER_PREPARING_BODY', e.target.value)} rows="3" />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block mb-2 text-sm font-medium text-gray-700">Order Ready Title</label>
+                                                <input className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" value={formData.NOTIFICATIONS?.ORDER_READY_TITLE ?? DEFAULT_FORM_STATE.NOTIFICATIONS.ORDER_READY_TITLE} onChange={(e) => handleChange('NOTIFICATIONS', 'ORDER_READY_TITLE', e.target.value)} />
+                                            </div>
+                                            <div>
+                                                <label className="block mb-2 text-sm font-medium text-gray-700">Order Ready Body</label>
+                                                <textarea className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" value={formData.NOTIFICATIONS?.ORDER_READY_BODY ?? DEFAULT_FORM_STATE.NOTIFICATIONS.ORDER_READY_BODY} onChange={(e) => handleChange('NOTIFICATIONS', 'ORDER_READY_BODY', e.target.value)} rows="3" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p className="mt-2 text-xs text-gray-500">Variables available: <strong>{'{{name}}'}</strong></p>
+                                </div>
+
+                                {/* Refunds & Balance */}
+                                <div>
+                                    <h3 className="font-semibold text-gray-800 mb-4 border-t pt-6">Refunds & Balance</h3>
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block mb-2 text-sm font-medium text-gray-700">Refund Approved Title</label>
+                                                <input className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" value={formData.NOTIFICATIONS?.REFUND_APPROVED_TITLE ?? DEFAULT_FORM_STATE.NOTIFICATIONS.REFUND_APPROVED_TITLE} onChange={(e) => handleChange('NOTIFICATIONS', 'REFUND_APPROVED_TITLE', e.target.value)} />
+                                            </div>
+                                            <div>
+                                                <label className="block mb-2 text-sm font-medium text-gray-700">Refund Approved Body</label>
+                                                <textarea className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" value={formData.NOTIFICATIONS?.REFUND_APPROVED_BODY ?? DEFAULT_FORM_STATE.NOTIFICATIONS.REFUND_APPROVED_BODY} onChange={(e) => handleChange('NOTIFICATIONS', 'REFUND_APPROVED_BODY', e.target.value)} rows="3" />
+                                                <p className="mt-1 text-xs text-gray-500">Variables available: <strong>{'{{amount}}'}</strong></p>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block mb-2 text-sm font-medium text-gray-700">Refund Rejected Title</label>
+                                                <input className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" value={formData.NOTIFICATIONS?.REFUND_REJECTED_TITLE ?? DEFAULT_FORM_STATE.NOTIFICATIONS.REFUND_REJECTED_TITLE} onChange={(e) => handleChange('NOTIFICATIONS', 'REFUND_REJECTED_TITLE', e.target.value)} />
+                                            </div>
+                                            <div>
+                                                <label className="block mb-2 text-sm font-medium text-gray-700">Refund Rejected Body</label>
+                                                <textarea className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" value={formData.NOTIFICATIONS?.REFUND_REJECTED_BODY ?? DEFAULT_FORM_STATE.NOTIFICATIONS.REFUND_REJECTED_BODY} onChange={(e) => handleChange('NOTIFICATIONS', 'REFUND_REJECTED_BODY', e.target.value)} rows="3" />
+                                                <p className="mt-1 text-xs text-gray-500">Variables available: <strong>{'{{reason}}'}</strong></p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block mb-2 text-sm font-medium text-gray-700">Balance Loaded Title</label>
+                                                <input className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" value={formData.NOTIFICATIONS?.BALANCE_LOADED_TITLE ?? DEFAULT_FORM_STATE.NOTIFICATIONS.BALANCE_LOADED_TITLE} onChange={(e) => handleChange('NOTIFICATIONS', 'BALANCE_LOADED_TITLE', e.target.value)} />
+                                            </div>
+                                            <div>
+                                                <label className="block mb-2 text-sm font-medium text-gray-700">Balance Loaded Body</label>
+                                                <textarea className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" value={formData.NOTIFICATIONS?.BALANCE_LOADED_BODY ?? DEFAULT_FORM_STATE.NOTIFICATIONS.BALANCE_LOADED_BODY} onChange={(e) => handleChange('NOTIFICATIONS', 'BALANCE_LOADED_BODY', e.target.value)} rows="3" />
+                                                <p className="mt-1 text-xs text-gray-500">Variables available: <strong>{'{{amount}}'}</strong>, <strong>{'{{loanInfo}}'}</strong></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Expiry */}
+                                <div>
+                                    <h3 className="font-semibold text-gray-800 mb-4 border-t pt-6">Expiry Warnings</h3>
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block mb-2 text-sm font-medium text-gray-700">RR Expiry Title</label>
+                                                <input className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" value={formData.NOTIFICATIONS?.EXPIRY_WARNING_TITLE ?? DEFAULT_FORM_STATE.NOTIFICATIONS.EXPIRY_WARNING_TITLE} onChange={(e) => handleChange('NOTIFICATIONS', 'EXPIRY_WARNING_TITLE', e.target.value)} />
+                                            </div>
+                                            <div>
+                                                <label className="block mb-2 text-sm font-medium text-gray-700">RR Expiry Body</label>
+                                                <textarea className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" value={formData.NOTIFICATIONS?.EXPIRY_WARNING_BODY ?? DEFAULT_FORM_STATE.NOTIFICATIONS.EXPIRY_WARNING_BODY} onChange={(e) => handleChange('NOTIFICATIONS', 'EXPIRY_WARNING_BODY', e.target.value)} rows="3" />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block mb-2 text-sm font-medium text-gray-700">Hostel Expiry Title</label>
+                                                <input className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" value={formData.NOTIFICATIONS?.HOSTEL_EXPIRY_WARNING_TITLE ?? DEFAULT_FORM_STATE.NOTIFICATIONS.HOSTEL_EXPIRY_WARNING_TITLE} onChange={(e) => handleChange('NOTIFICATIONS', 'HOSTEL_EXPIRY_WARNING_TITLE', e.target.value)} />
+                                            </div>
+                                            <div>
+                                                <label className="block mb-2 text-sm font-medium text-gray-700">Hostel Expiry Body</label>
+                                                <textarea className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" value={formData.NOTIFICATIONS?.HOSTEL_EXPIRY_WARNING_BODY ?? DEFAULT_FORM_STATE.NOTIFICATIONS.HOSTEL_EXPIRY_WARNING_BODY} onChange={(e) => handleChange('NOTIFICATIONS', 'HOSTEL_EXPIRY_WARNING_BODY', e.target.value)} rows="3" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p className="mt-2 text-xs text-gray-500">Variables available: <strong>{'{{name}}'}</strong></p>
+                                </div>
+
                             </div>
                         </div>
 

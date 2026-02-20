@@ -58,12 +58,9 @@ const RefundRequests = ({ onDataLoaded }) => {
 
             await updateDoc(docRef, updateData);
 
-            // If completed, maybe update user balance if it was a refund to wallet? 
-            // Or if it was cash, just mark done. 
-            // For now, assuming cash collection at office as per instruction.
 
             setShowActionModal(false);
-            // Refresh logic handled by snapshot listener
+
         } catch (error) {
             console.error("Error updating refund:", error);
             alert("Failed to update refund request.");
@@ -104,8 +101,6 @@ const RefundRequests = ({ onDataLoaded }) => {
         }
         return true;
     });
-
-    // ... (handle functions same) ...
 
 
 

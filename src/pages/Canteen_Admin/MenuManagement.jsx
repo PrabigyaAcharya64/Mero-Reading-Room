@@ -249,7 +249,7 @@ function MenuManagement({ onBack, onDataLoaded }) {
             description: item.description,
             category: item.category || 'Breakfast',
             targetTypes: item.targetTypes || [],
-            photoURL: item.photoURL || null,
+            photoURL: item.photoURL === undefined ? null : item.photoURL,
             // Daily transient flags from local state
             isHostelSpecial: config.isHostelSpecial,
             isStaffSpecial: config.isStaffSpecial
@@ -424,59 +424,57 @@ function MenuManagement({ onBack, onDataLoaded }) {
 
                     <div className="mm-card-footer">
                       <div className="mm-card-price">रु {Number(item.price).toFixed(0)}</div>
-                      {isSelected && <span className="mm-card-badge">Today's</span>}
                     </div>
 
                     <div style={{ display: 'flex', gap: '4px', marginTop: '8px', flexWrap: 'wrap' }}>
                       {config.isHostelSpecial && (
-                        <span style={{ fontSize: '10px', background: '#7c3aed', color: 'white', padding: '2px 6px', borderRadius: '4px' }}>Hostel Special</span>
+                        <span style={{ fontSize: '10px', background: '#7c3aed', color: 'white', padding: '2px 6px', borderRadius: '4px' }}>★ Hostel Special</span>
                       )}
                       {config.isStaffSpecial && (
-                        <span style={{ fontSize: '10px', background: '#10b981', color: 'white', padding: '2px 6px', borderRadius: '4px' }}>Staff Special</span>
+                        <span style={{ fontSize: '10px', background: '#10b981', color: 'white', padding: '2px 6px', borderRadius: '4px' }}>★ Staff Special</span>
                       )}
                     </div>
                   </div>
 
-                  <div className="mm-card-overlay" style={{ opacity: 1, background: 'rgba(255,255,255,0.95)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                      {/* 1. Toggle General Selection */}
-                      <Button
-                        variant={isSelected ? "primary" : "outline"}
-                        onClick={(e) => { e.stopPropagation(); handleToggleSelection(item.id); }}
-                        fullWidth
-                        size="sm"
-                      >
-                        {isSelected ? "In Today's Menu" : "Add to Today's Menu"}
-                      </Button>
+                  {/* Move actions OUT of the absolute overlay so they don't hide the content */}
+                  <div style={{ padding: '0 16px 16px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {/* 1. Toggle General Selection */}
+                    <Button
+                      variant={isSelected ? "primary" : "outline"}
+                      onClick={(e) => { e.stopPropagation(); handleToggleSelection(item.id); }}
+                      fullWidth
+                      size="sm"
+                    >
+                      {isSelected ? "Remove from Today" : "Add to Today's Menu"}
+                    </Button>
 
-                      {/* 2. Toggle Hostel Special */}
-                      <Button
-                        variant={config.isHostelSpecial ? "secondary" : "ghost"}
-                        onClick={(e) => { e.stopPropagation(); handleToggleSpecialFlag(item.id, 'isHostelSpecial'); }}
-                        fullWidth
-                        size="sm"
-                        style={config.isHostelSpecial ? { backgroundColor: '#dbc7fd', color: '#5b21b6', borderColor: '#7c3aed' } : { border: '1px solid #ddd' }}
-                      >
-                        {config.isHostelSpecial ? "★ Hostel Special Active" : "Set as Hostel Special"}
-                      </Button>
+                    {/* Display special toggles ONLY if selected for today */}
+                    {isSelected && (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <Button
+                          variant={config.isHostelSpecial ? "secondary" : "ghost"}
+                          onClick={(e) => { e.stopPropagation(); handleToggleSpecialFlag(item.id, 'isHostelSpecial'); }}
+                          size="sm"
+                          style={config.isHostelSpecial ? { backgroundColor: '#dbc7fd', color: '#5b21b6', borderColor: '#7c3aed', fontSize: '12px', padding: '4px' } : { border: '1px solid #ddd', fontSize: '12px', padding: '4px' }}
+                        >
+                          {config.isHostelSpecial ? "Hostel ★" : "Hostel Special"}
+                        </Button>
+                        <Button
+                          variant={config.isStaffSpecial ? "secondary" : "ghost"}
+                          onClick={(e) => { e.stopPropagation(); handleToggleSpecialFlag(item.id, 'isStaffSpecial'); }}
+                          size="sm"
+                          style={config.isStaffSpecial ? { backgroundColor: '#d1fae5', color: '#065f46', borderColor: '#10b981', fontSize: '12px', padding: '4px' } : { border: '1px solid #ddd', fontSize: '12px', padding: '4px' }}
+                        >
+                          {config.isStaffSpecial ? "Staff ★" : "Staff Special"}
+                        </Button>
+                      </div>
+                    )}
 
-                      {/* 3. Toggle Staff Special */}
-                      <Button
-                        variant={config.isStaffSpecial ? "secondary" : "ghost"}
-                        onClick={(e) => { e.stopPropagation(); handleToggleSpecialFlag(item.id, 'isStaffSpecial'); }}
-                        fullWidth
-                        size="sm"
-                        style={config.isStaffSpecial ? { backgroundColor: '#d1fae5', color: '#065f46', borderColor: '#10b981' } : { border: '1px solid #ddd' }}
-                      >
-                        {config.isStaffSpecial ? "★ Staff Special Active" : "Set as Staff Special"}
-                      </Button>
+                    <div style={{ borderTop: '1px solid #eee', margin: '4px 0' }}></div>
 
-                      <div style={{ borderTop: '1px solid #eee', margin: '4px 0' }}></div>
-
-                      <Button variant="danger" size="sm" onClick={(e) => { e.stopPropagation(); handleDeleteMenuItem(item.id); }} fullWidth>
-                        <Trash2 size={14} /> Delete
-                      </Button>
-                    </div>
+                    <Button variant="danger" size="sm" onClick={(e) => { e.stopPropagation(); handleDeleteMenuItem(item.id); }} fullWidth>
+                      <Trash2 size={14} /> Delete Item
+                    </Button>
                   </div>
                 </div>
               );

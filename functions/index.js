@@ -810,12 +810,19 @@ exports.onOrderUpdated = onDocumentUpdated("orders/{orderId}", async (event) => 
 
         console.log(`Order ${orderId} completed. Creating notification for ${userId}`);
 
+        const configDoc = await admin.firestore().collection('settings').doc('config').get();
+        const sysConfig = configDoc.exists ? configDoc.data() : {};
+        const notificationsConfig = sysConfig.NOTIFICATIONS || {};
+
+        const title = notificationsConfig.ORDER_READY_TITLE || "Order Ready!";
+        const message = (notificationsConfig.ORDER_READY_BODY || "Hello {{name}}, your canteen order is ready for pickup.").replace(/\{\{name\}\}/g, userName);
+
         // Create notification in Firestore
         // This will trigger 'onNotificationCreated' which sends the push
         await admin.firestore().collection('notifications').add({
             userId: userId,
-            title: "Order Ready!",
-            message: `Hello ${userName}, your canteen order is ready for pickup.`,
+            title: title,
+            message: message,
             type: 'order',
             orderId: orderId,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -826,12 +833,20 @@ exports.onOrderUpdated = onDocumentUpdated("orders/{orderId}", async (event) => 
     // Add logic for 'preparing' if needed, or other status changes
     if (newData.status === 'preparing' && oldData.status !== 'preparing') {
         const userId = newData.userId;
+        const userName = newData.userName || 'Reader';
         console.log(`Order ${orderId} preparing. Creating notification for ${userId}`);
+
+        const configDoc = await admin.firestore().collection('settings').doc('config').get();
+        const sysConfig = configDoc.exists ? configDoc.data() : {};
+        const notificationsConfig = sysConfig.NOTIFICATIONS || {};
+
+        const title = notificationsConfig.ORDER_PREPARING_TITLE || "Order Preparing 🍳";
+        const message = (notificationsConfig.ORDER_PREPARING_BODY || "Your order is now being prepared.").replace(/\{\{name\}\}/g, userName);
 
         await admin.firestore().collection('notifications').add({
             userId: userId,
-            title: "Order Preparing 🍳",
-            message: `Your order is now being prepared.`,
+            title: title,
+            message: message,
             type: 'order',
             orderId: orderId,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -932,15 +947,21 @@ exports.onRefundUpdated = onDocumentUpdated("refunds/{refundId}", async (event) 
         const userId = newData.userId;
         const status = newData.status; // 'approved', 'rejected', 'completed'
 
+        const configDoc = await admin.firestore().collection('settings').doc('config').get();
+        const sysConfig = configDoc.exists ? configDoc.data() : {};
+        const notificationsConfig = sysConfig.NOTIFICATIONS || {};
+
         let title = "Refund Update";
         let body = `Your refund request has been updated to: ${status}`;
 
         if (status === 'completed' || status === 'approved') {
-            title = "Refund Approved";
-            body = `Your refund of Rs. ${newData.finalRefundAmount || newData.amount} has been approved/completed.`;
+            title = notificationsConfig.REFUND_APPROVED_TITLE || "Refund Approved";
+            const amount = newData.finalRefundAmount || newData.amount;
+            body = (notificationsConfig.REFUND_APPROVED_BODY || "Your refund of Rs. {{amount}} has been approved/completed.").replace(/\{\{amount\}\}/g, amount);
         } else if (status === 'rejected') {
-            title = "Refund Rejected";
-            body = `Your refund request was rejected. Reason: ${newData.rejectionReason || 'Contact admin'}`;
+            title = notificationsConfig.REFUND_REJECTED_TITLE || "Refund Rejected";
+            const reason = newData.rejectionReason || 'Contact admin';
+            body = (notificationsConfig.REFUND_REJECTED_BODY || "Your refund request was rejected. Reason: {{reason}}").replace(/\{\{reason\}\}/g, reason);
         }
 
         console.log(`Refund ${refundId} status ${status}. creating notification for user ${userId}`);
@@ -994,6 +1015,8 @@ exports.checkStatusExpiration = onSchedule("0 0 * * *", async (event) => {
         const endOfDay = new Date(targetDate);
         endOfDay.setHours(23, 59, 59, 999);
 
+        const notificationsConfig = sysConfig.NOTIFICATIONS || {};
+
         // Warning for Reading Room
         const warningQuery = db.collection('users')
             .where('nextPaymentDue', '>=', startOfDay.toISOString())
@@ -1004,10 +1027,13 @@ exports.checkStatusExpiration = onSchedule("0 0 * * *", async (event) => {
 
         for (const userDoc of warningSnapshot.docs) {
             const userData = userDoc.data();
+            const title = notificationsConfig.EXPIRY_WARNING_TITLE || "Membership Expiring Soon";
+            const message = (notificationsConfig.EXPIRY_WARNING_BODY || "Hi {{name}}, your Reading Room package expires in 3 days. Please renew to avoid interruption.").replace(/\{\{name\}\}/g, userData.name || 'Reader');
+
             await db.collection('notifications').add({
                 userId: userDoc.id,
-                title: "Membership Expiring Soon",
-                message: `Hi ${userData.name}, your Reading Room package expires in 3 days. Please renew to avoid interruption.`,
+                title: title,
+                message: message,
                 type: 'enrollment',
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
                 read: false
@@ -1024,10 +1050,13 @@ exports.checkStatusExpiration = onSchedule("0 0 * * *", async (event) => {
 
         for (const userDoc of hostelWarningSnapshot.docs) {
             const userData = userDoc.data();
+            const title = notificationsConfig.HOSTEL_EXPIRY_WARNING_TITLE || "Hostel Rent Due Soon";
+            const message = (notificationsConfig.HOSTEL_EXPIRY_WARNING_BODY || "Hi {{name}}, your Hostel rent is due in 3 days. Please pay on time to avoid fines.").replace(/\{\{name\}\}/g, userData.name || 'Resident');
+
             await db.collection('notifications').add({
                 userId: userDoc.id,
-                title: "Hostel Rent Due Soon",
-                message: `Hi ${userData.name}, your Hostel rent is due in 3 days. Please pay on time to avoid fines.`,
+                title: title,
+                message: message,
                 type: 'hostel',
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
                 read: false
@@ -2310,6 +2339,49 @@ exports.topUpBalance = onCall(async (request) => {
 });
 
 /**
+ * Trigger: On Balance Request Updated
+ * Sends notification when request status changes to 'approved'.
+ */
+exports.onBalanceRequestUpdated = onDocumentUpdated("balanceRequests/{requestId}", async (event) => {
+    const newData = event.data.after.data();
+    const oldData = event.data.before.data();
+    const requestId = event.params.requestId;
+
+    // Check if status changed to 'approved'
+    if (newData.status === 'approved' && oldData.status !== 'approved') {
+        const userId = newData.userId;
+        const amount = newData.amount;
+        const loanDeducted = newData.loanDeducted || 0; // Retrieve stored deduction or default to 0
+
+        console.log(`Balance request ${requestId} approved. Creating notification for ${userId}`);
+
+        const configDoc = await admin.firestore().collection('settings').doc('config').get();
+        const sysConfig = configDoc.exists ? configDoc.data() : {};
+        const notificationsConfig = sysConfig.NOTIFICATIONS || {};
+
+        const title = notificationsConfig.BALANCE_LOADED_TITLE || 'Balance Loaded Successfully';
+        const loanInfo = loanDeducted > 0 ? `(रु ${loanDeducted} deducted for loan)` : '';
+        const message = (notificationsConfig.BALANCE_LOADED_BODY || "रु {{amount}} has been added to your wallet. {{loanInfo}}")
+            .replace(/\{\{amount\}\}/g, amount)
+            .replace(/\{\{loanInfo\}\}/g, loanInfo)
+            .trim(); // Trim in case {{loanInfo}} is empty and leaves a trailing space
+
+        // Create notification in Firestore
+        // This will trigger 'onNotificationCreated' which sends the push
+        await admin.firestore().collection('notifications').add({
+            userId: userId,
+            title: title,
+            message: message,
+            type: 'balance',
+            relatedId: requestId,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            read: false
+        });
+    }
+    return null;
+});
+
+/**
  * Callable function to approve balance load requests
  * Verifies admin, updates transaction, and increments user balance
  */
@@ -2414,11 +2486,12 @@ exports.approveBalanceLoad = onCall(async (request) => {
                 updatedAt: now
             });
 
-            // 4. Update Request Status
+            // 4. Update Request Status - AND STORE LOAN DEDUCTION FOR TRIGGER
             transaction.update(requestRef, {
                 status: 'approved',
                 approvedBy: request.auth.uid,
-                approvedAt: now
+                approvedAt: now,
+                loanDeducted: loanDeduction // Important: The trigger needs this for the message
             });
 
             // 5. Create Transaction Record
@@ -2438,17 +2511,8 @@ exports.approveBalanceLoad = onCall(async (request) => {
                 loanDeducted: loanDeduction
             });
 
-            // 6. Create Notification Record
-            const notificationRef = db.collection('notifications').doc();
-            transaction.set(notificationRef, {
-                userId: userId,
-                title: 'Balance Loaded Successfully',
-                message: `रु ${amount} has been added to your wallet. ${loanDeduction > 0 ? '(रु ' + loanDeduction + ' deducted for loan)' : ''}`,
-                type: 'balance',
-                relatedId: requestId,
-                read: false,
-                createdAt: admin.firestore.FieldValue.serverTimestamp()
-            });
+            // 6. Notification is now handled by 'onBalanceRequestUpdated' trigger
+            // This ensures manual approvals (if any) also trigger notifications.
 
 
             return { success: true, newBalance, loanDeducted: loanDeduction };
