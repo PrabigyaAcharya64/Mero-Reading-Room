@@ -395,8 +395,20 @@ function MenuManagement({ onBack, onDataLoaded }) {
               return (
                 <div key={item.id} className={`mm-card ${isSelected ? 'isSelected' : ''}`}>
                   {isSelected && (
-                    <div className="mm-select-indicator">
-                      <Check className="mm-indicator-icon" />
+                    <div style={{ position: 'absolute', top: '12px', left: '12px', display: 'flex', flexDirection: 'column', gap: '6px', zIndex: 10 }}>
+                      <span style={{ backgroundColor: '#0ea5e9', color: 'white', fontSize: '0.7rem', fontWeight: 'bold', padding: '4px 10px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+                        In Today's Special
+                      </span>
+                      {config.isHostelSpecial && (
+                        <span style={{ backgroundColor: '#7c3aed', color: 'white', fontSize: '0.7rem', fontWeight: 'bold', padding: '4px 10px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+                          Hostel Special
+                        </span>
+                      )}
+                      {config.isStaffSpecial && (
+                        <span style={{ backgroundColor: '#10b981', color: 'white', fontSize: '0.7rem', fontWeight: 'bold', padding: '4px 10px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+                          Staff Special
+                        </span>
+                      )}
                     </div>
                   )}
 
@@ -426,14 +438,7 @@ function MenuManagement({ onBack, onDataLoaded }) {
                       <div className="mm-card-price">रु {Number(item.price).toFixed(0)}</div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '4px', marginTop: '8px', flexWrap: 'wrap' }}>
-                      {config.isHostelSpecial && (
-                        <span style={{ fontSize: '10px', background: '#7c3aed', color: 'white', padding: '2px 6px', borderRadius: '4px' }}>★ Hostel Special</span>
-                      )}
-                      {config.isStaffSpecial && (
-                        <span style={{ fontSize: '10px', background: '#10b981', color: 'white', padding: '2px 6px', borderRadius: '4px' }}>★ Staff Special</span>
-                      )}
-                    </div>
+                    {/* Removed small bottom tags since we added prominent image badges */}
                   </div>
 
                   {/* Move actions OUT of the absolute overlay so they don't hide the content */}
