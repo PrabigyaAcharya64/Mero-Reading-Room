@@ -3374,7 +3374,7 @@ async function getDiceToken(username, password) {
 
 exports.sendExpirySms = onSchedule(
     {
-        schedule: "every 60 minutes",
+        schedule: "0 * * * *",
         secrets: [diceApiKey, diceUsername, dicePassword]
     },
     async (event) => {
@@ -3444,16 +3444,21 @@ exports.sendExpirySms = onSchedule(
 
             // 3. Calculate Date Ranges
             const getDayRange = (offsetDays) => {
-                const d = new Date();
-                d.setDate(d.getDate() + offsetDays); // Add/Sub days
-                const utcYear = d.getUTCFullYear();
-                const utcMonth = d.getUTCMonth();
-                const utcDay = d.getUTCDate();
+                const kathmanduDateStr = new Intl.DateTimeFormat('en-US', {
+                    timeZone: KATHMANDU_TZ,
+                    year: 'numeric', month: 'numeric', day: 'numeric'
+                }).format(new Date());
 
-                const start = new Date(Date.UTC(utcYear, utcMonth, utcDay, 0, 0, 0, 0));
-                const end = new Date(Date.UTC(utcYear, utcMonth, utcDay, 23, 59, 59, 999));
+                const [month, day, year] = kathmanduDateStr.split('/');
+                const ktmDate = new Date(year, month - 1, day);
+                ktmDate.setDate(ktmDate.getDate() + offsetDays);
 
-                return { start: start.toISOString(), end: end.toISOString() };
+                const tYear = ktmDate.getFullYear();
+                const tMonth = String(ktmDate.getMonth() + 1).padStart(2, '0');
+                const tDay = String(ktmDate.getDate()).padStart(2, '0');
+                const targetDateStr = `${tYear}-${tMonth}-${tDay}`;
+
+                return { start: targetDateStr, end: `${targetDateStr}T23:59:59.999Z` };
             };
 
             const warningRange = getDayRange(3);  // +3 Days
