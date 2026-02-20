@@ -127,9 +127,11 @@ const CanteenPreviewAdmin = ({ onBack }) => {
                             />
                             {variant === 'special' && (
                                 <div style={{ position: 'absolute', top: '8px', left: '8px', display: 'flex', flexDirection: 'column', gap: '6px', zIndex: 10 }}>
-                                    <span style={{ backgroundColor: '#0ea5e9', color: 'white', fontSize: '0.7rem', fontWeight: 'bold', padding: '4px 10px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
-                                        In Today's Special
-                                    </span>
+                                    {!item.isHostelSpecial && !item.isStaffSpecial && (
+                                        <span style={{ backgroundColor: '#0ea5e9', color: 'white', fontSize: '0.7rem', fontWeight: 'bold', padding: '4px 10px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+                                            Today's Special
+                                        </span>
+                                    )}
                                     {item.isHostelSpecial && (
                                         <span style={{ backgroundColor: '#7c3aed', color: 'white', fontSize: '0.7rem', fontWeight: 'bold', padding: '4px 10px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
                                             Hostel Special

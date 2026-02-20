@@ -30,9 +30,22 @@ const CanteenMenu = ({
     }, {});
   };
 
+  // Filter items based on user privileges
+  const filterForUser = (items) => {
+    return items.filter(item => {
+      if (item.isStaffSpecial && userCanteenType !== 'staff') return false;
+      if (item.isHostelSpecial && !['hostel', 'mrr_hostel'].includes(userCanteenType)) return false;
+
+      if (item.targetTypes && item.targetTypes.length > 0) {
+        if (!item.targetTypes.includes(userCanteenType)) return false;
+      }
+      return true;
+    });
+  };
+
   // Group menus
-  const groupedTodaysMenu = groupByCategory(todaysMenu);
-  const groupedFixedMenu = groupByCategory(fixedMenu);
+  const groupedTodaysMenu = groupByCategory(filterForUser(todaysMenu));
+  const groupedFixedMenu = groupByCategory(filterForUser(fixedMenu));
 
   // Helper to sort categories
   const getSortedCategories = (groupedItems) => {

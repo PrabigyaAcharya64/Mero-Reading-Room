@@ -396,9 +396,11 @@ function MenuManagement({ onBack, onDataLoaded }) {
                 <div key={item.id} className={`mm-card ${isSelected ? 'isSelected' : ''}`}>
                   {isSelected && (
                     <div style={{ position: 'absolute', top: '12px', left: '12px', display: 'flex', flexDirection: 'column', gap: '6px', zIndex: 10 }}>
-                      <span style={{ backgroundColor: '#0ea5e9', color: 'white', fontSize: '0.7rem', fontWeight: 'bold', padding: '4px 10px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
-                        In Today's Special
-                      </span>
+                      {!config.isHostelSpecial && !config.isStaffSpecial && (
+                        <span style={{ backgroundColor: '#0ea5e9', color: 'white', fontSize: '0.7rem', fontWeight: 'bold', padding: '4px 10px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+                          Today's Special
+                        </span>
+                      )}
                       {config.isHostelSpecial && (
                         <span style={{ backgroundColor: '#7c3aed', color: 'white', fontSize: '0.7rem', fontWeight: 'bold', padding: '4px 10px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
                           Hostel Special
