@@ -243,16 +243,16 @@ function MenuManagement({ onBack, onDataLoaded }) {
           // Defaults if not configured
           const config = dailySpecialsConfig[item.id] || { isHostelSpecial: false, isStaffSpecial: false };
           return {
-            id: item.id,
-            name: item.name,
-            price: item.price,
-            description: item.description,
+            id: item.id || '',
+            name: item.name || 'Unknown',
+            price: item.price !== undefined ? item.price : 0,
+            description: item.description || '',
             category: item.category || 'Breakfast',
             targetTypes: item.targetTypes || [],
             photoURL: item.photoURL === undefined ? null : item.photoURL,
-            // Daily transient flags from local state
-            isHostelSpecial: config.isHostelSpecial,
-            isStaffSpecial: config.isStaffSpecial
+            // Daily transient flags from local state with strict boolean cast
+            isHostelSpecial: Boolean(config.isHostelSpecial),
+            isStaffSpecial: Boolean(config.isStaffSpecial)
           };
         });
 
